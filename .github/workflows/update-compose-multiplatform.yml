@@ -18,6 +18,7 @@ on:
       auto-merge:
         type: string
         required: false
+        default: disable
       labels:
         type: string
         required: false
@@ -55,9 +56,9 @@ jobs:
             exit 1
           fi
           case "$AUTO_MERGE" in
-            "" | squash | merge | rebase) ;;
+            disable | squash | merge | rebase) ;;
             *)
-              echo "::error::auto-merge must be squash, merge or rebase, or be left empty."
+              echo "::error::auto-merge must be disable, squash, merge or rebase."
               exit 1
               ;;
           esac
@@ -202,7 +203,7 @@ jobs:
               options+=(--label "$LABELS")
             fi
             url="$(gh pr create "${options[@]}")"
-            if [ -n "$AUTO_MERGE" ]; then
+            if [ "$AUTO_MERGE" != disable ]; then
               gh pr merge "$url" --auto "--$AUTO_MERGE"
             fi
           fi
