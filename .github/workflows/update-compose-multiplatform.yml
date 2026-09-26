@@ -3,9 +3,6 @@ name: Update Compose Multiplatform
 on:
   workflow_call:
     inputs:
-      client-id:
-        type: string
-        required: true
       java-distribution:
         type: string
         required: true
@@ -15,9 +12,20 @@ on:
       gradle-tasks:
         type: string
         required: true
+      app-client-id:
+        type: string
+        required: false
+      auto-merge:
+        type: string
+        required: false
+      labels:
+        type: string
+        required: false
     secrets:
-      private-key:
-        required: true
+      token:
+        required: false
+      app-private-key:
+        required: false
 
 permissions: {}
 
@@ -30,8 +38,33 @@ env:
   BRANCH: chore/update-compose-multiplatform
 
 jobs:
+  check-inputs:
+    name: Check the inputs
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Check the credentials and the merge method
+        env:
+          HAS_TOKEN: ${{ secrets.token != '' }}
+          HAS_APP_CLIENT_ID: ${{ inputs.app-client-id != '' }}
+          HAS_APP_PRIVATE_KEY: ${{ secrets.app-private-key != '' }}
+          AUTO_MERGE: ${{ inputs.auto-merge }}
+        run: |
+          if [ "$HAS_TOKEN" = "$HAS_APP_CLIENT_ID" ] || [ "$HAS_APP_CLIENT_ID" != "$HAS_APP_PRIVATE_KEY" ]; then
+            echo "::error::Pass either the token secret, or the app-client-id input together with the app-private-key secret."
+            exit 1
+          fi
+          case "$AUTO_MERGE" in
+            "" | squash | merge | rebase) ;;
+            *)
+              echo "::error::auto-merge must be squash, merge or rebase, or be left empty."
+              exit 1
+              ;;
+          esac
+
   prepare:
     name: Update the version catalog and the lock files
+    needs: check-inputs
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -108,10 +141,11 @@ jobs:
     steps:
       - name: Create a token for the app
         id: app-token
+        if: inputs.app-client-id != ''
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ inputs.client-id }}
-          private-key: ${{ secrets.private-key }}
+          client-id: ${{ inputs.app-client-id }}
+          private-key: ${{ secrets.app-private-key }}
           permission-contents: write
           permission-pull-requests: write
 
@@ -119,7 +153,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.commit }}
-          token: ${{ steps.app-token.outputs.token }}
+          token: ${{ steps.app-token.outputs.token || secrets.token }}
 
       - name: Download the changes
         uses: actions/download-artifact@v8
@@ -129,12 +163,18 @@ jobs:
 
       - name: Push the branch
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
-          id="$(gh api "/users/${APP_SLUG}[bot]" --jq .id)"
-          git config user.name "${APP_SLUG}[bot]"
-          git config user.email "${id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          if [ -n "$APP_SLUG" ]; then
+            name="${APP_SLUG}[bot]"
+          elif ! name="$(gh api /user --jq .login)"; then
+            echo "::error::The token secret must belong to a user, such as a personal access token. The GITHUB_TOKEN cannot be used, because pull requests opened with it do not run workflows."
+            exit 1
+          fi
+          id="$(gh api "/users/$name" --jq .id)"
+          git config user.name "$name"
+          git config user.email "${id}+${name}@users.noreply.github.com"
           git switch --create "$BRANCH"
           git apply --index "$RUNNER_TEMP/update-compose-multiplatform/changes.patch"
           git commit --message "$TITLE"
@@ -148,15 +188,23 @@ jobs:
 
       - name: Open or update the pull request
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
+          AUTO_MERGE: ${{ inputs.auto-merge }}
+          LABELS: ${{ inputs.labels }}
         run: |
           body="$RUNNER_TEMP/update-compose-multiplatform/body.md"
           url="$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json url --jq '.[0].url // empty')"
           if [ -n "$url" ]; then
             gh pr edit "$url" --title "$TITLE" --body-file "$body"
           else
-            url="$(gh pr create --head "$BRANCH" --base "$BASE" --title "$TITLE" --body-file "$body" --label dependencies)"
-            gh pr merge "$url" --auto --squash
+            options=(--head "$BRANCH" --base "$BASE" --title "$TITLE" --body-file "$body")
+            if [ -n "$LABELS" ]; then
+              options+=(--label "$LABELS")
+            fi
+            url="$(gh pr create "${options[@]}")"
+            if [ -n "$AUTO_MERGE" ]; then
+              gh pr merge "$url" --auto "--$AUTO_MERGE"
+            fi
           fi
 
   close-pull-request:
@@ -177,18 +225,18 @@ jobs:
 
       - name: Create a token for the app
         id: app-token
-        if: steps.find.outputs.number != ''
+        if: steps.find.outputs.number != '' && inputs.app-client-id != ''
         uses: actions/create-github-app-token@v3
         with:
-          client-id: ${{ inputs.client-id }}
-          private-key: ${{ secrets.private-key }}
+          client-id: ${{ inputs.app-client-id }}
+          private-key: ${{ secrets.app-private-key }}
           permission-contents: write
           permission-pull-requests: write
 
       - name: Close the pull request
         if: steps.find.outputs.number != ''
         env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
           NUMBER: ${{ steps.find.outputs.number }}
           VERSIONS: ${{ needs.prepare.outputs.versions }}
         run: gh pr close "$NUMBER" --repo "$GITHUB_REPOSITORY" --delete-branch --comment "Closing because $BASE already uses $VERSIONS."
