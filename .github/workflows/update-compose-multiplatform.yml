@@ -3,15 +3,20 @@ name: Update Compose Multiplatform
 on:
   workflow_call:
     inputs:
-      java-distribution:
+      update-js-yarn-lock:
+        type: boolean
+        required: false
+        default: false
+      update-wasm-yarn-lock:
+        type: boolean
+        required: false
+        default: false
+      gradle-jdk-distribution:
         type: string
-        required: true
-      java-version:
+        required: false
+      gradle-jdk-version:
         type: string
-        required: true
-      gradle-tasks:
-        type: string
-        required: true
+        required: false
       app-client-id:
         type: string
         required: false
@@ -44,15 +49,22 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     steps:
-      - name: Check the credentials and the merge method
+      - name: Check the inputs
         env:
           HAS_TOKEN: ${{ secrets.token != '' }}
           HAS_APP_CLIENT_ID: ${{ inputs.app-client-id != '' }}
           HAS_APP_PRIVATE_KEY: ${{ secrets.app-private-key != '' }}
+          UPDATES_YARN_LOCK: ${{ inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock }}
+          GRADLE_JDK_DISTRIBUTION: ${{ inputs.gradle-jdk-distribution }}
+          GRADLE_JDK_VERSION: ${{ inputs.gradle-jdk-version }}
           AUTO_MERGE: ${{ inputs.auto-merge }}
         run: |
           if [ "$HAS_TOKEN" = "$HAS_APP_CLIENT_ID" ] || [ "$HAS_APP_CLIENT_ID" != "$HAS_APP_PRIVATE_KEY" ]; then
             echo "::error::Pass either the token secret, or the app-client-id input together with the app-private-key secret."
+            exit 1
+          fi
+          if [ "$UPDATES_YARN_LOCK" = true ] && { [ -z "$GRADLE_JDK_DISTRIBUTION" ] || [ -z "$GRADLE_JDK_VERSION" ]; }; then
+            echo "::error::Updating a yarn.lock runs Gradle, so pass gradle-jdk-distribution and gradle-jdk-version as well."
             exit 1
           fi
           case "$AUTO_MERGE" in
@@ -64,7 +76,7 @@ jobs:
           esac
 
   prepare:
-    name: Update the version catalog and the lock files
+    name: Update the version catalog and the yarn.lock files
     needs: check-inputs
     runs-on: ubuntu-latest
     permissions:
@@ -96,27 +108,34 @@ jobs:
         id: catalog
         run: kotlin .update-compose-multiplatform/scripts/update-version-catalog.main.kts "$RUNNER_TEMP/update-compose-multiplatform/body.md"
 
-      - name: Set up Java
-        if: steps.catalog.outputs.changed == 'true'
+      - name: Set up the JDK for Gradle
+        if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
         uses: actions/setup-java@v6
         with:
-          distribution: ${{ inputs.java-distribution }}
-          java-version: ${{ inputs.java-version }}
+          distribution: ${{ inputs.gradle-jdk-distribution }}
+          java-version: ${{ inputs.gradle-jdk-version }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
       - name: Set up Gradle
-        if: steps.catalog.outputs.changed == 'true'
+        if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
         uses: gradle/actions/setup-gradle@v6
 
-      - name: Update the lock files
-        if: steps.catalog.outputs.changed == 'true'
+      - name: Update the yarn.lock files
+        if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
         env:
-          GRADLE_TASKS: ${{ inputs.gradle-tasks }}
+          UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}
+          UPDATE_WASM_YARN_LOCK: ${{ inputs.update-wasm-yarn-lock }}
         run: |
-          read -ra tasks <<< "$GRADLE_TASKS"
+          tasks=()
+          if [ "$UPDATE_JS_YARN_LOCK" = true ]; then
+            tasks+=(kotlinUpgradeYarnLock)
+          fi
+          if [ "$UPDATE_WASM_YARN_LOCK" = true ]; then
+            tasks+=(kotlinWasmUpgradeYarnLock)
+          fi
           ./gradlew "${tasks[@]}"
-          echo "- The lock files were updated with \`./gradlew $GRADLE_TASKS\`." >> "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+          echo "- The yarn.lock files were updated with \`./gradlew ${tasks[*]}\`." >> "$RUNNER_TEMP/update-compose-multiplatform/body.md"
 
       - name: Save the changes
         if: steps.catalog.outputs.changed == 'true'
