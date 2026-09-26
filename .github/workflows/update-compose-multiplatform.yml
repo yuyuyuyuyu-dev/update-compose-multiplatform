@@ -1,0 +1,208 @@
+name: Update Compose Multiplatform
+
+on:
+  workflow_call:
+    inputs:
+      client-id:
+        type: string
+        required: true
+      java-distribution:
+        type: string
+        required: true
+      java-version:
+        type: string
+        required: true
+      gradle-tasks:
+        type: string
+        required: true
+    secrets:
+      private-key:
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: chore/update-compose-multiplatform
+  cancel-in-progress: false
+
+env:
+  BASE: ${{ github.event.repository.default_branch }}
+  BRANCH: chore/update-compose-multiplatform
+
+jobs:
+  prepare:
+    name: Update the version catalog and the lock files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      commit: ${{ steps.checkout.outputs.commit }}
+      changed: ${{ steps.catalog.outputs.changed }}
+      title: ${{ steps.catalog.outputs.title }}
+      versions: ${{ steps.catalog.outputs.versions }}
+      notice: ${{ steps.catalog.outputs.notice }}
+    steps:
+      - name: Check out the repository
+        id: checkout
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.BASE }}
+          persist-credentials: false
+
+      - name: Check out the script
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: scripts
+          persist-credentials: false
+
+      - name: Update the version catalog
+        id: catalog
+        run: kotlin .update-compose-multiplatform/scripts/update-version-catalog.main.kts "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+
+      - name: Set up Java
+        if: steps.catalog.outputs.changed == 'true'
+        uses: actions/setup-java@v6
+        with:
+          distribution: ${{ inputs.java-distribution }}
+          java-version: ${{ inputs.java-version }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Set up Gradle
+        if: steps.catalog.outputs.changed == 'true'
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Update the lock files
+        if: steps.catalog.outputs.changed == 'true'
+        env:
+          GRADLE_TASKS: ${{ inputs.gradle-tasks }}
+        run: |
+          read -ra tasks <<< "$GRADLE_TASKS"
+          ./gradlew "${tasks[@]}"
+          echo "- The lock files were updated with \`./gradlew $GRADLE_TASKS\`." >> "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+
+      - name: Save the changes
+        if: steps.catalog.outputs.changed == 'true'
+        run: git diff --binary > "$RUNNER_TEMP/update-compose-multiplatform/changes.patch"
+
+      - name: Upload the changes
+        if: steps.catalog.outputs.changed == 'true'
+        uses: actions/upload-artifact@v7
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
+          if-no-files-found: error
+          retention-days: 1
+
+  open-pull-request:
+    name: Open or update the pull request
+    needs: prepare
+    if: needs.prepare.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    permissions: {}
+    env:
+      TITLE: ${{ needs.prepare.outputs.title }}
+    steps:
+      - name: Create a token for the app
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ inputs.client-id }}
+          private-key: ${{ secrets.private-key }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.commit }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Download the changes
+        uses: actions/download-artifact@v8
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
+
+      - name: Push the branch
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: |
+          id="$(gh api "/users/${APP_SLUG}[bot]" --jq .id)"
+          git config user.name "${APP_SLUG}[bot]"
+          git config user.email "${id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git switch --create "$BRANCH"
+          git apply --index "$RUNNER_TEMP/update-compose-multiplatform/changes.patch"
+          git commit --message "$TITLE"
+          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null \
+            && git fetch --depth=1 origin "$BRANCH" \
+            && [ "$(git rev-parse 'FETCH_HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')" ]; then
+            echo "$BRANCH already holds this update."
+          else
+            git push --force origin "HEAD:refs/heads/$BRANCH"
+          fi
+
+      - name: Open or update the pull request
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          body="$RUNNER_TEMP/update-compose-multiplatform/body.md"
+          url="$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json url --jq '.[0].url // empty')"
+          if [ -n "$url" ]; then
+            gh pr edit "$url" --title "$TITLE" --body-file "$body"
+          else
+            url="$(gh pr create --head "$BRANCH" --base "$BASE" --title "$TITLE" --body-file "$body" --label dependencies)"
+            gh pr merge "$url" --auto --squash
+          fi
+
+  close-pull-request:
+    name: Close the pull request that is no longer needed
+    needs: prepare
+    if: needs.prepare.outputs.changed == 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Find the pull request
+        id: find
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          number="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')"
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+
+      - name: Create a token for the app
+        id: app-token
+        if: steps.find.outputs.number != ''
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ inputs.client-id }}
+          private-key: ${{ secrets.private-key }}
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Close the pull request
+        if: steps.find.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          NUMBER: ${{ steps.find.outputs.number }}
+          VERSIONS: ${{ needs.prepare.outputs.versions }}
+        run: gh pr close "$NUMBER" --repo "$GITHUB_REPOSITORY" --delete-branch --comment "Closing because $BASE already uses $VERSIONS."
+
+  report-material3-adaptive:
+    name: Report Material3 Adaptive
+    needs: prepare
+    if: needs.prepare.outputs.notice != ''
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
+      - name: Fail with the notice
+        env:
+          NOTICE: ${{ needs.prepare.outputs.notice }}
+        run: |
+          echo "::error::$NOTICE"
+          exit 1
