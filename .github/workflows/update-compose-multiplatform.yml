@@ -106,7 +106,7 @@ jobs:
 
       - name: Update the version catalog
         id: catalog
-        run: kotlin .update-compose-multiplatform/scripts/update-version-catalog.main.kts "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts "$RUNNER_TEMP/update-compose-multiplatform/body.md"
 
       - name: Set up the JDK to update the yarn.lock files
         if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
