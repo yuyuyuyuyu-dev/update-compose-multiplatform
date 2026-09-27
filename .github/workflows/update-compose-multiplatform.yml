@@ -11,10 +11,10 @@ on:
         type: boolean
         required: false
         default: false
-      gradle-jdk-distribution:
+      jdk-distribution-to-update-yarn-lock:
         type: string
         required: false
-      gradle-jdk-version:
+      jdk-version-to-update-yarn-lock:
         type: string
         required: false
       app-client-id:
@@ -55,16 +55,16 @@ jobs:
           HAS_APP_CLIENT_ID: ${{ inputs.app-client-id != '' }}
           HAS_APP_PRIVATE_KEY: ${{ secrets.app-private-key != '' }}
           UPDATES_YARN_LOCK: ${{ inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock }}
-          GRADLE_JDK_DISTRIBUTION: ${{ inputs.gradle-jdk-distribution }}
-          GRADLE_JDK_VERSION: ${{ inputs.gradle-jdk-version }}
+          JDK_DISTRIBUTION: ${{ inputs.jdk-distribution-to-update-yarn-lock }}
+          JDK_VERSION: ${{ inputs.jdk-version-to-update-yarn-lock }}
           AUTO_MERGE: ${{ inputs.auto-merge }}
         run: |
           if [ "$HAS_TOKEN" = "$HAS_APP_CLIENT_ID" ] || [ "$HAS_APP_CLIENT_ID" != "$HAS_APP_PRIVATE_KEY" ]; then
             echo "::error::Pass either the token secret, or the app-client-id input together with the app-private-key secret."
             exit 1
           fi
-          if [ "$UPDATES_YARN_LOCK" = true ] && { [ -z "$GRADLE_JDK_DISTRIBUTION" ] || [ -z "$GRADLE_JDK_VERSION" ]; }; then
-            echo "::error::Updating a yarn.lock runs Gradle, so pass gradle-jdk-distribution and gradle-jdk-version as well."
+          if [ "$UPDATES_YARN_LOCK" = true ] && { [ -z "$JDK_DISTRIBUTION" ] || [ -z "$JDK_VERSION" ]; }; then
+            echo "::error::Updating a yarn.lock runs Gradle, so pass jdk-distribution-to-update-yarn-lock and jdk-version-to-update-yarn-lock as well."
             exit 1
           fi
           case "$AUTO_MERGE" in
@@ -108,12 +108,12 @@ jobs:
         id: catalog
         run: kotlin .update-compose-multiplatform/scripts/update-version-catalog.main.kts "$RUNNER_TEMP/update-compose-multiplatform/body.md"
 
-      - name: Set up the JDK for Gradle
+      - name: Set up the JDK to update the yarn.lock files
         if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
         uses: actions/setup-java@v6
         with:
-          distribution: ${{ inputs.gradle-jdk-distribution }}
-          java-version: ${{ inputs.gradle-jdk-version }}
+          distribution: ${{ inputs.jdk-distribution-to-update-yarn-lock }}
+          java-version: ${{ inputs.jdk-version-to-update-yarn-lock }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
