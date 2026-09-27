@@ -49,31 +49,26 @@ jobs:
     runs-on: ubuntu-latest
     permissions: {}
     steps:
+      - name: Check out the script
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: scripts
+          persist-credentials: false
+
       - name: Check the inputs
         env:
           HAS_TOKEN: ${{ secrets.token != '' }}
           HAS_APP_CLIENT_ID: ${{ inputs.app-client-id != '' }}
           HAS_APP_PRIVATE_KEY: ${{ secrets.app-private-key != '' }}
-          UPDATES_YARN_LOCK: ${{ inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock }}
+          UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}
+          UPDATE_WASM_YARN_LOCK: ${{ inputs.update-wasm-yarn-lock }}
           JDK_DISTRIBUTION: ${{ inputs.jdk-distribution-to-update-yarn-lock }}
           JDK_VERSION: ${{ inputs.jdk-version-to-update-yarn-lock }}
           AUTO_MERGE: ${{ inputs.auto-merge }}
-        run: |
-          if [ "$HAS_TOKEN" = "$HAS_APP_CLIENT_ID" ] || [ "$HAS_APP_CLIENT_ID" != "$HAS_APP_PRIVATE_KEY" ]; then
-            echo "::error::Pass either the token secret, or the app-client-id input together with the app-private-key secret."
-            exit 1
-          fi
-          if [ "$UPDATES_YARN_LOCK" = true ] && { [ -z "$JDK_DISTRIBUTION" ] || [ -z "$JDK_VERSION" ]; }; then
-            echo "::error::Updating a yarn.lock runs Gradle, so pass jdk-distribution-to-update-yarn-lock and jdk-version-to-update-yarn-lock as well."
-            exit 1
-          fi
-          case "$AUTO_MERGE" in
-            disable | squash | merge | rebase) ;;
-            *)
-              echo "::error::auto-merge must be disable, squash, merge or rebase."
-              exit 1
-              ;;
-          esac
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts check-inputs
 
   prepare:
     name: Update the version catalog and the yarn.lock files
@@ -84,7 +79,6 @@ jobs:
     outputs:
       commit: ${{ steps.checkout.outputs.commit }}
       changed: ${{ steps.catalog.outputs.changed }}
-      title: ${{ steps.catalog.outputs.title }}
       versions: ${{ steps.catalog.outputs.versions }}
       notice: ${{ steps.catalog.outputs.notice }}
     steps:
@@ -106,7 +100,7 @@ jobs:
 
       - name: Update the version catalog
         id: catalog
-        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts update-version-catalog
 
       - name: Set up the JDK to update the yarn.lock files
         if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
@@ -126,20 +120,11 @@ jobs:
         env:
           UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}
           UPDATE_WASM_YARN_LOCK: ${{ inputs.update-wasm-yarn-lock }}
-        run: |
-          tasks=()
-          if [ "$UPDATE_JS_YARN_LOCK" = true ]; then
-            tasks+=(kotlinUpgradeYarnLock)
-          fi
-          if [ "$UPDATE_WASM_YARN_LOCK" = true ]; then
-            tasks+=(kotlinWasmUpgradeYarnLock)
-          fi
-          ./gradlew "${tasks[@]}"
-          echo "- The yarn.lock files were updated with \`./gradlew ${tasks[*]}\`." >> "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts update-yarn-lock
 
       - name: Save the changes
         if: steps.catalog.outputs.changed == 'true'
-        run: git diff --binary > "$RUNNER_TEMP/update-compose-multiplatform/changes.patch"
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts save-changes
 
       - name: Upload the changes
         if: steps.catalog.outputs.changed == 'true'
@@ -156,8 +141,6 @@ jobs:
     if: needs.prepare.outputs.changed == 'true'
     runs-on: ubuntu-latest
     permissions: {}
-    env:
-      TITLE: ${{ needs.prepare.outputs.title }}
     steps:
       - name: Create a token for the app
         id: app-token
@@ -175,57 +158,28 @@ jobs:
           ref: ${{ needs.prepare.outputs.commit }}
           token: ${{ steps.app-token.outputs.token || secrets.token }}
 
+      - name: Check out the script
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: scripts
+          persist-credentials: false
+
       - name: Download the changes
         uses: actions/download-artifact@v8
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
 
-      - name: Push the branch
+      - name: Push the branch and open or update the pull request
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
-        run: |
-          if [ -n "$APP_SLUG" ]; then
-            name="${APP_SLUG}[bot]"
-          elif ! name="$(gh api /user --jq .login)"; then
-            echo "::error::The token secret must belong to a user, such as a personal access token. The GITHUB_TOKEN cannot be used, because pull requests opened with it do not run workflows."
-            exit 1
-          fi
-          id="$(gh api "/users/$name" --jq .id)"
-          git config user.name "$name"
-          git config user.email "${id}+${name}@users.noreply.github.com"
-          git switch --create "$BRANCH"
-          git apply --index "$RUNNER_TEMP/update-compose-multiplatform/changes.patch"
-          git commit --message "$TITLE"
-          if git ls-remote --exit-code --heads origin "$BRANCH" > /dev/null \
-            && git fetch --depth=1 origin "$BRANCH" \
-            && [ "$(git rev-parse 'FETCH_HEAD^{tree}')" = "$(git rev-parse 'HEAD^{tree}')" ]; then
-            echo "$BRANCH already holds this update."
-          else
-            git push --force origin "HEAD:refs/heads/$BRANCH"
-          fi
-
-      - name: Open or update the pull request
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
           AUTO_MERGE: ${{ inputs.auto-merge }}
           LABELS: ${{ inputs.labels }}
-        run: |
-          body="$RUNNER_TEMP/update-compose-multiplatform/body.md"
-          url="$(gh pr list --head "$BRANCH" --base "$BASE" --state open --json url --jq '.[0].url // empty')"
-          if [ -n "$url" ]; then
-            gh pr edit "$url" --title "$TITLE" --body-file "$body"
-          else
-            options=(--head "$BRANCH" --base "$BASE" --title "$TITLE" --body-file "$body")
-            if [ -n "$LABELS" ]; then
-              options+=(--label "$LABELS")
-            fi
-            url="$(gh pr create "${options[@]}")"
-            if [ "$AUTO_MERGE" != disable ]; then
-              gh pr merge "$url" --auto "--$AUTO_MERGE"
-            fi
-          fi
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts open-pull-request
 
   close-pull-request:
     name: Close the pull request that is no longer needed
@@ -235,13 +189,20 @@ jobs:
     permissions:
       pull-requests: read
     steps:
+      - name: Check out the script
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: scripts
+          persist-credentials: false
+
       - name: Find the pull request
         id: find
         env:
           GH_TOKEN: ${{ github.token }}
-        run: |
-          number="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$BRANCH" --base "$BASE" --state open --json number --jq '.[0].number // empty')"
-          echo "number=$number" >> "$GITHUB_OUTPUT"
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts find-pull-request
 
       - name: Create a token for the app
         id: app-token
@@ -259,7 +220,7 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
           NUMBER: ${{ steps.find.outputs.number }}
           VERSIONS: ${{ needs.prepare.outputs.versions }}
-        run: gh pr close "$NUMBER" --repo "$GITHUB_REPOSITORY" --delete-branch --comment "Closing because $BASE already uses $VERSIONS."
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts close-pull-request
 
   report-material3-adaptive:
     name: Report Material3 Adaptive
