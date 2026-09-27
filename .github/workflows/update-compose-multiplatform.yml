@@ -1,5 +1,4 @@
 name: Update Compose Multiplatform
-
 on:
   workflow_call:
     inputs:
@@ -32,17 +31,13 @@ on:
         required: false
       app-private-key:
         required: false
-
 permissions: {}
-
 concurrency:
   group: chore/update-compose-multiplatform
   cancel-in-progress: false
-
 env:
   BASE: ${{ github.event.repository.default_branch }}
   BRANCH: chore/update-compose-multiplatform
-
 jobs:
   check-inputs:
     name: Check the inputs
@@ -57,7 +52,6 @@ jobs:
           path: .update-compose-multiplatform
           sparse-checkout: scripts
           persist-credentials: false
-
       - name: Check the inputs
         env:
           HAS_TOKEN: ${{ secrets.token != '' }}
@@ -69,7 +63,6 @@ jobs:
           JDK_VERSION: ${{ inputs.jdk-version-to-update-yarn-lock }}
           AUTO_MERGE: ${{ inputs.auto-merge }}
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts check-inputs
-
   prepare:
     name: Update the version catalog and the yarn.lock files
     needs: check-inputs
@@ -88,7 +81,6 @@ jobs:
         with:
           ref: ${{ env.BASE }}
           persist-credentials: false
-
       - name: Check out the script
         uses: actions/checkout@v7
         with:
@@ -97,11 +89,9 @@ jobs:
           path: .update-compose-multiplatform
           sparse-checkout: scripts
           persist-credentials: false
-
       - name: Update the version catalog
         id: catalog
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts update-version-catalog
-
       - name: Set up the JDK to update the yarn.lock files
         if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
         uses: actions/setup-java@v6
@@ -110,22 +100,18 @@ jobs:
           java-version: ${{ inputs.jdk-version-to-update-yarn-lock }}
         env:
           GITHUB_TOKEN: ${{ github.token }}
-
       - name: Set up Gradle
         if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
         uses: gradle/actions/setup-gradle@v6
-
       - name: Update the yarn.lock files
         if: steps.catalog.outputs.changed == 'true' && (inputs.update-js-yarn-lock || inputs.update-wasm-yarn-lock)
         env:
           UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}
           UPDATE_WASM_YARN_LOCK: ${{ inputs.update-wasm-yarn-lock }}
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts update-yarn-lock
-
       - name: Save the changes
         if: steps.catalog.outputs.changed == 'true'
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts save-changes
-
       - name: Upload the changes
         if: steps.catalog.outputs.changed == 'true'
         uses: actions/upload-artifact@v7
@@ -134,7 +120,6 @@ jobs:
           path: ${{ runner.temp }}/update-compose-multiplatform
           if-no-files-found: error
           retention-days: 1
-
   open-pull-request:
     name: Open or update the pull request
     needs: prepare
@@ -151,13 +136,11 @@ jobs:
           private-key: ${{ secrets.app-private-key }}
           permission-contents: write
           permission-pull-requests: write
-
       - name: Check out the repository
         uses: actions/checkout@v7
         with:
           ref: ${{ needs.prepare.outputs.commit }}
           token: ${{ steps.app-token.outputs.token || secrets.token }}
-
       - name: Check out the script
         uses: actions/checkout@v7
         with:
@@ -166,13 +149,11 @@ jobs:
           path: .update-compose-multiplatform
           sparse-checkout: scripts
           persist-credentials: false
-
       - name: Download the changes
         uses: actions/download-artifact@v8
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
-
       - name: Push the branch and open or update the pull request
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
@@ -180,7 +161,6 @@ jobs:
           AUTO_MERGE: ${{ inputs.auto-merge }}
           LABELS: ${{ inputs.labels }}
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts open-pull-request
-
   close-pull-request:
     name: Close the pull request that is no longer needed
     needs: prepare
@@ -197,13 +177,11 @@ jobs:
           path: .update-compose-multiplatform
           sparse-checkout: scripts
           persist-credentials: false
-
       - name: Find the pull request
         id: find
         env:
           GH_TOKEN: ${{ github.token }}
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts find-pull-request
-
       - name: Create a token for the app
         id: app-token
         if: steps.find.outputs.number != '' && inputs.app-client-id != ''
@@ -213,7 +191,6 @@ jobs:
           private-key: ${{ secrets.app-private-key }}
           permission-contents: write
           permission-pull-requests: write
-
       - name: Close the pull request
         if: steps.find.outputs.number != ''
         env:
@@ -221,7 +198,6 @@ jobs:
           NUMBER: ${{ steps.find.outputs.number }}
           VERSIONS: ${{ needs.prepare.outputs.versions }}
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts close-pull-request
-
   report-material3-adaptive:
     name: Report Material3 Adaptive
     needs: prepare
