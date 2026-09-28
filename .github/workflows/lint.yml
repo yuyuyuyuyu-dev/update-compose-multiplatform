@@ -17,12 +17,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Download Detekt
-        run: |
-          curl -fsSL -o "$RUNNER_TEMP/detekt-cli.jar" https://github.com/detekt/detekt/releases/download/v1.23.8/detekt-cli-1.23.8-all.jar
-          echo "2ce2ff952e150baf28a29cda70a363b0340b3e81a55f43e51ec5edffc3d066c1  $RUNNER_TEMP/detekt-cli.jar" | sha256sum --check --strict
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
       - name: Run Detekt
-        run: java -jar "$RUNNER_TEMP/detekt-cli.jar"
+        run: ./gradlew detekt
   ktlint:
     name: ktlint
     runs-on: ubuntu-latest
@@ -33,15 +31,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Install ktlint
-        run: |
-          mkdir -p "$RUNNER_TEMP/bin"
-          curl -fsSL -o "$RUNNER_TEMP/bin/ktlint" https://github.com/pinterest/ktlint/releases/download/1.8.0/ktlint
-          echo "a3fd620207d5c40da6ca789b95e7f823c54e854b7fade7f613e91096a3706d75  $RUNNER_TEMP/bin/ktlint" | sha256sum --check --strict
-          chmod +x "$RUNNER_TEMP/bin/ktlint"
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
       - name: Run ktlint
-        run: ktlint
+        run: ./gradlew lintKotlin
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
