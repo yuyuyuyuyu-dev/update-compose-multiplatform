@@ -64,12 +64,10 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-      - name: Install yamlfmt
-        run: |
-          mkdir -p "$RUNNER_TEMP/bin"
-          curl -fsSL -o "$RUNNER_TEMP/yamlfmt.tar.gz" https://github.com/google/yamlfmt/releases/download/v0.21.0/yamlfmt_0.21.0_Linux_x86_64.tar.gz
-          echo "1f300d9257b232bb3b541d7fb1b0e6b3c121bcbab381c86cd38cb8722be8a566  $RUNNER_TEMP/yamlfmt.tar.gz" | sha256sum --check --strict
-          tar -xzf "$RUNNER_TEMP/yamlfmt.tar.gz" -C "$RUNNER_TEMP/bin" yamlfmt
-          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
       - name: Run yamlfmt
-        run: yamlfmt -lint .
+        run: go run github.com/google/yamlfmt/cmd/yamlfmt@latest -lint .
