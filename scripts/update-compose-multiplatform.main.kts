@@ -189,13 +189,44 @@ class Update(
     val to: String,
 )
 
-fun environment(name: String): String = System.getenv(name).orEmpty()
+class CatalogUpdate(
+    val updates: List<Update>,
+    val adaptive: AdaptivePairing?,
+) {
+    val changes: List<Update> = updates.filter { it.from != it.to }
 
-fun required(name: String): String = environment(name).ifEmpty { error("$name is not set.") }
+    val title: String = "build(deps): update ${listed(changes.map { "${it.library} to ${it.to}" })}"
 
-fun flag(name: String): Boolean = environment(name) == "true"
+    val versions: String = listed(updates.map { "${it.library} ${it.to}" })
 
-fun workFile(name: String): File = File(required("RUNNER_TEMP"), "update-compose-multiplatform/$name")
+    val notice: String = (adaptive as? Unpaired)?.notice.orEmpty()
+}
+
+class Arguments(
+    private val values: Map<String, String>,
+) {
+    fun text(name: String): String = values.getValue(name)
+
+    fun flag(name: String): Boolean = text(name).toBooleanStrictOrNull() ?: error("--$name must be true or false.")
+
+    fun file(name: String): File = File(text(name))
+}
+
+class Command(
+    private val options: List<String>,
+    private val action: (Arguments) -> Unit,
+) {
+    fun run(arguments: List<String>) {
+        val pairs = arguments.chunked(2)
+        val expected = options.map { "--$it" }
+        check(pairs.all { it.size == 2 } && pairs.map { it.first() }.sorted() == expected.sorted()) {
+            "Pass ${listed(expected)}, each followed by its value."
+        }
+        action(Arguments(pairs.associate { (name, value) -> name.removePrefix("--") to value }))
+    }
+}
+
+fun hasSecret(name: String): Boolean = !System.getenv(name).isNullOrEmpty()
 
 fun executeOrNull(command: List<String>): String? {
     val process = ProcessBuilder(command).redirectError(ProcessBuilder.Redirect.INHERIT).start()
@@ -462,12 +493,14 @@ fun pullRequestBody(
         }
     }
 
-fun writeOutputs(outputs: Map<String, String>) {
-    val file = System.getenv("GITHUB_OUTPUT")?.let(::File)
+fun writeOutputs(
+    file: File,
+    outputs: Map<String, String>,
+) {
     outputs.forEach { (name, value) ->
         println("$name=$value")
         val delimiter = "EOF_${UUID.randomUUID()}"
-        file?.appendText("$name<<$delimiter\n$value\n$delimiter\n")
+        file.appendText("$name<<$delimiter\n$value\n$delimiter\n")
     }
 }
 
@@ -484,33 +517,7 @@ fun openPullRequestField(
         ?.jsonPrimitive
         ?.content
 
-fun checkInputs() {
-    val usesToken = flag("HAS_TOKEN")
-    val usesApp = flag("HAS_APP_CLIENT_ID")
-    val updatesYarnLock = flag("UPDATE_JS_YARN_LOCK") || flag("UPDATE_WASM_YARN_LOCK")
-    val jdkIsMissing = environment("JDK_DISTRIBUTION").isEmpty() || environment("JDK_VERSION").isEmpty()
-    val problems =
-        buildList {
-            if (usesToken == usesApp || usesApp != flag("HAS_APP_PRIVATE_KEY")) {
-                add(
-                    "Pass either the token secret, " +
-                        "or the app-client-id input together with the app-private-key secret.",
-                )
-            }
-            if (updatesYarnLock && jdkIsMissing) {
-                add(
-                    "Updating a yarn.lock runs Gradle, " +
-                        "so pass jdk-distribution-to-update-yarn-lock and jdk-version-to-update-yarn-lock as well.",
-                )
-            }
-            if (environment("AUTO_MERGE") !in autoMergeMethods) {
-                add("auto-merge must be disable, squash, merge or rebase.")
-            }
-        }
-    check(problems.isEmpty()) { problems.joinToString("\n") }
-}
-
-fun updateVersionCatalog() {
+fun updateVersionCatalog(): CatalogUpdate {
     val catalogFile = File("gradle/libs.versions.toml")
     val catalog = VersionCatalog(catalogFile)
     val libraryProblems =
@@ -546,45 +553,34 @@ fun updateVersionCatalog() {
     val material3 = pairedMaterial3(compose)
     val adaptive = currentAdaptive?.let { pairedAdaptive(compose, adaptiveArtifacts) }
 
-    val updates =
-        listOfNotNull(
-            Update("Compose Multiplatform", composeKey, currentCompose, compose.toString()),
-            Update("material3", material3Key, currentMaterial3, material3.toString()),
-            currentAdaptive?.let {
-                Update("Material3 Adaptive", adaptiveKey, it, (adaptive as? Paired)?.version?.toString() ?: it)
-            },
+    val update =
+        CatalogUpdate(
+            listOfNotNull(
+                Update("Compose Multiplatform", composeKey, currentCompose, compose.toString()),
+                Update("material3", material3Key, currentMaterial3, material3.toString()),
+                currentAdaptive?.let {
+                    Update("Material3 Adaptive", adaptiveKey, it, (adaptive as? Paired)?.version?.toString() ?: it)
+                },
+            ),
+            adaptive,
         )
-    val changes = updates.filter { it.from != it.to }
-    if (changes.isNotEmpty()) {
-        changes.forEach { catalog.setVersion(it.key, it.to) }
+    if (update.changes.isNotEmpty()) {
+        update.changes.forEach { catalog.setVersion(it.key, it.to) }
         catalog.save()
-        workFile("body.md").apply { parentFile.mkdirs() }.writeText(pullRequestBody(updates, adaptive))
-        workFile("title.txt").writeText("build(deps): update ${listed(changes.map { "${it.library} to ${it.to}" })}")
     }
-    writeOutputs(
-        mapOf(
-            "changed" to changes.isNotEmpty().toString(),
-            "versions" to listed(updates.map { "${it.library} ${it.to}" }),
-            "notice" to ((adaptive as? Unpaired)?.notice ?: ""),
-        ),
-    )
+    return update
 }
 
-fun updateYarnLock() {
-    val tasks =
-        listOfNotNull(
-            "kotlinUpgradeYarnLock".takeIf { flag("UPDATE_JS_YARN_LOCK") },
-            "kotlinWasmUpgradeYarnLock".takeIf { flag("UPDATE_WASM_YARN_LOCK") },
-        )
+fun updateYarnLock(tasks: List<String>): String {
     val command = listOf("./gradlew") + tasks
     check(ProcessBuilder(command).inheritIO().start().waitFor() == 0) { "${command.joinToString(" ")} failed." }
-    workFile("body.md").appendText("- The yarn.lock files were updated with `${command.joinToString(" ")}`.\n")
+    return "- The yarn.lock files were updated with `${command.joinToString(" ")}`.\n"
 }
 
-fun saveChanges() {
+fun saveChanges(patch: File) {
     val process =
         ProcessBuilder("git", "diff", "--binary")
-            .redirectOutput(workFile("changes.patch"))
+            .redirectOutput(patch)
             .redirectError(ProcessBuilder.Redirect.INHERIT)
             .start()
     check(process.waitFor() == 0) { "git diff --binary failed." }
@@ -607,8 +603,10 @@ fun tokenOwner(): String =
 fun commitChanges(
     branch: String,
     title: String,
+    patch: File,
+    appSlug: String,
 ) {
-    val name = environment("APP_SLUG").ifEmpty { null }?.let { "$it[bot]" } ?: tokenOwner()
+    val name = appSlug.ifEmpty { null }?.let { "$it[bot]" } ?: tokenOwner()
     val id =
         Json
             .parseToJsonElement(gh("api", "/users/$name"))
@@ -619,7 +617,7 @@ fun commitChanges(
     git("config", "user.name", name)
     git("config", "user.email", "$id+$name@users.noreply.github.com")
     git("switch", "--create", branch)
-    git("apply", "--index", workFile("changes.patch").path)
+    git("apply", "--index", patch.path)
     git("commit", "--message", title)
 }
 
@@ -640,62 +638,137 @@ fun pushBranch(branch: String) {
 }
 
 fun createPullRequest(
-    base: String,
-    branch: String,
+    arguments: Arguments,
     title: String,
     body: String,
 ) {
-    val labels = environment("LABELS")
+    val labels = arguments.text("labels")
     val labelOptions = if (labels.isEmpty()) emptyList() else listOf("--label", labels)
-    val options = listOf("--head", branch, "--base", base, "--title", title, "--body-file", body) + labelOptions
-    val url = execute(listOf("gh", "pr", "create") + options)
-    val autoMerge = required("AUTO_MERGE")
+    val target = listOf("--head", arguments.text("branch"), "--base", arguments.text("base"))
+    val content = listOf("--title", title, "--body-file", body) + labelOptions
+    val url = execute(listOf("gh", "pr", "create") + target + content)
+    val autoMerge = arguments.text("auto-merge")
     if (autoMerge != "disable") {
         gh("pr", "merge", url, "--auto", "--$autoMerge")
     }
 }
 
-fun openPullRequest() {
-    val base = required("BASE")
-    val branch = required("BRANCH")
-    val title = workFile("title.txt").readText()
-    val body = workFile("body.md").path
-    commitChanges(branch, title)
+fun checkInputs(arguments: Arguments) {
+    val usesToken = hasSecret("TOKEN")
+    val usesApp = arguments.text("app-client-id").isNotEmpty()
+    val updatesYarnLock = arguments.flag("update-js-yarn-lock") || arguments.flag("update-wasm-yarn-lock")
+    val jdkIsMissing =
+        arguments.text("jdk-distribution-to-update-yarn-lock").isEmpty() ||
+            arguments.text("jdk-version-to-update-yarn-lock").isEmpty()
+    val problems =
+        buildList {
+            if (usesToken == usesApp || usesApp != hasSecret("APP_PRIVATE_KEY")) {
+                add(
+                    "Pass either the token secret, " +
+                        "or the app-client-id input together with the app-private-key secret.",
+                )
+            }
+            if (updatesYarnLock && jdkIsMissing) {
+                add(
+                    "Updating a yarn.lock runs Gradle, " +
+                        "so pass jdk-distribution-to-update-yarn-lock and jdk-version-to-update-yarn-lock as well.",
+                )
+            }
+            if (arguments.text("auto-merge") !in autoMergeMethods) {
+                add("auto-merge must be disable, squash, merge or rebase.")
+            }
+        }
+    check(problems.isEmpty()) { problems.joinToString("\n") }
+}
+
+fun prepare(arguments: Arguments) {
+    val directory = arguments.file("update-directory")
+    val tasks =
+        listOfNotNull(
+            "kotlinUpgradeYarnLock".takeIf { arguments.flag("update-js-yarn-lock") },
+            "kotlinWasmUpgradeYarnLock".takeIf { arguments.flag("update-wasm-yarn-lock") },
+        )
+    val update = updateVersionCatalog()
+    val changed = update.changes.isNotEmpty()
+    if (changed) {
+        val yarnLock = if (tasks.isEmpty()) "" else updateYarnLock(tasks)
+        directory.mkdirs()
+        directory.resolve("title.txt").writeText(update.title)
+        directory.resolve("body.md").writeText(pullRequestBody(update.updates, update.adaptive) + yarnLock)
+        saveChanges(directory.resolve("changes.patch"))
+    }
+    writeOutputs(
+        arguments.file("github-output"),
+        mapOf("changed" to changed.toString(), "versions" to update.versions, "notice" to update.notice),
+    )
+}
+
+fun openPullRequest(arguments: Arguments) {
+    val base = arguments.text("base")
+    val branch = arguments.text("branch")
+    val directory = arguments.file("update-directory")
+    val title = directory.resolve("title.txt").readText()
+    val body = directory.resolve("body.md").path
+    commitChanges(branch, title, directory.resolve("changes.patch"), arguments.text("app-slug"))
     pushBranch(branch)
     val url = openPullRequestField("url", listOf("--head", branch, "--base", base))
     if (url != null) {
         gh("pr", "edit", url, "--title", title, "--body-file", body)
     } else {
-        createPullRequest(base, branch, title, body)
+        createPullRequest(arguments, title, body)
     }
 }
 
-fun findPullRequest() {
-    val options =
-        listOf("--repo", required("GITHUB_REPOSITORY"), "--head", required("BRANCH"), "--base", required("BASE"))
-    writeOutputs(mapOf("number" to openPullRequestField("number", options).orEmpty()))
+fun closePullRequest(arguments: Arguments) {
+    val repository = arguments.text("repository")
+    val base = arguments.text("base")
+    val target = listOf("--repo", repository, "--head", arguments.text("branch"), "--base", base)
+    val number = openPullRequestField("number", target)
+    if (number == null) {
+        println("No pull request needs to be closed.")
+    } else {
+        val comment = "Closing because $base already uses ${arguments.text("versions")}."
+        gh("pr", "close", number, "--repo", repository, "--delete-branch", "--comment", comment)
+    }
 }
 
-fun closePullRequest() {
-    val repository = required("GITHUB_REPOSITORY")
-    val comment = "Closing because ${required("BASE")} already uses ${required("VERSIONS")}."
-    gh("pr", "close", required("NUMBER"), "--repo", repository, "--delete-branch", "--comment", comment)
+fun reportMaterial3Adaptive(arguments: Arguments) {
+    error(arguments.text("notice"))
 }
 
-val commands: Map<String, () -> Unit> =
+val commands: Map<String, Command> =
     mapOf(
-        "check-inputs" to ::checkInputs,
-        "update-version-catalog" to ::updateVersionCatalog,
-        "update-yarn-lock" to ::updateYarnLock,
-        "save-changes" to ::saveChanges,
-        "open-pull-request" to ::openPullRequest,
-        "find-pull-request" to ::findPullRequest,
-        "close-pull-request" to ::closePullRequest,
+        "check-inputs" to
+            Command(
+                listOf(
+                    "update-js-yarn-lock",
+                    "update-wasm-yarn-lock",
+                    "jdk-distribution-to-update-yarn-lock",
+                    "jdk-version-to-update-yarn-lock",
+                    "app-client-id",
+                    "auto-merge",
+                ),
+                ::checkInputs,
+            ),
+        "prepare" to
+            Command(
+                listOf("update-js-yarn-lock", "update-wasm-yarn-lock", "update-directory", "github-output"),
+                ::prepare,
+            ),
+        "open-pull-request" to
+            Command(
+                listOf("base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
+                ::openPullRequest,
+            ),
+        "close-pull-request" to Command(listOf("repository", "base", "branch", "versions"), ::closePullRequest),
+        "report-material3-adaptive" to Command(listOf("notice"), ::reportMaterial3Adaptive),
     )
 
 try {
-    val command = commands[args.singleOrNull().orEmpty()] ?: error("Pass one of ${commands.keys.joinToString()}.")
-    command()
+    val command =
+        commands[args.firstOrNull().orEmpty()]
+            ?: error("Pass one of ${commands.keys.joinToString()} as the first argument.")
+    command.run(args.drop(1))
 } catch (failure: IllegalStateException) {
     failure.message
         .orEmpty()

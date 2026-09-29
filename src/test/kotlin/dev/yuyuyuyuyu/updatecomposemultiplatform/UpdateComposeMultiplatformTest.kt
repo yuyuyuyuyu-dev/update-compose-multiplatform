@@ -22,14 +22,28 @@ class UpdateComposeMultiplatformTest {
         val runner = Runner(directory.resolve("runner"), git, gh)
 
         // Act
-        val prepare = runner.checkOut(repository, "main")
-        runner.run(prepare, "update-version-catalog")
-        runner.run(prepare, "save-changes")
-        val openPullRequest = runner.checkOut(repository, commit)
+        val update = runner.temp.resolve("update-compose-multiplatform").path
         runner.run(
-            openPullRequest,
+            runner.checkOut(repository, "main"),
+            "prepare",
+            mapOf(
+                "update-js-yarn-lock" to "false",
+                "update-wasm-yarn-lock" to "false",
+                "update-directory" to update,
+                "github-output" to runner.output().path,
+            ),
+        )
+        runner.run(
+            runner.checkOut(repository, commit),
             "open-pull-request",
-            mapOf("APP_SLUG" to "compose-updater", "AUTO_MERGE" to "disable", "LABELS" to ""),
+            mapOf(
+                "base" to "main",
+                "branch" to "chore/update-compose-multiplatform",
+                "update-directory" to update,
+                "app-slug" to "compose-updater",
+                "auto-merge" to "disable",
+                "labels" to "",
+            ),
         )
 
         // Assert

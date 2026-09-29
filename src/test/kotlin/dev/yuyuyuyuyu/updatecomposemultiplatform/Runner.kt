@@ -8,20 +8,19 @@ class Runner(
     private val git: Git,
     gh: FakeGh,
 ) {
+    val temp: File = directory.resolve("temp")
+
     private val script = File("scripts/update-compose-multiplatform.main.kts").absoluteFile
 
     private val environment =
         git.environment +
             mapOf(
                 "PATH" to "${gh.bin}${File.pathSeparator}${System.getenv("PATH")}",
-                "RUNNER_TEMP" to directory.resolve("temp").path,
                 "GITHUB_REPOSITORY" to "octo-org/octo-app",
-                "BASE" to "main",
-                "BRANCH" to "chore/update-compose-multiplatform",
             )
 
     init {
-        directory.mkdirs()
+        temp.mkdirs()
     }
 
     fun checkOut(
@@ -34,13 +33,14 @@ class Runner(
         return workspace
     }
 
+    fun output(): File = Files.createTempFile(directory.toPath(), "output", "").toFile()
+
     fun run(
         workspace: File,
         command: String,
-        variables: Map<String, String> = emptyMap(),
+        options: Map<String, String>,
     ) {
-        val output = Files.createTempFile(directory.toPath(), "output", "").toString()
-        val step = environment + mapOf("GITHUB_OUTPUT" to output) + variables
-        execute(listOf("kotlin", script.path, command), workspace, step)
+        val arguments = options.flatMap { (name, value) -> listOf("--$name", value) }
+        execute(listOf("kotlin", script.path, command) + arguments, workspace, environment)
     }
 }
