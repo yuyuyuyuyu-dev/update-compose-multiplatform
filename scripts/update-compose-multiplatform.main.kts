@@ -53,6 +53,47 @@ val client: HttpClient =
         .followRedirects(HttpClient.Redirect.NORMAL)
         .build()
 
+fun main(arguments: Array<String>) {
+    val commands =
+        mapOf(
+            "check-inputs" to
+                Command(
+                    listOf(
+                        "update-js-yarn-lock",
+                        "update-wasm-yarn-lock",
+                        "jdk-distribution-to-update-yarn-lock",
+                        "jdk-version-to-update-yarn-lock",
+                        "app-client-id",
+                        "auto-merge",
+                    ),
+                    ::checkInputs,
+                ),
+            "prepare" to
+                Command(
+                    listOf("update-js-yarn-lock", "update-wasm-yarn-lock", "update-directory", "github-output"),
+                    ::prepare,
+                ),
+            "sync-pull-request" to
+                Command(
+                    listOf("repository", "base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
+                    ::syncPullRequest,
+                ),
+            "report-material3-adaptive" to Command(listOf("notice"), ::reportMaterial3Adaptive),
+        )
+    try {
+        val command =
+            commands[arguments.firstOrNull().orEmpty()]
+                ?: error("Pass one of ${commands.keys.joinToString()} as the first argument.")
+        command.run(arguments.drop(1))
+    } catch (failure: IllegalStateException) {
+        failure.message
+            .orEmpty()
+            .lines()
+            .forEach { println("::error::$it") }
+        exitProcess(1)
+    }
+}
+
 class Version private constructor(
     private val text: String,
     private val order: List<Int>,
@@ -223,47 +264,6 @@ class Command(
             "Pass ${listed(expected)}, each followed by its value."
         }
         action(Arguments(pairs.associate { (name, value) -> name.removePrefix("--") to value }))
-    }
-}
-
-fun main(arguments: Array<String>) {
-    val commands =
-        mapOf(
-            "check-inputs" to
-                Command(
-                    listOf(
-                        "update-js-yarn-lock",
-                        "update-wasm-yarn-lock",
-                        "jdk-distribution-to-update-yarn-lock",
-                        "jdk-version-to-update-yarn-lock",
-                        "app-client-id",
-                        "auto-merge",
-                    ),
-                    ::checkInputs,
-                ),
-            "prepare" to
-                Command(
-                    listOf("update-js-yarn-lock", "update-wasm-yarn-lock", "update-directory", "github-output"),
-                    ::prepare,
-                ),
-            "sync-pull-request" to
-                Command(
-                    listOf("repository", "base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
-                    ::syncPullRequest,
-                ),
-            "report-material3-adaptive" to Command(listOf("notice"), ::reportMaterial3Adaptive),
-        )
-    try {
-        val command =
-            commands[arguments.firstOrNull().orEmpty()]
-                ?: error("Pass one of ${commands.keys.joinToString()} as the first argument.")
-        command.run(arguments.drop(1))
-    } catch (failure: IllegalStateException) {
-        failure.message
-            .orEmpty()
-            .lines()
-            .forEach { println("::error::$it") }
-        exitProcess(1)
     }
 }
 
