@@ -41,8 +41,6 @@ val material3Key = "material3"
 val adaptiveKey = "compose-multiplatform-adaptive"
 val managedKeys = setOf(composeKey, material3Key, adaptiveKey)
 val autoMergeMethods = setOf("disable", "squash", "merge", "rebase")
-val mavenCentral = "https://repo1.maven.org/maven2"
-val changelog = "https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md"
 val changelogDelay: Duration = Duration.ofDays(3)
 val adaptiveRow = Regex("""org\.jetbrains\.compose\.material3\.adaptive:adaptive\*:([^`\s|]+)""")
 val releaseHeading = Regex("""#+\s+(\d+\.\d+\.\d+\S*)\s+\(.*""")
@@ -70,7 +68,14 @@ fun main(arguments: Array<String>) {
                 ),
             "prepare" to
                 Command(
-                    listOf("update-js-yarn-lock", "update-wasm-yarn-lock", "update-directory", "github-output"),
+                    listOf(
+                        "update-js-yarn-lock",
+                        "update-wasm-yarn-lock",
+                        "maven-repository",
+                        "changelog",
+                        "update-directory",
+                        "github-output",
+                    ),
                     ::prepare,
                 ),
             "sync-pull-request" to
@@ -223,6 +228,163 @@ class VersionCatalog(
     }
 }
 
+class Releases(
+    private val repository: String,
+    private val changelog: String,
+) {
+    fun latestStableCompose(): Version =
+        publishedVersions(composeGroup, "compose-gradle-plugin")
+            .mapNotNull(Version::parse)
+            .filter { it.isStable }
+            .maxOrNull()
+            ?: error("Maven Central lists no stable release of Compose Multiplatform.")
+
+    fun pairedMaterial3(compose: Version): Version =
+        publishedVersions(material3Group, "material3")
+            .mapNotNull(Version::parse)
+            .filter { it.line == compose.line }
+            .sortedDescending()
+            .firstOrNull { candidate -> composeRequirement(candidate)?.let { it <= compose } == true }
+            ?: error("No material3 release on the ${compose.line} line works with Compose Multiplatform $compose.")
+
+    fun pairedAdaptive(
+        compose: Version,
+        artifacts: Collection<String>,
+    ): AdaptivePairing =
+        try {
+            changelogPairing(compose, artifacts)
+        } catch (exception: IOException) {
+            unpairable("Material3 Adaptive could not be determined: ${exception.message}")
+        } catch (exception: IllegalStateException) {
+            unpairable("Material3 Adaptive could not be determined: ${exception.message}")
+        } catch (exception: SAXException) {
+            unpairable("Material3 Adaptive could not be determined: ${exception.message}")
+        }
+
+    private fun artifactUrl(
+        group: String,
+        artifact: String,
+    ): String = "$repository/${group.replace('.', '/')}/$artifact"
+
+    private fun publishedVersions(
+        group: String,
+        artifact: String,
+    ): List<String> {
+        val factory = DocumentBuilderFactory.newInstance()
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
+        val metadata =
+            factory.newDocumentBuilder().parse(
+                InputSource(StringReader(fetch("${artifactUrl(group, artifact)}/maven-metadata.xml"))),
+            )
+        val versions =
+            XPathFactory.newInstance().newXPath().evaluate(
+                "/metadata/versioning/versions/version",
+                metadata,
+                XPathConstants.NODESET,
+            ) as NodeList
+        return List(versions.length) { versions.item(it).textContent.trim() }
+    }
+
+    private fun composeRequirement(material3: Version): Version? {
+        val module =
+            Json
+                .parseToJsonElement(
+                    fetch("${artifactUrl(material3Group, "material3")}/$material3/material3-$material3.module"),
+                ).jsonObject
+        val requirements =
+            module["variants"]
+                ?.jsonArray
+                .orEmpty()
+                .flatMap { variant -> variant.jsonObject["dependencies"]?.jsonArray.orEmpty() }
+                .map { it.jsonObject }
+                .filter { isComposeLibrary(it["group"]?.jsonPrimitive?.contentOrNull.orEmpty()) }
+                .map { requiredVersion(it)?.let(Version::parse) }
+        val problem =
+            when {
+                requirements.isEmpty() -> "it declares no Compose Multiplatform requirement"
+                null in requirements -> "one of its Compose Multiplatform requirements cannot be read"
+                else -> return requirements.filterNotNull().max()
+            }
+        println("::warning::material3 $material3 was skipped because $problem.")
+        return null
+    }
+
+    private fun releasedAt(compose: Version): Instant? =
+        runCatching {
+            val pom =
+                "${artifactUrl(composeGroup, "compose-gradle-plugin")}/$compose/compose-gradle-plugin-$compose.pom"
+            val response =
+                client.send(
+                    request(pom).method("HEAD", HttpRequest.BodyPublishers.noBody()).build(),
+                    HttpResponse.BodyHandlers.discarding(),
+                )
+            response
+                .headers()
+                .firstValue("Last-Modified")
+                .map {
+                    ZonedDateTime.parse(it, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant()
+                }.orElse(null)
+        }.getOrNull()
+
+    private fun waitingFor(
+        compose: Version,
+        reason: String,
+    ): Unpaired {
+        val released = releasedAt(compose)
+        val releaseDate = released?.let { LocalDate.ofInstant(it, ZoneOffset.UTC) }
+        val notice =
+            when {
+                released == null -> "$reason The release date of Compose Multiplatform $compose could not be read."
+                Duration.between(released, Instant.now()) <= changelogDelay -> null
+                else -> "$reason Compose Multiplatform $compose was released on $releaseDate."
+            }
+        return Unpaired(reason, notice)
+    }
+
+    private fun changelogPairing(
+        compose: Version,
+        artifacts: Collection<String>,
+    ): AdaptivePairing {
+        val section = changelogSection(fetch(changelog), compose)
+        val adaptive =
+            section?.let {
+                adaptiveRow
+                    .find(it)
+                    ?.groupValues
+                    ?.get(1)
+                    ?.let(Version::parse)
+            }
+        val missing =
+            adaptive?.let { version ->
+                artifacts.filter { version.toString() !in publishedVersions(adaptiveGroup, it) }
+            }
+        return when {
+            section == null -> {
+                waitingFor(compose, "The Compose Multiplatform CHANGELOG has no section for $compose yet.")
+            }
+
+            adaptive == null -> {
+                unpairable(
+                    "The Compose Multiplatform CHANGELOG section for $compose " +
+                        "has no Material3 Adaptive version that can be read.",
+                )
+            }
+
+            missing.isNullOrEmpty() -> {
+                Paired(adaptive)
+            }
+
+            else -> {
+                waitingFor(
+                    compose,
+                    "Material3 Adaptive $adaptive, which the CHANGELOG pairs with Compose Multiplatform $compose, " +
+                        "is not on Maven Central yet for ${missing.joinToString()}.",
+                )
+            }
+        }
+    }
+}
+
 class Update(
     val library: String,
     val key: String,
@@ -297,37 +459,6 @@ fun fetch(url: String): String {
     return response.body()
 }
 
-fun artifactUrl(
-    group: String,
-    artifact: String,
-): String = "$mavenCentral/${group.replace('.', '/')}/$artifact"
-
-fun publishedVersions(
-    group: String,
-    artifact: String,
-): List<String> {
-    val factory = DocumentBuilderFactory.newInstance()
-    factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
-    val metadata =
-        factory.newDocumentBuilder().parse(
-            InputSource(StringReader(fetch("${artifactUrl(group, artifact)}/maven-metadata.xml"))),
-        )
-    val versions =
-        XPathFactory.newInstance().newXPath().evaluate(
-            "/metadata/versioning/versions/version",
-            metadata,
-            XPathConstants.NODESET,
-        ) as NodeList
-    return List(versions.length) { versions.item(it).textContent.trim() }
-}
-
-fun latestStableCompose(): Version =
-    publishedVersions(composeGroup, "compose-gradle-plugin")
-        .mapNotNull(Version::parse)
-        .filter { it.isStable }
-        .maxOrNull()
-        ?: error("Maven Central lists no stable release of Compose Multiplatform.")
-
 fun isComposeLibrary(group: String): Boolean =
     group.startsWith("$composeGroup.") && group != material3Group && !group.startsWith("$material3Group.")
 
@@ -336,70 +467,7 @@ fun requiredVersion(dependency: JsonObject): String? {
     return listOf("strictly", "requires", "prefers").firstNotNullOfOrNull { version[it]?.jsonPrimitive?.contentOrNull }
 }
 
-fun composeRequirement(material3: Version): Version? {
-    val module =
-        Json
-            .parseToJsonElement(
-                fetch("${artifactUrl(material3Group, "material3")}/$material3/material3-$material3.module"),
-            ).jsonObject
-    val requirements =
-        module["variants"]
-            ?.jsonArray
-            .orEmpty()
-            .flatMap { variant -> variant.jsonObject["dependencies"]?.jsonArray.orEmpty() }
-            .map { it.jsonObject }
-            .filter { isComposeLibrary(it["group"]?.jsonPrimitive?.contentOrNull.orEmpty()) }
-            .map { requiredVersion(it)?.let(Version::parse) }
-    val problem =
-        when {
-            requirements.isEmpty() -> "it declares no Compose Multiplatform requirement"
-            null in requirements -> "one of its Compose Multiplatform requirements cannot be read"
-            else -> return requirements.filterNotNull().max()
-        }
-    println("::warning::material3 $material3 was skipped because $problem.")
-    return null
-}
-
-fun pairedMaterial3(compose: Version): Version =
-    publishedVersions(material3Group, "material3")
-        .mapNotNull(Version::parse)
-        .filter { it.line == compose.line }
-        .sortedDescending()
-        .firstOrNull { candidate -> composeRequirement(candidate)?.let { it <= compose } == true }
-        ?: error("No material3 release on the ${compose.line} line works with Compose Multiplatform $compose.")
-
-fun releasedAt(compose: Version): Instant? =
-    runCatching {
-        val pom = "${artifactUrl(composeGroup, "compose-gradle-plugin")}/$compose/compose-gradle-plugin-$compose.pom"
-        val response =
-            client.send(
-                request(pom).method("HEAD", HttpRequest.BodyPublishers.noBody()).build(),
-                HttpResponse.BodyHandlers.discarding(),
-            )
-        response
-            .headers()
-            .firstValue("Last-Modified")
-            .map {
-                ZonedDateTime.parse(it, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant()
-            }.orElse(null)
-    }.getOrNull()
-
 fun unpairable(reason: String): Unpaired = Unpaired(reason, reason)
-
-fun waitingFor(
-    compose: Version,
-    reason: String,
-): Unpaired {
-    val released = releasedAt(compose)
-    val releaseDate = released?.let { LocalDate.ofInstant(it, ZoneOffset.UTC) }
-    val notice =
-        when {
-            released == null -> "$reason The release date of Compose Multiplatform $compose could not be read."
-            Duration.between(released, Instant.now()) <= changelogDelay -> null
-            else -> "$reason Compose Multiplatform $compose was released on $releaseDate."
-        }
-    return Unpaired(reason, notice)
-}
 
 fun changelogSection(
     text: String,
@@ -413,61 +481,6 @@ fun changelogSection(
     val next = (heading + 1 until lines.size).firstOrNull { releaseHeading.matches(lines[it]) } ?: lines.size
     return lines.subList(heading + 1, next).joinToString("\n")
 }
-
-fun changelogPairing(
-    compose: Version,
-    artifacts: Collection<String>,
-): AdaptivePairing {
-    val section = changelogSection(fetch(changelog), compose)
-    val adaptive =
-        section?.let {
-            adaptiveRow
-                .find(it)
-                ?.groupValues
-                ?.get(1)
-                ?.let(Version::parse)
-        }
-    val missing =
-        adaptive?.let { version -> artifacts.filter { version.toString() !in publishedVersions(adaptiveGroup, it) } }
-    return when {
-        section == null -> {
-            waitingFor(compose, "The Compose Multiplatform CHANGELOG has no section for $compose yet.")
-        }
-
-        adaptive == null -> {
-            unpairable(
-                "The Compose Multiplatform CHANGELOG section for $compose " +
-                    "has no Material3 Adaptive version that can be read.",
-            )
-        }
-
-        missing.isNullOrEmpty() -> {
-            Paired(adaptive)
-        }
-
-        else -> {
-            waitingFor(
-                compose,
-                "Material3 Adaptive $adaptive, which the CHANGELOG pairs with Compose Multiplatform $compose, " +
-                    "is not on Maven Central yet for ${missing.joinToString()}.",
-            )
-        }
-    }
-}
-
-fun pairedAdaptive(
-    compose: Version,
-    artifacts: Collection<String>,
-): AdaptivePairing =
-    try {
-        changelogPairing(compose, artifacts)
-    } catch (exception: IOException) {
-        unpairable("Material3 Adaptive could not be determined: ${exception.message}")
-    } catch (exception: IllegalStateException) {
-        unpairable("Material3 Adaptive could not be determined: ${exception.message}")
-    } catch (exception: SAXException) {
-        unpairable("Material3 Adaptive could not be determined: ${exception.message}")
-    }
 
 fun expectedKey(owner: String): String? =
     when {
@@ -558,7 +571,7 @@ fun openPullRequestField(
         ?.jsonPrimitive
         ?.content
 
-fun updateVersionCatalog(): CatalogUpdate {
+fun updateVersionCatalog(releases: Releases): CatalogUpdate {
     val catalogFile = File("gradle/libs.versions.toml")
     val catalog = VersionCatalog(catalogFile)
     val libraryProblems =
@@ -587,12 +600,12 @@ fun updateVersionCatalog(): CatalogUpdate {
 
     val compose =
         maxOf(
-            latestStableCompose(),
+            releases.latestStableCompose(),
             Version.parse(currentCompose)
                 ?: error("versions.$composeKey = \"$currentCompose\" is not a version that this workflow can compare."),
         )
-    val material3 = pairedMaterial3(compose)
-    val adaptive = currentAdaptive?.let { pairedAdaptive(compose, adaptiveArtifacts) }
+    val material3 = releases.pairedMaterial3(compose)
+    val adaptive = currentAdaptive?.let { releases.pairedAdaptive(compose, adaptiveArtifacts) }
 
     val update =
         CatalogUpdate(
@@ -761,7 +774,7 @@ fun prepare(arguments: Arguments) {
             "kotlinUpgradeYarnLock".takeIf { arguments.flag("update-js-yarn-lock") },
             "kotlinWasmUpgradeYarnLock".takeIf { arguments.flag("update-wasm-yarn-lock") },
         )
-    val update = updateVersionCatalog()
+    val update = updateVersionCatalog(Releases(arguments.text("maven-repository"), arguments.text("changelog")))
     directory.mkdirs()
     directory.resolve("versions.txt").writeText(update.versions)
     if (update.changes.isEmpty()) {
