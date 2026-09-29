@@ -52,6 +52,7 @@ jobs:
             token: fake-token
             app-client-id: ""
             app-private-key: ""
+            app-token: ""
             app-slug: ""
             committer: octocat
             identity-calls: '[["api", "/user"], ["api", "/users/octocat"]]'
@@ -59,11 +60,11 @@ jobs:
             token: ""
             app-client-id: fake-client-id
             app-private-key: fake-private-key
+            app-token: fake-app-token
             app-slug: fake-app
             committer: fake-app[bot]
             identity-calls: '[["api", "/users/fake-app[bot]"]]'
     env:
-      SCRIPT: ${{ github.workspace }}/scripts/update-compose-multiplatform.main.kts
       REPOSITORY: octo-org/octo-app
       BASE: main
       BRANCH: chore/update-compose-multiplatform
@@ -72,11 +73,12 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v7
         with:
+          path: .update-compose-multiplatform
           persist-credentials: false
       - name: Create the calling repository
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R test/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
@@ -84,69 +86,56 @@ jobs:
       - name: Create an empty log of the calls to gradlew
         run: touch "$RUNNER_TEMP/gradlew-calls.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/test/fake" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
-        env:
-          TOKEN: ${{ matrix.token }}
-          APP_PRIVATE_KEY: ${{ matrix.app-private-key }}
-          UPDATE_JS_YARN_LOCK: ${{ matrix.update-js-yarn-lock }}
-          UPDATE_WASM_YARN_LOCK: ${{ matrix.update-wasm-yarn-lock }}
-          JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK: ${{ matrix.jdk-distribution }}
-          JDK_VERSION_TO_UPDATE_YARN_LOCK: ${{ matrix.jdk-version }}
-          APP_CLIENT_ID: ${{ matrix.app-client-id }}
-          AUTO_MERGE: disable
-        run: |
-          kotlin "$SCRIPT" check-inputs \
-            --update-js-yarn-lock "$UPDATE_JS_YARN_LOCK" \
-            --update-wasm-yarn-lock "$UPDATE_WASM_YARN_LOCK" \
-            --jdk-distribution-to-update-yarn-lock "$JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK" \
-            --jdk-version-to-update-yarn-lock "$JDK_VERSION_TO_UPDATE_YARN_LOCK" \
-            --app-client-id "$APP_CLIENT_ID" \
-            --auto-merge "$AUTO_MERGE"
+        uses: ./.update-compose-multiplatform/.github/actions/check-inputs
+        with:
+          update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
+          update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
+          jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
+          jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          app-client-id: ${{ matrix.app-client-id }}
+          auto-merge: disable
+          token: ${{ matrix.token }}
+          app-private-key: ${{ matrix.app-private-key }}
       - name: Check out the calling repository
         id: checkout
         run: |
-          git clone --quiet "$RUNNER_TEMP/origin.git" "$RUNNER_TEMP/prepare"
-          echo "commit=$(git -C "$RUNNER_TEMP/prepare" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          git init --quiet --initial-branch=main
+          git remote add origin "$RUNNER_TEMP/origin.git"
+          git fetch --quiet origin
+          git checkout --quiet --force -B main origin/main
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Update the version catalog and the yarn.lock files
         id: update
-        working-directory: ${{ runner.temp }}/prepare
-        env:
-          UPDATE_JS_YARN_LOCK: ${{ matrix.update-js-yarn-lock }}
-          UPDATE_WASM_YARN_LOCK: ${{ matrix.update-wasm-yarn-lock }}
-        run: |
-          kotlin "$SCRIPT" prepare \
-            --update-js-yarn-lock "$UPDATE_JS_YARN_LOCK" \
-            --update-wasm-yarn-lock "$UPDATE_WASM_YARN_LOCK" \
-            --update-directory "$RUNNER_TEMP/update-compose-multiplatform" \
-            --github-output "$GITHUB_OUTPUT"
+        uses: ./.update-compose-multiplatform/.github/actions/prepare
+        with:
+          update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
+          update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
+          jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
+          jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
           COMMIT: ${{ steps.checkout.outputs.commit }}
-        run: |
-          git clone --quiet "$RUNNER_TEMP/origin.git" "$RUNNER_TEMP/sync"
-          git -C "$RUNNER_TEMP/sync" checkout --quiet "$COMMIT"
+        run: git checkout --quiet --force --detach "$COMMIT"
       - name: Open, update or close the pull request
-        working-directory: ${{ runner.temp }}/sync
-        env:
-          APP_SLUG: ${{ matrix.app-slug }}
-          AUTO_MERGE: disable
-          LABELS: ""
-        run: |
-          kotlin "$SCRIPT" sync-pull-request \
-            --repository "$REPOSITORY" \
-            --base "$BASE" \
-            --branch "$BRANCH" \
-            --update-directory "$RUNNER_TEMP/update-compose-multiplatform" \
-            --app-slug "$APP_SLUG" \
-            --auto-merge "$AUTO_MERGE" \
-            --labels "$LABELS"
+        uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
+        with:
+          repository: ${{ env.REPOSITORY }}
+          base: ${{ env.BASE }}
+          branch: ${{ env.BRANCH }}
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
+          token: ${{ matrix.app-token || matrix.token }}
+          app-slug: ${{ matrix.app-slug }}
+          auto-merge: disable
+          labels: ""
       - name: Fail with the notice
         if: steps.update.outputs.notice != ''
-        env:
-          NOTICE: ${{ steps.update.outputs.notice }}
-        run: kotlin "$SCRIPT" report-material3-adaptive --notice "$NOTICE"
+        uses: ./.update-compose-multiplatform/.github/actions/report-material3-adaptive
+        with:
+          notice: ${{ steps.update.outputs.notice }}
       # Assert
       - name: Find the versions paired with the latest stable Compose Multiplatform
         id: expected
@@ -220,11 +209,12 @@ jobs:
           MATERIAL3: ${{ steps.expected.outputs.material3 }}
           ADAPTIVE: ${{ steps.expected.outputs.adaptive }}
         run: |
-          sed \
-            -e "s/^composeMultiplatform = \"[^\"]*\"$/composeMultiplatform = \"$COMPOSE\"/" \
-            -e "s/^material3 = \"[^\"]*\"$/material3 = \"$MATERIAL3\"/" \
-            -e "s/^compose-multiplatform-adaptive = \"[^\"]*\"$/compose-multiplatform-adaptive = \"$ADAPTIVE\"/" \
-            test/fixture/gradle/libs.versions.toml > "$RUNNER_TEMP/expected-catalog.toml"
+          git -C "$RUNNER_TEMP/origin.git" show "$BASE:gradle/libs.versions.toml" \
+            | sed \
+              -e "s/^composeMultiplatform = \"[^\"]*\"$/composeMultiplatform = \"$COMPOSE\"/" \
+              -e "s/^material3 = \"[^\"]*\"$/material3 = \"$MATERIAL3\"/" \
+              -e "s/^compose-multiplatform-adaptive = \"[^\"]*\"$/compose-multiplatform-adaptive = \"$ADAPTIVE\"/" \
+              > "$RUNNER_TEMP/expected-catalog.toml"
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
           diff "$RUNNER_TEMP/expected-catalog.toml" "$RUNNER_TEMP/catalog.toml"
           if [ "$UPDATE_JS_YARN_LOCK" = true ]; then
@@ -259,7 +249,6 @@ jobs:
           - merge
           - rebase
     env:
-      SCRIPT: ${{ github.workspace }}/scripts/update-compose-multiplatform.main.kts
       REPOSITORY: octo-org/octo-app
       BASE: main
       BRANCH: chore/update-compose-multiplatform
@@ -268,79 +257,67 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v7
         with:
+          path: .update-compose-multiplatform
           persist-credentials: false
       - name: Create the calling repository
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R test/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/test/fake" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
-        env:
-          TOKEN: fake-token
-          APP_PRIVATE_KEY: ""
-          UPDATE_JS_YARN_LOCK: false
-          UPDATE_WASM_YARN_LOCK: false
-          JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK: ""
-          JDK_VERSION_TO_UPDATE_YARN_LOCK: ""
-          APP_CLIENT_ID: ""
-          AUTO_MERGE: ${{ matrix.auto-merge }}
-        run: |
-          kotlin "$SCRIPT" check-inputs \
-            --update-js-yarn-lock "$UPDATE_JS_YARN_LOCK" \
-            --update-wasm-yarn-lock "$UPDATE_WASM_YARN_LOCK" \
-            --jdk-distribution-to-update-yarn-lock "$JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK" \
-            --jdk-version-to-update-yarn-lock "$JDK_VERSION_TO_UPDATE_YARN_LOCK" \
-            --app-client-id "$APP_CLIENT_ID" \
-            --auto-merge "$AUTO_MERGE"
+        uses: ./.update-compose-multiplatform/.github/actions/check-inputs
+        with:
+          update-js-yarn-lock: false
+          update-wasm-yarn-lock: false
+          jdk-distribution-to-update-yarn-lock: ""
+          jdk-version-to-update-yarn-lock: ""
+          app-client-id: ""
+          auto-merge: ${{ matrix.auto-merge }}
+          token: fake-token
+          app-private-key: ""
       - name: Check out the calling repository
         id: checkout
         run: |
-          git clone --quiet "$RUNNER_TEMP/origin.git" "$RUNNER_TEMP/prepare"
-          echo "commit=$(git -C "$RUNNER_TEMP/prepare" rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          git init --quiet --initial-branch=main
+          git remote add origin "$RUNNER_TEMP/origin.git"
+          git fetch --quiet origin
+          git checkout --quiet --force -B main origin/main
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - name: Update the version catalog and the yarn.lock files
         id: update
-        working-directory: ${{ runner.temp }}/prepare
-        env:
-          UPDATE_JS_YARN_LOCK: false
-          UPDATE_WASM_YARN_LOCK: false
-        run: |
-          kotlin "$SCRIPT" prepare \
-            --update-js-yarn-lock "$UPDATE_JS_YARN_LOCK" \
-            --update-wasm-yarn-lock "$UPDATE_WASM_YARN_LOCK" \
-            --update-directory "$RUNNER_TEMP/update-compose-multiplatform" \
-            --github-output "$GITHUB_OUTPUT"
+        uses: ./.update-compose-multiplatform/.github/actions/prepare
+        with:
+          update-js-yarn-lock: false
+          update-wasm-yarn-lock: false
+          jdk-distribution-to-update-yarn-lock: ""
+          jdk-version-to-update-yarn-lock: ""
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
           COMMIT: ${{ steps.checkout.outputs.commit }}
-        run: |
-          git clone --quiet "$RUNNER_TEMP/origin.git" "$RUNNER_TEMP/sync"
-          git -C "$RUNNER_TEMP/sync" checkout --quiet "$COMMIT"
+        run: git checkout --quiet --force --detach "$COMMIT"
       - name: Open, update or close the pull request
-        working-directory: ${{ runner.temp }}/sync
-        env:
-          APP_SLUG: ""
-          AUTO_MERGE: ${{ matrix.auto-merge }}
-          LABELS: ""
-        run: |
-          kotlin "$SCRIPT" sync-pull-request \
-            --repository "$REPOSITORY" \
-            --base "$BASE" \
-            --branch "$BRANCH" \
-            --update-directory "$RUNNER_TEMP/update-compose-multiplatform" \
-            --app-slug "$APP_SLUG" \
-            --auto-merge "$AUTO_MERGE" \
-            --labels "$LABELS"
+        uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
+        with:
+          repository: ${{ env.REPOSITORY }}
+          base: ${{ env.BASE }}
+          branch: ${{ env.BRANCH }}
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
+          token: fake-token
+          app-slug: ""
+          auto-merge: ${{ matrix.auto-merge }}
+          labels: ""
       - name: Fail with the notice
         if: steps.update.outputs.notice != ''
-        env:
-          NOTICE: ${{ steps.update.outputs.notice }}
-        run: kotlin "$SCRIPT" report-material3-adaptive --notice "$NOTICE"
+        uses: ./.update-compose-multiplatform/.github/actions/report-material3-adaptive
+        with:
+          notice: ${{ steps.update.outputs.notice }}
       # Assert
       - name: Verify the call to gh that turns on auto-merge
         env:

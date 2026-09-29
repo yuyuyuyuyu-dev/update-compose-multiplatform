@@ -1,0 +1,40 @@
+name: Check the inputs
+inputs:
+  update-js-yarn-lock:
+    required: true
+  update-wasm-yarn-lock:
+    required: true
+  jdk-distribution-to-update-yarn-lock:
+    required: false
+  jdk-version-to-update-yarn-lock:
+    required: false
+  app-client-id:
+    required: false
+  auto-merge:
+    required: true
+  token:
+    required: false
+  app-private-key:
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Check the inputs
+      shell: bash
+      env:
+        TOKEN: ${{ inputs.token }}
+        APP_PRIVATE_KEY: ${{ inputs.app-private-key }}
+        UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}
+        UPDATE_WASM_YARN_LOCK: ${{ inputs.update-wasm-yarn-lock }}
+        JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK: ${{ inputs.jdk-distribution-to-update-yarn-lock }}
+        JDK_VERSION_TO_UPDATE_YARN_LOCK: ${{ inputs.jdk-version-to-update-yarn-lock }}
+        APP_CLIENT_ID: ${{ inputs.app-client-id }}
+        AUTO_MERGE: ${{ inputs.auto-merge }}
+      run: |
+        kotlin "$GITHUB_ACTION_PATH/../../../scripts/update-compose-multiplatform.main.kts" check-inputs \
+          --update-js-yarn-lock "$UPDATE_JS_YARN_LOCK" \
+          --update-wasm-yarn-lock "$UPDATE_WASM_YARN_LOCK" \
+          --jdk-distribution-to-update-yarn-lock "$JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK" \
+          --jdk-version-to-update-yarn-lock "$JDK_VERSION_TO_UPDATE_YARN_LOCK" \
+          --app-client-id "$APP_CLIENT_ID" \
+          --auto-merge "$AUTO_MERGE"

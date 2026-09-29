@@ -1,0 +1,12 @@
+name: Report Material3 Adaptive
+inputs:
+  notice:
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Fail with the notice
+      shell: bash
+      env:
+        NOTICE: ${{ inputs.notice }}
+      run: kotlin "$GITHUB_ACTION_PATH/../../../scripts/update-compose-multiplatform.main.kts" report-material3-adaptive --notice "$NOTICE"
