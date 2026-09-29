@@ -29,7 +29,9 @@ class FakeGh(
     }
 
     fun pullRequests(): List<PullRequest> =
-        read(state).map { PullRequest(it.text("headRefName"), it.text("baseRefName"), it.text("title")) }
+        read(state).map {
+            PullRequest(it.text("repository"), it.text("headRefName"), it.text("baseRefName"), it.text("title"))
+        }
 
     companion object {
         @JvmStatic
@@ -79,13 +81,16 @@ class FakeGh(
             state: File,
             options: Map<String, String>,
         ): String? {
-            if (options.keys != setOf("--head", "--base", "--state", "--json") || options["--state"] != "open") {
+            val expected = setOf("--repo", "--head", "--base", "--state", "--json")
+            if (options.keys != expected || options["--state"] != "open") {
                 return null
             }
             val fields = options.getValue("--json").split(",")
             val matching =
                 read(state).filter {
-                    it.text("headRefName") == options["--head"] && it.text("baseRefName") == options["--base"]
+                    it.text("repository") == options["--repo"] &&
+                        it.text("headRefName") == options["--head"] &&
+                        it.text("baseRefName") == options["--base"]
                 }
             val selected = matching.map { pullRequest -> JsonObject(fields.associateWith { pullRequest.getValue(it) }) }
             return JsonArray(selected).toString()
@@ -95,14 +100,16 @@ class FakeGh(
             state: File,
             options: Map<String, String>,
         ): String? {
-            if (options.keys != setOf("--head", "--base", "--title", "--body-file")) {
+            if (options.keys != setOf("--repo", "--head", "--base", "--title", "--body-file")) {
                 return null
             }
             val pullRequests = read(state)
             val number = pullRequests.size + 1
-            val url = "https://github.com/${System.getenv("GITHUB_REPOSITORY")}/pull/$number"
+            val repository = options.getValue("--repo")
+            val url = "https://github.com/$repository/pull/$number"
             val pullRequest =
                 buildJsonObject {
+                    put("repository", repository)
                     put("number", number)
                     put("url", url)
                     put("headRefName", options.getValue("--head"))
@@ -117,6 +124,7 @@ class FakeGh(
 }
 
 data class PullRequest(
+    val repository: String,
     val head: String,
     val base: String,
     val title: String,

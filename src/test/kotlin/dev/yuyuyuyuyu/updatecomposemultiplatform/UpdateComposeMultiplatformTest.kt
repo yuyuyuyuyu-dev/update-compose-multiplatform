@@ -35,8 +35,9 @@ class UpdateComposeMultiplatformTest {
         )
         runner.run(
             runner.checkOut(repository, commit),
-            "open-pull-request",
+            "sync-pull-request",
             mapOf(
+                "repository" to "octo-org/octo-app",
                 "base" to "main",
                 "branch" to "chore/update-compose-multiplatform",
                 "update-directory" to update,
@@ -60,6 +61,7 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             listOf(
                 PullRequest(
+                    repository = "octo-org/octo-app",
                     head = "chore/update-compose-multiplatform",
                     base = "main",
                     title =

@@ -13,11 +13,7 @@ class Runner(
     private val script = File("scripts/update-compose-multiplatform.main.kts").absoluteFile
 
     private val environment =
-        git.environment +
-            mapOf(
-                "PATH" to "${gh.bin}${File.pathSeparator}${System.getenv("PATH")}",
-                "GITHUB_REPOSITORY" to "octo-org/octo-app",
-            )
+        git.environment + mapOf("PATH" to "${gh.bin}${File.pathSeparator}${System.getenv("PATH")}")
 
     init {
         temp.mkdirs()

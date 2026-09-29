@@ -637,6 +637,9 @@ fun pushBranch(branch: String) {
     }
 }
 
+fun pullRequestTarget(arguments: Arguments): List<String> =
+    listOf("--repo", arguments.text("repository"), "--head", arguments.text("branch"), "--base", arguments.text("base"))
+
 fun createPullRequest(
     arguments: Arguments,
     title: String,
@@ -644,12 +647,41 @@ fun createPullRequest(
 ) {
     val labels = arguments.text("labels")
     val labelOptions = if (labels.isEmpty()) emptyList() else listOf("--label", labels)
-    val target = listOf("--head", arguments.text("branch"), "--base", arguments.text("base"))
     val content = listOf("--title", title, "--body-file", body) + labelOptions
-    val url = execute(listOf("gh", "pr", "create") + target + content)
+    val url = execute(listOf("gh", "pr", "create") + pullRequestTarget(arguments) + content)
     val autoMerge = arguments.text("auto-merge")
     if (autoMerge != "disable") {
         gh("pr", "merge", url, "--auto", "--$autoMerge")
+    }
+}
+
+fun openPullRequest(
+    arguments: Arguments,
+    directory: File,
+) {
+    val branch = arguments.text("branch")
+    val title = directory.resolve("title.txt").readText()
+    val body = directory.resolve("body.md").path
+    commitChanges(branch, title, directory.resolve("changes.patch"), arguments.text("app-slug"))
+    pushBranch(branch)
+    val url = openPullRequestField("url", pullRequestTarget(arguments))
+    if (url != null) {
+        gh("pr", "edit", url, "--title", title, "--body-file", body)
+    } else {
+        createPullRequest(arguments, title, body)
+    }
+}
+
+fun closePullRequest(
+    arguments: Arguments,
+    versions: String,
+) {
+    val number = openPullRequestField("number", pullRequestTarget(arguments))
+    if (number == null) {
+        println("No pull request needs to be closed.")
+    } else {
+        val comment = "Closing because ${arguments.text("base")} already uses $versions."
+        gh("pr", "close", number, "--repo", arguments.text("repository"), "--delete-branch", "--comment", comment)
     }
 }
 
@@ -689,46 +721,26 @@ fun prepare(arguments: Arguments) {
             "kotlinWasmUpgradeYarnLock".takeIf { arguments.flag("update-wasm-yarn-lock") },
         )
     val update = updateVersionCatalog()
-    val changed = update.changes.isNotEmpty()
-    if (changed) {
+    directory.mkdirs()
+    directory.resolve("versions.txt").writeText(update.versions)
+    if (update.changes.isEmpty()) {
+        println("The catalog already uses ${update.versions}.")
+    } else {
         val yarnLock = if (tasks.isEmpty()) "" else updateYarnLock(tasks)
-        directory.mkdirs()
         directory.resolve("title.txt").writeText(update.title)
         directory.resolve("body.md").writeText(pullRequestBody(update.updates, update.adaptive) + yarnLock)
         saveChanges(directory.resolve("changes.patch"))
+        println("The catalog now uses ${update.versions}.")
     }
-    writeOutputs(
-        arguments.file("github-output"),
-        mapOf("changed" to changed.toString(), "versions" to update.versions, "notice" to update.notice),
-    )
+    writeOutputs(arguments.file("github-output"), mapOf("notice" to update.notice))
 }
 
-fun openPullRequest(arguments: Arguments) {
-    val base = arguments.text("base")
-    val branch = arguments.text("branch")
+fun syncPullRequest(arguments: Arguments) {
     val directory = arguments.file("update-directory")
-    val title = directory.resolve("title.txt").readText()
-    val body = directory.resolve("body.md").path
-    commitChanges(branch, title, directory.resolve("changes.patch"), arguments.text("app-slug"))
-    pushBranch(branch)
-    val url = openPullRequestField("url", listOf("--head", branch, "--base", base))
-    if (url != null) {
-        gh("pr", "edit", url, "--title", title, "--body-file", body)
+    if (directory.resolve("changes.patch").exists()) {
+        openPullRequest(arguments, directory)
     } else {
-        createPullRequest(arguments, title, body)
-    }
-}
-
-fun closePullRequest(arguments: Arguments) {
-    val repository = arguments.text("repository")
-    val base = arguments.text("base")
-    val target = listOf("--repo", repository, "--head", arguments.text("branch"), "--base", base)
-    val number = openPullRequestField("number", target)
-    if (number == null) {
-        println("No pull request needs to be closed.")
-    } else {
-        val comment = "Closing because $base already uses ${arguments.text("versions")}."
-        gh("pr", "close", number, "--repo", repository, "--delete-branch", "--comment", comment)
+        closePullRequest(arguments, directory.resolve("versions.txt").readText())
     }
 }
 
@@ -755,12 +767,11 @@ val commands: Map<String, Command> =
                 listOf("update-js-yarn-lock", "update-wasm-yarn-lock", "update-directory", "github-output"),
                 ::prepare,
             ),
-        "open-pull-request" to
+        "sync-pull-request" to
             Command(
-                listOf("base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
-                ::openPullRequest,
+                listOf("repository", "base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
+                ::syncPullRequest,
             ),
-        "close-pull-request" to Command(listOf("repository", "base", "branch", "versions"), ::closePullRequest),
         "report-material3-adaptive" to Command(listOf("notice"), ::reportMaterial3Adaptive),
     )
 

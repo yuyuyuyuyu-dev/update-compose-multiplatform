@@ -78,8 +78,6 @@ jobs:
       contents: read
     outputs:
       commit: ${{ steps.checkout.outputs.commit }}
-      changed: ${{ steps.update.outputs.changed }}
-      versions: ${{ steps.update.outputs.versions }}
       notice: ${{ steps.update.outputs.notice }}
     steps:
       - name: Check out the repository
@@ -118,18 +116,16 @@ jobs:
             --update-wasm-yarn-lock "$UPDATE_WASM_YARN_LOCK" \
             --update-directory "$RUNNER_TEMP/update-compose-multiplatform" \
             --github-output "$GITHUB_OUTPUT"
-      - name: Upload the changes
-        if: steps.update.outputs.changed == 'true'
+      - name: Upload the update
         uses: actions/upload-artifact@v7
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
           if-no-files-found: error
           retention-days: 1
-  open-pull-request:
-    name: Open or update the pull request
+  sync-pull-request:
+    name: Open, update or close the pull request
     needs: prepare
-    if: needs.prepare.outputs.changed == 'true'
     runs-on: ubuntu-latest
     permissions: {}
     steps:
@@ -155,59 +151,26 @@ jobs:
           path: .update-compose-multiplatform
           sparse-checkout: scripts
           persist-credentials: false
-      - name: Download the changes
+      - name: Download the update
         uses: actions/download-artifact@v8
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
-      - name: Push the branch and open or update the pull request
+      - name: Open, update or close the pull request
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
           AUTO_MERGE: ${{ inputs.auto-merge }}
           LABELS: ${{ inputs.labels }}
         run: |
-          kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts open-pull-request \
+          kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts sync-pull-request \
+            --repository "$GITHUB_REPOSITORY" \
             --base "$BASE" \
             --branch "$BRANCH" \
             --update-directory "$RUNNER_TEMP/update-compose-multiplatform" \
             --app-slug "$APP_SLUG" \
             --auto-merge "$AUTO_MERGE" \
             --labels "$LABELS"
-  close-pull-request:
-    name: Close the pull request that is no longer needed
-    needs: prepare
-    if: needs.prepare.outputs.changed == 'false'
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Create a token for the app
-        id: app-token
-        if: inputs.app-client-id != ''
-        uses: actions/create-github-app-token@v3
-        with:
-          client-id: ${{ inputs.app-client-id }}
-          private-key: ${{ secrets.app-private-key }}
-          permission-contents: write
-          permission-pull-requests: write
-      - name: Check out the script
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ job.workflow_repository }}
-          ref: ${{ job.workflow_sha }}
-          path: .update-compose-multiplatform
-          sparse-checkout: scripts
-          persist-credentials: false
-      - name: Close the pull request
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token || secrets.token }}
-          VERSIONS: ${{ needs.prepare.outputs.versions }}
-        run: |
-          kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts close-pull-request \
-            --repository "$GITHUB_REPOSITORY" \
-            --base "$BASE" \
-            --branch "$BRANCH" \
-            --versions "$VERSIONS"
   report-material3-adaptive:
     name: Report Material3 Adaptive
     needs: prepare
