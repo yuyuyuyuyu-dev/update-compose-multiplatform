@@ -41,3 +41,7 @@ tasks.test {
     useJUnitPlatform()
     inputs.dir("scripts")
 }
+
+tasks.wrapper {
+    retries = 3
+}
