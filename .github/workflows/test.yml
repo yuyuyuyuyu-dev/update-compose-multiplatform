@@ -83,10 +83,14 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
+      - name: Start the fake Maven Central and CHANGELOG
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 --directory .update-compose-multiplatform/test/fake > "$RUNNER_TEMP/fake-server.log" 2>&1 &
+          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/CHANGELOG.md
       - name: Create an empty log of the calls to gradlew
         run: touch "$RUNNER_TEMP/gradlew-calls.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -115,6 +119,8 @@ jobs:
           update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
           jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          maven-repository: http://127.0.0.1:8000/maven-central
+          changelog: http://127.0.0.1:8000/CHANGELOG.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -137,44 +143,16 @@ jobs:
         with:
           notice: ${{ steps.update.outputs.notice }}
       # Assert
-      - name: Find the versions paired with the latest stable Compose Multiplatform
-        id: expected
-        run: |
-          compose="$(
-            curl -fsSL https://repo1.maven.org/maven2/org/jetbrains/compose/compose-gradle-plugin/maven-metadata.xml \
-              | grep -oE '<version>[0-9]+\.[0-9]+\.[0-9]+</version>' \
-              | sed -E 's#</?version>##g' \
-              | sort -V \
-              | tail -n 1
-          )"
-          section="$(
-            curl -fsSL https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md \
-              | awk -v heading="# $compose (" 'index($0, heading) == 1 { found = 1; next } found && /^# / { exit } found { print }'
-          )"
-          material3="$(grep -oE 'org\.jetbrains\.compose\.material3:material3\*:[^`[:space:]|]+' <<< "$section" | head -n 1 | sed -E 's/.*://')"
-          adaptive="$(grep -oE 'org\.jetbrains\.compose\.material3\.adaptive:adaptive\*:[^`[:space:]|]+' <<< "$section" | head -n 1 | sed -E 's/.*://')"
-          if [ -z "$material3" ] || [ -z "$adaptive" ]; then
-            echo "::error::The Compose Multiplatform CHANGELOG pairs no material3 and Material3 Adaptive with $compose yet."
-            exit 1
-          fi
-          {
-            echo "compose=$compose"
-            echo "material3=$material3"
-            echo "adaptive=$adaptive"
-          } >> "$GITHUB_OUTPUT"
       - name: Verify the calls to gh
         env:
           IDENTITY_CALLS: ${{ matrix.identity-calls }}
-          COMPOSE: ${{ steps.expected.outputs.compose }}
-          MATERIAL3: ${{ steps.expected.outputs.material3 }}
-          ADAPTIVE: ${{ steps.expected.outputs.adaptive }}
         run: |
           jq -n \
             --argjson identity "$IDENTITY_CALLS" \
             --arg repository "$REPOSITORY" \
             --arg base "$BASE" \
             --arg branch "$BRANCH" \
-            --arg title "build(deps): update Compose Multiplatform to $COMPOSE, material3 to $MATERIAL3 and Material3 Adaptive to $ADAPTIVE" \
+            --arg title "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0" \
             --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
             '$identity + [
               ["pr", "list", "--repo", $repository, "--head", $branch, "--base", $base, "--state", "open", "--json", "url"],
@@ -205,15 +183,12 @@ jobs:
           UPDATE_JS_YARN_LOCK: ${{ matrix.update-js-yarn-lock }}
           UPDATE_WASM_YARN_LOCK: ${{ matrix.update-wasm-yarn-lock }}
           COMMITTER: ${{ matrix.committer }}
-          COMPOSE: ${{ steps.expected.outputs.compose }}
-          MATERIAL3: ${{ steps.expected.outputs.material3 }}
-          ADAPTIVE: ${{ steps.expected.outputs.adaptive }}
         run: |
           git -C "$RUNNER_TEMP/origin.git" show "$BASE:gradle/libs.versions.toml" \
             | sed \
-              -e "s/^composeMultiplatform = \"[^\"]*\"$/composeMultiplatform = \"$COMPOSE\"/" \
-              -e "s/^material3 = \"[^\"]*\"$/material3 = \"$MATERIAL3\"/" \
-              -e "s/^compose-multiplatform-adaptive = \"[^\"]*\"$/compose-multiplatform-adaptive = \"$ADAPTIVE\"/" \
+              -e 's/^composeMultiplatform = "[^"]*"$/composeMultiplatform = "1.10.1"/' \
+              -e 's/^material3 = "[^"]*"$/material3 = "1.10.0-alpha06"/' \
+              -e 's/^compose-multiplatform-adaptive = "[^"]*"$/compose-multiplatform-adaptive = "1.2.0"/' \
               > "$RUNNER_TEMP/expected-catalog.toml"
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
           diff "$RUNNER_TEMP/expected-catalog.toml" "$RUNNER_TEMP/catalog.toml"
@@ -267,8 +242,12 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
+      - name: Start the fake Maven Central and CHANGELOG
+        run: |
+          python3 -m http.server 8000 --bind 127.0.0.1 --directory .update-compose-multiplatform/test/fake > "$RUNNER_TEMP/fake-server.log" 2>&1 &
+          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/CHANGELOG.md
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -297,6 +276,8 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
+          maven-repository: http://127.0.0.1:8000/maven-central
+          changelog: http://127.0.0.1:8000/CHANGELOG.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
