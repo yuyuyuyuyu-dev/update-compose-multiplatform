@@ -226,6 +226,47 @@ class Command(
     }
 }
 
+fun main(arguments: Array<String>) {
+    val commands =
+        mapOf(
+            "check-inputs" to
+                Command(
+                    listOf(
+                        "update-js-yarn-lock",
+                        "update-wasm-yarn-lock",
+                        "jdk-distribution-to-update-yarn-lock",
+                        "jdk-version-to-update-yarn-lock",
+                        "app-client-id",
+                        "auto-merge",
+                    ),
+                    ::checkInputs,
+                ),
+            "prepare" to
+                Command(
+                    listOf("update-js-yarn-lock", "update-wasm-yarn-lock", "update-directory", "github-output"),
+                    ::prepare,
+                ),
+            "sync-pull-request" to
+                Command(
+                    listOf("repository", "base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
+                    ::syncPullRequest,
+                ),
+            "report-material3-adaptive" to Command(listOf("notice"), ::reportMaterial3Adaptive),
+        )
+    try {
+        val command =
+            commands[arguments.firstOrNull().orEmpty()]
+                ?: error("Pass one of ${commands.keys.joinToString()} as the first argument.")
+        command.run(arguments.drop(1))
+    } catch (failure: IllegalStateException) {
+        failure.message
+            .orEmpty()
+            .lines()
+            .forEach { println("::error::$it") }
+        exitProcess(1)
+    }
+}
+
 fun hasSecret(name: String): Boolean = !System.getenv(name).isNullOrEmpty()
 
 fun executeOrNull(command: List<String>): String? {
@@ -748,42 +789,4 @@ fun reportMaterial3Adaptive(arguments: Arguments) {
     error(arguments.text("notice"))
 }
 
-val commands: Map<String, Command> =
-    mapOf(
-        "check-inputs" to
-            Command(
-                listOf(
-                    "update-js-yarn-lock",
-                    "update-wasm-yarn-lock",
-                    "jdk-distribution-to-update-yarn-lock",
-                    "jdk-version-to-update-yarn-lock",
-                    "app-client-id",
-                    "auto-merge",
-                ),
-                ::checkInputs,
-            ),
-        "prepare" to
-            Command(
-                listOf("update-js-yarn-lock", "update-wasm-yarn-lock", "update-directory", "github-output"),
-                ::prepare,
-            ),
-        "sync-pull-request" to
-            Command(
-                listOf("repository", "base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
-                ::syncPullRequest,
-            ),
-        "report-material3-adaptive" to Command(listOf("notice"), ::reportMaterial3Adaptive),
-    )
-
-try {
-    val command =
-        commands[args.firstOrNull().orEmpty()]
-            ?: error("Pass one of ${commands.keys.joinToString()} as the first argument.")
-    command.run(args.drop(1))
-} catch (failure: IllegalStateException) {
-    failure.message
-        .orEmpty()
-        .lines()
-        .forEach { println("::error::$it") }
-    exitProcess(1)
-}
+main(args)
