@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.kotlinter)
 }
 
-val kotlinScripts = files("scripts", "build.gradle.kts", "settings.gradle.kts")
+val kotlinScripts = files("scripts", "test", "build.gradle.kts", "settings.gradle.kts")
 
 detekt {
     source.setFrom(kotlinScripts)
