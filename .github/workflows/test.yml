@@ -16,6 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         yarn-lock:
+          - none
           - js
           - wasm
           - js-and-wasm
@@ -23,17 +24,29 @@ jobs:
           - token
           - app
         include:
+          - yarn-lock: none
+            update-js-yarn-lock: false
+            update-wasm-yarn-lock: false
+            jdk-distribution: ""
+            jdk-version: ""
+            gradle-tasks: ""
           - yarn-lock: js
             update-js-yarn-lock: true
             update-wasm-yarn-lock: false
+            jdk-distribution: temurin
+            jdk-version: "21"
             gradle-tasks: kotlinUpgradeYarnLock
           - yarn-lock: wasm
             update-js-yarn-lock: false
             update-wasm-yarn-lock: true
+            jdk-distribution: temurin
+            jdk-version: "21"
             gradle-tasks: kotlinWasmUpgradeYarnLock
           - yarn-lock: js-and-wasm
             update-js-yarn-lock: true
             update-wasm-yarn-lock: true
+            jdk-distribution: temurin
+            jdk-version: "21"
             gradle-tasks: kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock
           - credential: token
             token: fake-token
@@ -68,6 +81,8 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
+      - name: Create an empty log of the calls to gradlew
+        run: touch "$RUNNER_TEMP/gradlew-calls.jsonl"
       - name: Put the fake gh first on the PATH
         run: echo "$GITHUB_WORKSPACE/test/fake" >> "$GITHUB_PATH"
       # Act
@@ -77,8 +92,8 @@ jobs:
           APP_PRIVATE_KEY: ${{ matrix.app-private-key }}
           UPDATE_JS_YARN_LOCK: ${{ matrix.update-js-yarn-lock }}
           UPDATE_WASM_YARN_LOCK: ${{ matrix.update-wasm-yarn-lock }}
-          JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK: temurin
-          JDK_VERSION_TO_UPDATE_YARN_LOCK: "21"
+          JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK: ${{ matrix.jdk-distribution }}
+          JDK_VERSION_TO_UPDATE_YARN_LOCK: ${{ matrix.jdk-version }}
           APP_CLIENT_ID: ${{ matrix.app-client-id }}
           AUTO_MERGE: disable
         run: |
@@ -181,12 +196,19 @@ jobs:
       - name: Verify the pull request body
         env:
           GRADLE_TASKS: ${{ matrix.gradle-tasks }}
-        run: grep -Fx -- "- The yarn.lock files were updated with \`./gradlew $GRADLE_TASKS\`." "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+        run: |
+          if [ -n "$GRADLE_TASKS" ]; then
+            echo "- The yarn.lock files were updated with \`./gradlew $GRADLE_TASKS\`." > "$RUNNER_TEMP/expected-yarn-lock-lines.txt"
+          else
+            : > "$RUNNER_TEMP/expected-yarn-lock-lines.txt"
+          fi
+          sed -n '/yarn\.lock/p' "$RUNNER_TEMP/update-compose-multiplatform/body.md" > "$RUNNER_TEMP/yarn-lock-lines.txt"
+          diff "$RUNNER_TEMP/expected-yarn-lock-lines.txt" "$RUNNER_TEMP/yarn-lock-lines.txt"
       - name: Verify the calls to gradlew
         env:
           GRADLE_TASKS: ${{ matrix.gradle-tasks }}
         run: |
-          jq -n --arg tasks "$GRADLE_TASKS" '[$tasks | split(" ")]' > "$RUNNER_TEMP/expected-gradlew-calls.json"
+          jq -n --arg tasks "$GRADLE_TASKS" 'if $tasks == "" then [] else [$tasks | split(" ")] end' > "$RUNNER_TEMP/expected-gradlew-calls.json"
           jq -s . "$RUNNER_TEMP/gradlew-calls.jsonl" > "$RUNNER_TEMP/gradlew-calls.json"
           diff "$RUNNER_TEMP/expected-gradlew-calls.json" "$RUNNER_TEMP/gradlew-calls.json"
       - name: Verify the pushed branch
