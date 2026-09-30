@@ -522,7 +522,12 @@ fun updateVersionCatalog(releases: Releases): Preparation {
     check(problems.isEmpty()) { problems.joinToString("\n") }
 
     val currentCompose = catalog.version(composeKey) ?: error("${catalogFile.path} has no versions.$composeKey.")
-    val currentMaterial3 = catalog.version(material3Key) ?: error("${catalogFile.path} has no versions.$material3Key.")
+    val currentMaterial3 =
+        catalog.version(material3Key)
+            ?: error(
+                "${catalogFile.path} has no versions.$material3Key. " +
+                    "This workflow is only for projects that take material3 from the version catalog.",
+            )
     val adaptiveArtifacts =
         catalog.libraries
             .filter { it.group == adaptiveGroup }
