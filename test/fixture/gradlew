@@ -1,6 +1,11 @@
 #!/bin/sh
 set -eu
 jq -cn '$ARGS.positional' --args -- "$@" >> "$RUNNER_TEMP/gradlew-calls.jsonl"
+properties="$("${JAVA_HOME:+$JAVA_HOME/bin/}java" -XshowSettings:properties -version 2>&1)"
+jq -cn \
+  --arg vendor "$(printf '%s\n' "$properties" | sed -n 's/^ *java\.vendor = //p')" \
+  --arg version "$(printf '%s\n' "$properties" | sed -n 's/^ *java\.specification\.version = //p')" \
+  '{vendor: $vendor, version: $version}' >> "$RUNNER_TEMP/gradlew-jdks.jsonl"
 for task in "$@"; do
   case "$task" in
     kotlinUpgradeYarnLock)
