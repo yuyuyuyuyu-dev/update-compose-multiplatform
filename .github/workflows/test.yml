@@ -7,8 +7,8 @@ on:
   workflow_dispatch:
 permissions: {}
 jobs:
-  update-compose-multiplatform:
-    name: should update Compose Multiplatform along with the material3 and Material3 Adaptive paired with it (${{ matrix.yarn-lock }}, ${{ matrix.credential }})
+  update-yarn-lock:
+    name: should update only the requested yarn.lock files (${{ matrix.yarn-lock }})
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -20,9 +20,6 @@ jobs:
           - js
           - wasm
           - js-and-wasm
-        credential:
-          - token
-          - app
         include:
           - yarn-lock: none
             update-js-yarn-lock: false
@@ -48,6 +45,240 @@ jobs:
             jdk-distribution: temurin
             jdk-version: "21"
             gradle-tasks: kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock
+    env:
+      REPOSITORY: octo-org/octo-app
+      BASE: main
+      BRANCH: chore/update-compose-multiplatform
+    steps:
+      # Arrange
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          path: .update-compose-multiplatform
+          persist-credentials: false
+      - name: Create the calling repository
+        run: |
+          git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
+          cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
+          git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
+          git -C "$RUNNER_TEMP/fixture" add --all
+          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
+          git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
+      - name: Start the fake Maven Central and CHANGELOG
+        run: |
+          "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
+          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+      - name: Create an empty log of the calls to gradlew
+        run: touch "$RUNNER_TEMP/gradlew-calls.jsonl"
+      - name: Put the fake gh first on the PATH
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
+      # Act
+      - name: Check the inputs
+        uses: ./.update-compose-multiplatform/.github/actions/check-inputs
+        with:
+          update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
+          update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
+          jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
+          jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          app-client-id: ""
+          auto-merge: disable
+          token: fake-token
+          app-private-key: ""
+      - name: Check out the calling repository
+        id: checkout
+        run: |
+          git init --quiet --initial-branch=main
+          git remote add origin "$RUNNER_TEMP/origin.git"
+          git fetch --quiet origin
+          git checkout --quiet --force -B main origin/main
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Update the version catalog and the yarn.lock files
+        id: update
+        uses: ./.update-compose-multiplatform/.github/actions/prepare
+        with:
+          update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
+          update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
+          jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
+          jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          maven-repository: http://127.0.0.1:8000/maven-central
+          changelog: http://127.0.0.1:8000/changelog/paired.md
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
+      - name: Check out the calling repository at the prepared commit
+        env:
+          COMMIT: ${{ steps.checkout.outputs.commit }}
+        run: git checkout --quiet --force --detach "$COMMIT"
+      - name: Open, update or close the pull request
+        uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
+        with:
+          repository: ${{ env.REPOSITORY }}
+          base: ${{ env.BASE }}
+          branch: ${{ env.BRANCH }}
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
+          token: fake-token
+          app-slug: ""
+          auto-merge: disable
+          labels: ""
+      - name: Fail with the notice
+        if: steps.update.outputs.notice != ''
+        uses: ./.update-compose-multiplatform/.github/actions/report-material3-adaptive
+        with:
+          notice: ${{ steps.update.outputs.notice }}
+      # Assert
+      - name: Verify the calls to gradlew
+        env:
+          GRADLE_TASKS: ${{ matrix.gradle-tasks }}
+        run: |
+          jq -n --arg tasks "$GRADLE_TASKS" 'if $tasks == "" then [] else [$tasks | split(" ")] end' > "$RUNNER_TEMP/expected-gradlew-calls.json"
+          jq -s . "$RUNNER_TEMP/gradlew-calls.jsonl" > "$RUNNER_TEMP/gradlew-calls.json"
+          diff "$RUNNER_TEMP/expected-gradlew-calls.json" "$RUNNER_TEMP/gradlew-calls.json"
+      - name: Verify the pull request body
+        env:
+          GRADLE_TASKS: ${{ matrix.gradle-tasks }}
+        run: |
+          if [ -n "$GRADLE_TASKS" ]; then
+            echo "- The yarn.lock files were updated with \`./gradlew $GRADLE_TASKS\`." > "$RUNNER_TEMP/expected-yarn-lock-lines.txt"
+          else
+            : > "$RUNNER_TEMP/expected-yarn-lock-lines.txt"
+          fi
+          sed -n '/yarn\.lock/p' "$RUNNER_TEMP/update-compose-multiplatform/body.md" > "$RUNNER_TEMP/yarn-lock-lines.txt"
+          diff "$RUNNER_TEMP/expected-yarn-lock-lines.txt" "$RUNNER_TEMP/yarn-lock-lines.txt"
+      - name: Verify the pushed yarn.lock files
+        env:
+          UPDATE_JS_YARN_LOCK: ${{ matrix.update-js-yarn-lock }}
+          UPDATE_WASM_YARN_LOCK: ${{ matrix.update-wasm-yarn-lock }}
+        run: |
+          if [ "$UPDATE_JS_YARN_LOCK" = true ]; then
+            echo "Upgraded by kotlinUpgradeYarnLock" > "$RUNNER_TEMP/expected-js-yarn.lock"
+          else
+            : > "$RUNNER_TEMP/expected-js-yarn.lock"
+          fi
+          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:kotlin-js-store/yarn.lock" > "$RUNNER_TEMP/js-yarn.lock"
+          diff "$RUNNER_TEMP/expected-js-yarn.lock" "$RUNNER_TEMP/js-yarn.lock"
+          if [ "$UPDATE_WASM_YARN_LOCK" = true ]; then
+            echo "Upgraded by kotlinWasmUpgradeYarnLock" > "$RUNNER_TEMP/expected-wasm-yarn.lock"
+          else
+            : > "$RUNNER_TEMP/expected-wasm-yarn.lock"
+          fi
+          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:kotlin-js-store/wasm/yarn.lock" > "$RUNNER_TEMP/wasm-yarn.lock"
+          diff "$RUNNER_TEMP/expected-wasm-yarn.lock" "$RUNNER_TEMP/wasm-yarn.lock"
+  enable-auto-merge:
+    name: should enable auto-merge when it is requested (${{ matrix.auto-merge }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        auto-merge:
+          - disable
+          - squash
+          - merge
+          - rebase
+        include:
+          - auto-merge: disable
+            merge-calls: "[]"
+          - auto-merge: squash
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
+          - auto-merge: merge
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--merge"]]'
+          - auto-merge: rebase
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--rebase"]]'
+    env:
+      REPOSITORY: octo-org/octo-app
+      BASE: main
+      BRANCH: chore/update-compose-multiplatform
+    steps:
+      # Arrange
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          path: .update-compose-multiplatform
+          persist-credentials: false
+      - name: Create the calling repository
+        run: |
+          git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
+          cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
+          git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
+          git -C "$RUNNER_TEMP/fixture" add --all
+          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
+          git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
+      - name: Start the fake Maven Central and CHANGELOG
+        run: |
+          "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
+          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+      - name: Put the fake gh first on the PATH
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
+      # Act
+      - name: Check the inputs
+        uses: ./.update-compose-multiplatform/.github/actions/check-inputs
+        with:
+          update-js-yarn-lock: false
+          update-wasm-yarn-lock: false
+          jdk-distribution-to-update-yarn-lock: ""
+          jdk-version-to-update-yarn-lock: ""
+          app-client-id: ""
+          auto-merge: ${{ matrix.auto-merge }}
+          token: fake-token
+          app-private-key: ""
+      - name: Check out the calling repository
+        id: checkout
+        run: |
+          git init --quiet --initial-branch=main
+          git remote add origin "$RUNNER_TEMP/origin.git"
+          git fetch --quiet origin
+          git checkout --quiet --force -B main origin/main
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - name: Update the version catalog and the yarn.lock files
+        id: update
+        uses: ./.update-compose-multiplatform/.github/actions/prepare
+        with:
+          update-js-yarn-lock: false
+          update-wasm-yarn-lock: false
+          jdk-distribution-to-update-yarn-lock: ""
+          jdk-version-to-update-yarn-lock: ""
+          maven-repository: http://127.0.0.1:8000/maven-central
+          changelog: http://127.0.0.1:8000/changelog/paired.md
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
+      - name: Check out the calling repository at the prepared commit
+        env:
+          COMMIT: ${{ steps.checkout.outputs.commit }}
+        run: git checkout --quiet --force --detach "$COMMIT"
+      - name: Open, update or close the pull request
+        uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
+        with:
+          repository: ${{ env.REPOSITORY }}
+          base: ${{ env.BASE }}
+          branch: ${{ env.BRANCH }}
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
+          token: fake-token
+          app-slug: ""
+          auto-merge: ${{ matrix.auto-merge }}
+          labels: ""
+      - name: Fail with the notice
+        if: steps.update.outputs.notice != ''
+        uses: ./.update-compose-multiplatform/.github/actions/report-material3-adaptive
+        with:
+          notice: ${{ steps.update.outputs.notice }}
+      # Assert
+      - name: Verify the calls to gh that turn on auto-merge
+        env:
+          MERGE_CALLS: ${{ matrix.merge-calls }}
+        run: |
+          jq -n --argjson calls "$MERGE_CALLS" '$calls' > "$RUNNER_TEMP/expected-merge-calls.json"
+          jq -s '[.[] | select(.[0:2] == ["pr", "merge"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/merge-calls.json"
+          diff "$RUNNER_TEMP/expected-merge-calls.json" "$RUNNER_TEMP/merge-calls.json"
+  commit-as-token-owner:
+    name: should commit as the owner of the token (${{ matrix.credential }})
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        credential:
+          - token
+          - app
+        include:
           - credential: token
             token: fake-token
             app-client-id: ""
@@ -86,19 +317,17 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/CHANGELOG.md
-      - name: Create an empty log of the calls to gradlew
-        run: touch "$RUNNER_TEMP/gradlew-calls.jsonl"
+          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Put the fake gh first on the PATH
         run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
         with:
-          update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
-          update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
-          jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
-          jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          update-js-yarn-lock: false
+          update-wasm-yarn-lock: false
+          jdk-distribution-to-update-yarn-lock: ""
+          jdk-version-to-update-yarn-lock: ""
           app-client-id: ${{ matrix.app-client-id }}
           auto-merge: disable
           token: ${{ matrix.token }}
@@ -115,12 +344,12 @@ jobs:
         id: update
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
-          update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
-          update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
-          jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
-          jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          update-js-yarn-lock: false
+          update-wasm-yarn-lock: false
+          jdk-distribution-to-update-yarn-lock: ""
+          jdk-version-to-update-yarn-lock: ""
           maven-repository: http://127.0.0.1:8000/maven-central
-          changelog: http://127.0.0.1:8000/CHANGELOG.md
+          changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -143,86 +372,79 @@ jobs:
         with:
           notice: ${{ steps.update.outputs.notice }}
       # Assert
-      - name: Verify the calls to gh
+      - name: Verify the calls to gh that look up the committer
         env:
           IDENTITY_CALLS: ${{ matrix.identity-calls }}
         run: |
-          jq -n \
-            --argjson identity "$IDENTITY_CALLS" \
-            --arg repository "$REPOSITORY" \
-            --arg base "$BASE" \
-            --arg branch "$BRANCH" \
-            --arg title "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0" \
-            --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
-            '$identity + [
-              ["pr", "list", "--repo", $repository, "--head", $branch, "--base", $base, "--state", "open", "--json", "url"],
-              ["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body]
-            ]' > "$RUNNER_TEMP/expected-gh-calls.json"
-          jq -s . "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/gh-calls.json"
-          diff "$RUNNER_TEMP/expected-gh-calls.json" "$RUNNER_TEMP/gh-calls.json"
-      - name: Verify the pull request body
+          jq -n --argjson calls "$IDENTITY_CALLS" '$calls' > "$RUNNER_TEMP/expected-identity-calls.json"
+          jq -s '[.[] | select(.[0] == "api")]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/identity-calls.json"
+          diff "$RUNNER_TEMP/expected-identity-calls.json" "$RUNNER_TEMP/identity-calls.json"
+      - name: Verify the author of the pushed commit
         env:
-          GRADLE_TASKS: ${{ matrix.gradle-tasks }}
-        run: |
-          if [ -n "$GRADLE_TASKS" ]; then
-            echo "- The yarn.lock files were updated with \`./gradlew $GRADLE_TASKS\`." > "$RUNNER_TEMP/expected-yarn-lock-lines.txt"
-          else
-            : > "$RUNNER_TEMP/expected-yarn-lock-lines.txt"
-          fi
-          sed -n '/yarn\.lock/p' "$RUNNER_TEMP/update-compose-multiplatform/body.md" > "$RUNNER_TEMP/yarn-lock-lines.txt"
-          diff "$RUNNER_TEMP/expected-yarn-lock-lines.txt" "$RUNNER_TEMP/yarn-lock-lines.txt"
-      - name: Verify the calls to gradlew
-        env:
-          GRADLE_TASKS: ${{ matrix.gradle-tasks }}
-        run: |
-          jq -n --arg tasks "$GRADLE_TASKS" 'if $tasks == "" then [] else [$tasks | split(" ")] end' > "$RUNNER_TEMP/expected-gradlew-calls.json"
-          jq -s . "$RUNNER_TEMP/gradlew-calls.jsonl" > "$RUNNER_TEMP/gradlew-calls.json"
-          diff "$RUNNER_TEMP/expected-gradlew-calls.json" "$RUNNER_TEMP/gradlew-calls.json"
-      - name: Verify the pushed branch
-        env:
-          UPDATE_JS_YARN_LOCK: ${{ matrix.update-js-yarn-lock }}
-          UPDATE_WASM_YARN_LOCK: ${{ matrix.update-wasm-yarn-lock }}
           COMMITTER: ${{ matrix.committer }}
         run: |
-          git -C "$RUNNER_TEMP/origin.git" show "$BASE:gradle/libs.versions.toml" \
-            | sed \
-              -e 's/^composeMultiplatform = "[^"]*"$/composeMultiplatform = "1.10.1"/' \
-              -e 's/^material3 = "[^"]*"$/material3 = "1.10.0-alpha06"/' \
-              -e 's/^compose-multiplatform-adaptive = "[^"]*"$/compose-multiplatform-adaptive = "1.2.0"/' \
-              > "$RUNNER_TEMP/expected-catalog.toml"
-          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
-          diff "$RUNNER_TEMP/expected-catalog.toml" "$RUNNER_TEMP/catalog.toml"
-          if [ "$UPDATE_JS_YARN_LOCK" = true ]; then
-            echo "Upgraded by kotlinUpgradeYarnLock" > "$RUNNER_TEMP/expected-js-yarn.lock"
-          else
-            : > "$RUNNER_TEMP/expected-js-yarn.lock"
-          fi
-          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:kotlin-js-store/yarn.lock" > "$RUNNER_TEMP/js-yarn.lock"
-          diff "$RUNNER_TEMP/expected-js-yarn.lock" "$RUNNER_TEMP/js-yarn.lock"
-          if [ "$UPDATE_WASM_YARN_LOCK" = true ]; then
-            echo "Upgraded by kotlinWasmUpgradeYarnLock" > "$RUNNER_TEMP/expected-wasm-yarn.lock"
-          else
-            : > "$RUNNER_TEMP/expected-wasm-yarn.lock"
-          fi
-          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:kotlin-js-store/wasm/yarn.lock" > "$RUNNER_TEMP/wasm-yarn.lock"
-          diff "$RUNNER_TEMP/expected-wasm-yarn.lock" "$RUNNER_TEMP/wasm-yarn.lock"
           author="$(git -C "$RUNNER_TEMP/origin.git" log -1 --format='%an <%ae>' "$BRANCH")"
           if [ "$author" != "$COMMITTER <1+$COMMITTER@users.noreply.github.com>" ]; then
             echo "::error::The pushed commit was written by $author."
             exit 1
           fi
-  enable-auto-merge:
-    name: should enable auto-merge when it is requested
+  material3-adaptive:
+    name: ${{ matrix.test }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
-        auto-merge:
-          - squash
-          - merge
-          - rebase
+        include:
+          - test: should update Compose Multiplatform along with the material3 and Material3 Adaptive paired with it
+            changelog: paired.md
+            released: ""
+            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+            adaptive: 1.2.0
+            adaptive-line: "- Material3 Adaptive is the version that the Compose Multiplatform CHANGELOG pairs with this Compose Multiplatform release."
+            notice: ""
+            report: skipped
+          - test: should leave Material3 Adaptive unchanged when the CHANGELOG has no section within three days of the release
+            changelog: no-section.md
+            released: 1 day ago
+            title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
+            adaptive: 1.2.0-alpha06
+            adaptive-line: "- Material3 Adaptive is left unchanged. The Compose Multiplatform CHANGELOG has no section for 1.10.1 yet."
+            notice: ""
+            report: skipped
+          - test: should leave Material3 Adaptive unchanged and report it when the CHANGELOG still has no section three days after the release
+            changelog: no-section.md
+            released: "2026-01-15T00:00:00Z"
+            title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
+            adaptive: 1.2.0-alpha06
+            adaptive-line: "- Material3 Adaptive is left unchanged. The Compose Multiplatform CHANGELOG has no section for 1.10.1 yet."
+            notice: The Compose Multiplatform CHANGELOG has no section for 1.10.1 yet. Compose Multiplatform 1.10.1 was released on 2026-01-15.
+            report: failure
+          - test: should leave Material3 Adaptive unchanged when it is not on Maven Central within three days of the release
+            changelog: unpublished-adaptive.md
+            released: 1 day ago
+            title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
+            adaptive: 1.2.0-alpha06
+            adaptive-line: "- Material3 Adaptive is left unchanged. Material3 Adaptive 1.2.1, which the CHANGELOG pairs with Compose Multiplatform 1.10.1, is not on Maven Central yet for adaptive."
+            notice: ""
+            report: skipped
+          - test: should leave Material3 Adaptive unchanged and report it when it is still not on Maven Central three days after the release
+            changelog: unpublished-adaptive.md
+            released: "2026-01-15T00:00:00Z"
+            title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
+            adaptive: 1.2.0-alpha06
+            adaptive-line: "- Material3 Adaptive is left unchanged. Material3 Adaptive 1.2.1, which the CHANGELOG pairs with Compose Multiplatform 1.10.1, is not on Maven Central yet for adaptive."
+            notice: Material3 Adaptive 1.2.1, which the CHANGELOG pairs with Compose Multiplatform 1.10.1, is not on Maven Central yet for adaptive. Compose Multiplatform 1.10.1 was released on 2026-01-15.
+            report: failure
+          - test: should leave Material3 Adaptive unchanged and report it when the CHANGELOG section has no version of it
+            changelog: no-adaptive.md
+            released: ""
+            title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
+            adaptive: 1.2.0-alpha06
+            adaptive-line: "- Material3 Adaptive is left unchanged. The Compose Multiplatform CHANGELOG section for 1.10.1 has no Material3 Adaptive version that can be read."
+            notice: The Compose Multiplatform CHANGELOG section for 1.10.1 has no Material3 Adaptive version that can be read.
+            report: failure
     env:
       REPOSITORY: octo-org/octo-app
       BASE: main
@@ -242,10 +464,15 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
+      - name: Set the release date of Compose Multiplatform 1.10.1
+        if: matrix.released != ''
+        env:
+          RELEASED: ${{ matrix.released }}
+        run: touch -d "$RELEASED" .update-compose-multiplatform/test/fake/maven-central/org/jetbrains/compose/compose-gradle-plugin/1.10.1/compose-gradle-plugin-1.10.1.pom
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/CHANGELOG.md
+          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Put the fake gh first on the PATH
         run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
       # Act
@@ -257,7 +484,7 @@ jobs:
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ""
-          auto-merge: ${{ matrix.auto-merge }}
+          auto-merge: disable
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -277,7 +504,7 @@ jobs:
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
           maven-repository: http://127.0.0.1:8000/maven-central
-          changelog: http://127.0.0.1:8000/CHANGELOG.md
+          changelog: http://127.0.0.1:8000/changelog/${{ matrix.changelog }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -292,21 +519,59 @@ jobs:
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
-          auto-merge: ${{ matrix.auto-merge }}
+          auto-merge: disable
           labels: ""
       - name: Fail with the notice
+        id: report
         if: steps.update.outputs.notice != ''
+        continue-on-error: true
         uses: ./.update-compose-multiplatform/.github/actions/report-material3-adaptive
         with:
           notice: ${{ steps.update.outputs.notice }}
       # Assert
-      - name: Verify the call to gh that turns on auto-merge
+      - name: Verify the title of the pull request
         env:
-          AUTO_MERGE: ${{ matrix.auto-merge }}
+          TITLE: ${{ matrix.title }}
         run: |
           jq -n \
-            --arg url "https://github.com/$REPOSITORY/pull/1" \
-            --arg method "--$AUTO_MERGE" \
-            '["pr", "merge", $url, "--auto", $method]' > "$RUNNER_TEMP/expected-gh-call.json"
-          jq -s '.[-1]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/gh-call.json"
-          diff "$RUNNER_TEMP/expected-gh-call.json" "$RUNNER_TEMP/gh-call.json"
+            --arg repository "$REPOSITORY" \
+            --arg base "$BASE" \
+            --arg branch "$BRANCH" \
+            --arg title "$TITLE" \
+            --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
+            '[["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body]]' > "$RUNNER_TEMP/expected-create-calls.json"
+          jq -s '[.[] | select(.[0:2] == ["pr", "create"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/create-calls.json"
+          diff "$RUNNER_TEMP/expected-create-calls.json" "$RUNNER_TEMP/create-calls.json"
+      - name: Verify the pushed version catalog
+        env:
+          ADAPTIVE: ${{ matrix.adaptive }}
+        run: |
+          git -C "$RUNNER_TEMP/origin.git" show "$BASE:gradle/libs.versions.toml" \
+            | sed \
+              -e 's/^composeMultiplatform = "[^"]*"$/composeMultiplatform = "1.10.1"/' \
+              -e 's/^material3 = "[^"]*"$/material3 = "1.10.0-alpha06"/' \
+              -e "s/^compose-multiplatform-adaptive = \"[^\"]*\"$/compose-multiplatform-adaptive = \"$ADAPTIVE\"/" \
+              > "$RUNNER_TEMP/expected-catalog.toml"
+          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
+          diff "$RUNNER_TEMP/expected-catalog.toml" "$RUNNER_TEMP/catalog.toml"
+      - name: Verify the pull request body
+        env:
+          ADAPTIVE_LINE: ${{ matrix.adaptive-line }}
+        run: |
+          echo "$ADAPTIVE_LINE" > "$RUNNER_TEMP/expected-adaptive-lines.txt"
+          sed -n '/^- Material3 Adaptive /p' "$RUNNER_TEMP/update-compose-multiplatform/body.md" > "$RUNNER_TEMP/adaptive-lines.txt"
+          diff "$RUNNER_TEMP/expected-adaptive-lines.txt" "$RUNNER_TEMP/adaptive-lines.txt"
+      - name: Verify the report of Material3 Adaptive
+        env:
+          EXPECTED_NOTICE: ${{ matrix.notice }}
+          NOTICE: ${{ steps.update.outputs.notice }}
+          EXPECTED_REPORT: ${{ matrix.report }}
+          REPORT: ${{ steps.report.outcome }}
+        run: |
+          echo "$EXPECTED_NOTICE" > "$RUNNER_TEMP/expected-notice.txt"
+          echo "$NOTICE" > "$RUNNER_TEMP/notice.txt"
+          diff "$RUNNER_TEMP/expected-notice.txt" "$RUNNER_TEMP/notice.txt"
+          if [ "$REPORT" != "$EXPECTED_REPORT" ]; then
+            echo "::error::The report step ended with $REPORT instead of $EXPECTED_REPORT."
+            exit 1
+          fi
