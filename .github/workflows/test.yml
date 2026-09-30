@@ -11,7 +11,7 @@ env:
   BASE: main
   BRANCH: chore/update-compose-multiplatform
 jobs:
-  material3-adaptive:
+  update-version-catalog:
     name: ${{ matrix.test }}
     runs-on: ubuntu-latest
     permissions:
@@ -20,25 +20,54 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - test: should update without waiting for Material3 Adaptive when the catalog does not use it
+            catalog: without-material3-adaptive.toml
+            changelog: no-section.md
+            released: ""
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
+            waiting: ""
           - test: should wait and say why when the CHANGELOG has no section within three days of the release
+            catalog: with-material3-adaptive.toml
             changelog: no-section.md
             released: 1 day ago
             outcome: success
+            title: ""
             waiting: The Compose Multiplatform CHANGELOG has no section for 1.10.1 yet.
+          - test: should fail without updating anything when the CHANGELOG still has no section three days after the release
+            catalog: with-material3-adaptive.toml
+            changelog: no-section.md
+            released: "2026-01-15T00:00:00Z"
+            outcome: failure
+            title: ""
+            waiting: ""
           - test: should wait and say why when Material3 Adaptive is not on Maven Central within three days of the release
+            catalog: with-material3-adaptive.toml
             changelog: unpublished-adaptive.md
             released: 1 day ago
             outcome: success
+            title: ""
             waiting: Material3 Adaptive 1.2.1, which the CHANGELOG pairs with Compose Multiplatform 1.10.1, is not on Maven Central yet for adaptive.
           - test: should fail without updating anything when Material3 Adaptive is still not on Maven Central three days after the release
+            catalog: with-material3-adaptive.toml
             changelog: unpublished-adaptive.md
             released: "2026-01-15T00:00:00Z"
             outcome: failure
+            title: ""
             waiting: ""
           - test: should fail without updating anything when the CHANGELOG section has no version of Material3 Adaptive
+            catalog: with-material3-adaptive.toml
             changelog: no-adaptive.md
             released: ""
             outcome: failure
+            title: ""
+            waiting: ""
+          - test: should fail without updating anything when the catalog does not use material3
+            catalog: without-material3.toml
+            changelog: paired.md
+            released: ""
+            outcome: failure
+            title: ""
             waiting: ""
     steps:
       # Arrange
@@ -49,7 +78,7 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: with-material3-adaptive.toml
+          CATALOG: ${{ matrix.catalog }}
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
@@ -132,11 +161,34 @@ jobs:
             exit 1
           fi
       - name: Verify the calls to gh about pull requests
+        env:
+          TITLE: ${{ matrix.title }}
         run: |
-          echo "[]" | jq . > "$RUNNER_TEMP/expected-pull-request-calls.json"
+          jq -n \
+            --arg repository "$REPOSITORY" \
+            --arg base "$BASE" \
+            --arg branch "$BRANCH" \
+            --arg title "$TITLE" \
+            --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
+            'if $title == "" then [] else [
+              ["pr", "list", "--repo", $repository, "--head", $branch, "--base", $base, "--state", "open", "--json", "url"],
+              ["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body]
+            ] end' > "$RUNNER_TEMP/expected-pull-request-calls.json"
           jq -s '[.[] | select(.[0] == "pr")]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/pull-request-calls.json"
           diff "$RUNNER_TEMP/expected-pull-request-calls.json" "$RUNNER_TEMP/pull-request-calls.json"
+      - name: Verify the pushed version catalog
+        if: matrix.title != ''
+        run: |
+          git -C "$RUNNER_TEMP/origin.git" show "$BASE:gradle/libs.versions.toml" \
+            | sed \
+              -e 's/^composeMultiplatform = "[^"]*"$/composeMultiplatform = "1.10.1"/' \
+              -e 's/^material3 = "[^"]*"$/material3 = "1.10.0-alpha06"/' \
+              -e 's/^compose-multiplatform-adaptive = "[^"]*"$/compose-multiplatform-adaptive = "1.2.0"/' \
+              > "$RUNNER_TEMP/expected-catalog.toml"
+          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
+          diff "$RUNNER_TEMP/expected-catalog.toml" "$RUNNER_TEMP/catalog.toml"
       - name: Verify that nothing is pushed
+        if: matrix.title == ''
         run: |
           if git -C "$RUNNER_TEMP/origin.git" rev-parse --verify --quiet "refs/heads/$BRANCH"; then
             echo "::error::$BRANCH was pushed."
