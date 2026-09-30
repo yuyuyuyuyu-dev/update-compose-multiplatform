@@ -20,6 +20,20 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          - test: should update the version keys that the libraries use, whatever their names
+            catalog: other-version-keys.toml
+            changelog: paired.md
+            released: ""
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+            waiting: ""
+          - test: should leave alone the Compose libraries that have versions of their own
+            catalog: with-separately-versioned-compose-libraries.toml
+            changelog: paired.md
+            released: ""
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+            waiting: ""
           - test: should update without waiting for Material3 Adaptive when the catalog does not use it
             catalog: without-material3-adaptive.toml
             changelog: no-section.md
@@ -178,15 +192,11 @@ jobs:
           diff "$RUNNER_TEMP/expected-pull-request-calls.json" "$RUNNER_TEMP/pull-request-calls.json"
       - name: Verify the pushed version catalog
         if: matrix.title != ''
+        env:
+          CATALOG: ${{ matrix.catalog }}
         run: |
-          git -C "$RUNNER_TEMP/origin.git" show "$BASE:gradle/libs.versions.toml" \
-            | sed \
-              -e 's/^composeMultiplatform = "[^"]*"$/composeMultiplatform = "1.10.1"/' \
-              -e 's/^material3 = "[^"]*"$/material3 = "1.10.0-alpha06"/' \
-              -e 's/^compose-multiplatform-adaptive = "[^"]*"$/compose-multiplatform-adaptive = "1.2.0"/' \
-              > "$RUNNER_TEMP/expected-catalog.toml"
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
-          diff "$RUNNER_TEMP/expected-catalog.toml" "$RUNNER_TEMP/catalog.toml"
+          diff ".update-compose-multiplatform/test/expected/catalog/$CATALOG" "$RUNNER_TEMP/catalog.toml"
       - name: Verify that nothing is pushed
         if: matrix.title == ''
         run: |

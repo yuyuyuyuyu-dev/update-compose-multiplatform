@@ -119,15 +119,11 @@ jobs:
           BODY: ${{ matrix.body }}
         run: diff ".update-compose-multiplatform/test/expected/pull-request-body/$BODY" "$RUNNER_TEMP/update-compose-multiplatform/body.md"
       - name: Verify the pushed version catalog
+        env:
+          CATALOG: ${{ matrix.catalog }}
         run: |
-          git -C "$RUNNER_TEMP/origin.git" show "$BASE:gradle/libs.versions.toml" \
-            | sed \
-              -e 's/^composeMultiplatform = "[^"]*"$/composeMultiplatform = "1.10.1"/' \
-              -e 's/^material3 = "[^"]*"$/material3 = "1.10.0-alpha06"/' \
-              -e 's/^compose-multiplatform-adaptive = "[^"]*"$/compose-multiplatform-adaptive = "1.2.0"/' \
-              > "$RUNNER_TEMP/expected-catalog.toml"
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
-          diff "$RUNNER_TEMP/expected-catalog.toml" "$RUNNER_TEMP/catalog.toml"
+          diff ".update-compose-multiplatform/test/expected/catalog/$CATALOG" "$RUNNER_TEMP/catalog.toml"
   update-yarn-lock:
     name: should update only the requested yarn.lock files (${{ matrix.yarn-lock }})
     runs-on: ubuntu-latest
