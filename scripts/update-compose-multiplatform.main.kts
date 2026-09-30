@@ -13,9 +13,7 @@ import org.tomlj.TomlParseResult
 import org.tomlj.TomlTable
 import org.w3c.dom.NodeList
 import org.xml.sax.InputSource
-import org.xml.sax.SAXException
 import java.io.File
-import java.io.IOException
 import java.io.StringReader
 import java.net.URI
 import java.net.http.HttpClient
@@ -27,7 +25,6 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.UUID
 import javax.xml.parsers.DocumentBuilderFactory
 import javax.xml.xpath.XPathConstants
 import javax.xml.xpath.XPathFactory
@@ -74,7 +71,6 @@ fun main(arguments: Array<String>) {
                         "maven-repository",
                         "changelog",
                         "update-directory",
-                        "github-output",
                     ),
                     ::prepare,
                 ),
@@ -83,7 +79,6 @@ fun main(arguments: Array<String>) {
                     listOf("repository", "base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
                     ::syncPullRequest,
                 ),
-            "report-material3-adaptive" to Command(listOf("notice"), ::reportMaterial3Adaptive),
         )
     try {
         val command =
@@ -133,14 +128,16 @@ class Version private constructor(
 
 sealed interface AdaptivePairing
 
+sealed interface Preparation
+
 class Paired(
     val version: Version,
 ) : AdaptivePairing
 
-class Unpaired(
+class Waiting(
     val reason: String,
-    val notice: String?,
-) : AdaptivePairing
+) : AdaptivePairing,
+    Preparation
 
 class Library(
     val alias: String,
@@ -250,16 +247,31 @@ class Releases(
     fun pairedAdaptive(
         compose: Version,
         artifacts: Collection<String>,
-    ): AdaptivePairing =
-        try {
-            changelogPairing(compose, artifacts)
-        } catch (exception: IOException) {
-            unpairable("Material3 Adaptive could not be determined: ${exception.message}")
-        } catch (exception: IllegalStateException) {
-            unpairable("Material3 Adaptive could not be determined: ${exception.message}")
-        } catch (exception: SAXException) {
-            unpairable("Material3 Adaptive could not be determined: ${exception.message}")
+    ): AdaptivePairing {
+        val section =
+            changelogSection(fetch(changelog), compose)
+                ?: return waitingFor(compose, "The Compose Multiplatform CHANGELOG has no section for $compose yet.")
+        val adaptive =
+            adaptiveRow
+                .find(section)
+                ?.groupValues
+                ?.get(1)
+                ?.let(Version::parse)
+                ?: error(
+                    "The Compose Multiplatform CHANGELOG section for $compose " +
+                        "has no Material3 Adaptive version that can be read.",
+                )
+        val missing = artifacts.filter { adaptive.toString() !in publishedVersions(adaptiveGroup, it) }
+        return if (missing.isEmpty()) {
+            Paired(adaptive)
+        } else {
+            waitingFor(
+                compose,
+                "Material3 Adaptive $adaptive, which the CHANGELOG pairs with Compose Multiplatform $compose, " +
+                    "is not on Maven Central yet for ${missing.joinToString()}.",
+            )
         }
+    }
 
     private fun artifactUrl(
         group: String,
@@ -329,59 +341,14 @@ class Releases(
     private fun waitingFor(
         compose: Version,
         reason: String,
-    ): Unpaired {
-        val released = releasedAt(compose)
-        val releaseDate = released?.let { LocalDate.ofInstant(it, ZoneOffset.UTC) }
-        val notice =
-            when {
-                released == null -> "$reason The release date of Compose Multiplatform $compose could not be read."
-                Duration.between(released, Instant.now()) <= changelogDelay -> null
-                else -> "$reason Compose Multiplatform $compose was released on $releaseDate."
-            }
-        return Unpaired(reason, notice)
-    }
-
-    private fun changelogPairing(
-        compose: Version,
-        artifacts: Collection<String>,
-    ): AdaptivePairing {
-        val section = changelogSection(fetch(changelog), compose)
-        val adaptive =
-            section?.let {
-                adaptiveRow
-                    .find(it)
-                    ?.groupValues
-                    ?.get(1)
-                    ?.let(Version::parse)
-            }
-        val missing =
-            adaptive?.let { version ->
-                artifacts.filter { version.toString() !in publishedVersions(adaptiveGroup, it) }
-            }
-        return when {
-            section == null -> {
-                waitingFor(compose, "The Compose Multiplatform CHANGELOG has no section for $compose yet.")
-            }
-
-            adaptive == null -> {
-                unpairable(
-                    "The Compose Multiplatform CHANGELOG section for $compose " +
-                        "has no Material3 Adaptive version that can be read.",
-                )
-            }
-
-            missing.isNullOrEmpty() -> {
-                Paired(adaptive)
-            }
-
-            else -> {
-                waitingFor(
-                    compose,
-                    "Material3 Adaptive $adaptive, which the CHANGELOG pairs with Compose Multiplatform $compose, " +
-                        "is not on Maven Central yet for ${missing.joinToString()}.",
-                )
-            }
+    ): Waiting {
+        val released =
+            releasedAt(compose)
+                ?: error("$reason The release date of Compose Multiplatform $compose could not be read.")
+        check(Duration.between(released, Instant.now()) <= changelogDelay) {
+            "$reason Compose Multiplatform $compose was released on ${LocalDate.ofInstant(released, ZoneOffset.UTC)}."
         }
+        return Waiting(reason)
     }
 }
 
@@ -394,15 +361,12 @@ class Update(
 
 class CatalogUpdate(
     val updates: List<Update>,
-    val adaptive: AdaptivePairing?,
-) {
+) : Preparation {
     val changes: List<Update> = updates.filter { it.from != it.to }
 
     val title: String = "build(deps): update ${listed(changes.map { "${it.library} to ${it.to}" })}"
 
     val versions: String = listed(updates.map { "${it.library} ${it.to}" })
-
-    val notice: String = (adaptive as? Unpaired)?.notice.orEmpty()
 }
 
 class Arguments(
@@ -467,8 +431,6 @@ fun requiredVersion(dependency: JsonObject): String? {
     return listOf("strictly", "requires", "prefers").firstNotNullOfOrNull { version[it]?.jsonPrimitive?.contentOrNull }
 }
 
-fun unpairable(reason: String): Unpaired = Unpaired(reason, reason)
-
 fun changelogSection(
     text: String,
     compose: Version,
@@ -514,10 +476,7 @@ fun ownershipProblem(
 fun listed(items: List<String>): String =
     if (items.size < 2) items.joinToString() else "${items.dropLast(1).joinToString(", ")} and ${items.last()}"
 
-fun pullRequestBody(
-    updates: List<Update>,
-    adaptive: AdaptivePairing?,
-): String =
+fun pullRequestBody(updates: List<Update>): String =
     buildString {
         append("Updates the Compose Multiplatform libraries that have to move together. ")
         append("The Update Compose Multiplatform workflow updates this pull request on each run ")
@@ -531,32 +490,11 @@ fun pullRequestBody(
         appendLine("unless the catalog already has a newer version.")
         append("- material3 is the newest release on the same major.minor line as Compose Multiplatform ")
         appendLine("that requires no Compose Multiplatform library newer than it.")
-        when (adaptive) {
-            is Paired -> {
-                append("- Material3 Adaptive is the version that the Compose Multiplatform CHANGELOG pairs ")
-                appendLine("with this Compose Multiplatform release.")
-            }
-
-            is Unpaired -> {
-                appendLine("- Material3 Adaptive is left unchanged. ${adaptive.reason}")
-            }
-
-            null -> {
-                Unit
-            }
+        if (updates.any { it.key == adaptiveKey }) {
+            append("- Material3 Adaptive is the version that the Compose Multiplatform CHANGELOG pairs ")
+            appendLine("with this Compose Multiplatform release.")
         }
     }
-
-fun writeOutputs(
-    file: File,
-    outputs: Map<String, String>,
-) {
-    outputs.forEach { (name, value) ->
-        println("$name=$value")
-        val delimiter = "EOF_${UUID.randomUUID()}"
-        file.appendText("$name<<$delimiter\n$value\n$delimiter\n")
-    }
-}
 
 fun openPullRequestField(
     field: String,
@@ -571,7 +509,7 @@ fun openPullRequestField(
         ?.jsonPrimitive
         ?.content
 
-fun updateVersionCatalog(releases: Releases): CatalogUpdate {
+fun updateVersionCatalog(releases: Releases): Preparation {
     val catalogFile = File("gradle/libs.versions.toml")
     val catalog = VersionCatalog(catalogFile)
     val libraryProblems =
@@ -605,18 +543,21 @@ fun updateVersionCatalog(releases: Releases): CatalogUpdate {
                 ?: error("versions.$composeKey = \"$currentCompose\" is not a version that this workflow can compare."),
         )
     val material3 = releases.pairedMaterial3(compose)
-    val adaptive = currentAdaptive?.let { releases.pairedAdaptive(compose, adaptiveArtifacts) }
+    val adaptive =
+        currentAdaptive?.let { current ->
+            when (val pairing = releases.pairedAdaptive(compose, adaptiveArtifacts)) {
+                is Paired -> Update("Material3 Adaptive", adaptiveKey, current, pairing.version.toString())
+                is Waiting -> return pairing
+            }
+        }
 
     val update =
         CatalogUpdate(
             listOfNotNull(
                 Update("Compose Multiplatform", composeKey, currentCompose, compose.toString()),
                 Update("material3", material3Key, currentMaterial3, material3.toString()),
-                currentAdaptive?.let {
-                    Update("Material3 Adaptive", adaptiveKey, it, (adaptive as? Paired)?.version?.toString() ?: it)
-                },
+                adaptive,
             ),
-            adaptive,
         )
     if (update.changes.isNotEmpty()) {
         update.changes.forEach { catalog.setVersion(it.key, it.to) }
@@ -774,32 +715,45 @@ fun prepare(arguments: Arguments) {
             "kotlinUpgradeYarnLock".takeIf { arguments.flag("update-js-yarn-lock") },
             "kotlinWasmUpgradeYarnLock".takeIf { arguments.flag("update-wasm-yarn-lock") },
         )
-    val update = updateVersionCatalog(Releases(arguments.text("maven-repository"), arguments.text("changelog")))
+    val preparation = updateVersionCatalog(Releases(arguments.text("maven-repository"), arguments.text("changelog")))
     directory.mkdirs()
-    directory.resolve("versions.txt").writeText(update.versions)
-    if (update.changes.isEmpty()) {
-        println("The catalog already uses ${update.versions}.")
-    } else {
-        val yarnLock = if (tasks.isEmpty()) "" else updateYarnLock(tasks)
-        directory.resolve("title.txt").writeText(update.title)
-        directory.resolve("body.md").writeText(pullRequestBody(update.updates, update.adaptive) + yarnLock)
-        saveChanges(directory.resolve("changes.patch"))
-        println("The catalog now uses ${update.versions}.")
+    when (preparation) {
+        is Waiting -> {
+            directory.resolve("waiting.txt").writeText(preparation.reason)
+            println("Nothing is updated until Material3 Adaptive can be paired. ${preparation.reason}")
+        }
+
+        is CatalogUpdate -> {
+            directory.resolve("versions.txt").writeText(preparation.versions)
+            if (preparation.changes.isEmpty()) {
+                println("The catalog already uses ${preparation.versions}.")
+            } else {
+                val yarnLock = if (tasks.isEmpty()) "" else updateYarnLock(tasks)
+                directory.resolve("title.txt").writeText(preparation.title)
+                directory.resolve("body.md").writeText(pullRequestBody(preparation.updates) + yarnLock)
+                saveChanges(directory.resolve("changes.patch"))
+                println("The catalog now uses ${preparation.versions}.")
+            }
+        }
     }
-    writeOutputs(arguments.file("github-output"), mapOf("notice" to update.notice))
 }
 
 fun syncPullRequest(arguments: Arguments) {
     val directory = arguments.file("update-directory")
-    if (directory.resolve("changes.patch").exists()) {
-        openPullRequest(arguments, directory)
-    } else {
-        closePullRequest(arguments, directory.resolve("versions.txt").readText())
-    }
-}
+    val waiting = directory.resolve("waiting.txt")
+    when {
+        waiting.exists() -> {
+            println("The pull request is left as it is until Material3 Adaptive can be paired. ${waiting.readText()}")
+        }
 
-fun reportMaterial3Adaptive(arguments: Arguments) {
-    error(arguments.text("notice"))
+        directory.resolve("changes.patch").exists() -> {
+            openPullRequest(arguments, directory)
+        }
+
+        else -> {
+            closePullRequest(arguments, directory.resolve("versions.txt").readText())
+        }
+    }
 }
 
 main(args)

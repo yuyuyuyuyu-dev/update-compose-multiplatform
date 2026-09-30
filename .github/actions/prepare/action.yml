@@ -16,9 +16,6 @@ inputs:
     default: https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md
   update-directory:
     required: true
-outputs:
-  notice:
-    value: ${{ steps.update.outputs.notice }}
 runs:
   using: composite
   steps:
@@ -34,7 +31,6 @@ runs:
       if: inputs.update-js-yarn-lock == 'true' || inputs.update-wasm-yarn-lock == 'true'
       uses: gradle/actions/setup-gradle@v6
     - name: Update the version catalog and the yarn.lock files
-      id: update
       shell: bash
       env:
         UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}
@@ -48,5 +44,4 @@ runs:
           --update-wasm-yarn-lock "$UPDATE_WASM_YARN_LOCK" \
           --maven-repository "$MAVEN_REPOSITORY" \
           --changelog "$CHANGELOG" \
-          --update-directory "$UPDATE_DIRECTORY" \
-          --github-output "$GITHUB_OUTPUT"
+          --update-directory "$UPDATE_DIRECTORY"

@@ -73,7 +73,6 @@ jobs:
       contents: read
     outputs:
       commit: ${{ steps.checkout.outputs.commit }}
-      notice: ${{ steps.update.outputs.notice }}
     steps:
       - name: Check out the repository
         id: checkout
@@ -92,7 +91,6 @@ jobs:
             scripts
           persist-credentials: false
       - name: Update the version catalog and the yarn.lock files
-        id: update
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: ${{ inputs.update-js-yarn-lock }}
@@ -153,24 +151,3 @@ jobs:
           app-slug: ${{ steps.app-token.outputs.app-slug }}
           auto-merge: ${{ inputs.auto-merge }}
           labels: ${{ inputs.labels }}
-  report-material3-adaptive:
-    name: Report Material3 Adaptive
-    needs: prepare
-    if: needs.prepare.outputs.notice != ''
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Check out the actions
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ job.workflow_repository }}
-          ref: ${{ job.workflow_sha }}
-          path: .update-compose-multiplatform
-          sparse-checkout: |
-            .github/actions
-            scripts
-          persist-credentials: false
-      - name: Fail with the notice
-        uses: ./.update-compose-multiplatform/.github/actions/report-material3-adaptive
-        with:
-          notice: ${{ needs.prepare.outputs.notice }}
