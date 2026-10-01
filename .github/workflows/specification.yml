@@ -125,19 +125,22 @@ jobs:
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
           diff ".update-compose-multiplatform/test/expected/catalog/$CATALOG" "$RUNNER_TEMP/catalog.toml"
   update-yarn-lock:
-    name: ${{ matrix.test }}
+    name: should work with the update-${{ matrix.target }}-yarn-lock input
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
+        target:
+          - js
+          - wasm
         include:
-          - test: should work with the update-js-yarn-lock input
+          - target: js
             update-js-yarn-lock: true
             update-wasm-yarn-lock: false
             yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinUpgradeYarnLock`."
-          - test: should work with the update-wasm-yarn-lock input
+          - target: wasm
             update-js-yarn-lock: false
             update-wasm-yarn-lock: true
             yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinWasmUpgradeYarnLock`."
