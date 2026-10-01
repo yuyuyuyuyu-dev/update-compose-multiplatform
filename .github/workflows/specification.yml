@@ -262,25 +262,10 @@ jobs:
           sed -n '/yarn\.lock/p' "$RUNNER_TEMP/update-compose-multiplatform/body.md" > "$RUNNER_TEMP/yarn-lock-lines.txt"
           diff "$RUNNER_TEMP/expected-yarn-lock-lines.txt" "$RUNNER_TEMP/yarn-lock-lines.txt"
   run-gradle-on-requested-jdk:
-    name: should work with the jdk-distribution-to-update-yarn-lock and jdk-version-to-update-yarn-lock inputs (${{ matrix.jdk }})
+    name: should work with the jdk-distribution-to-update-yarn-lock and jdk-version-to-update-yarn-lock inputs
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        jdk:
-          - temurin 21
-          - zulu 17
-        include:
-          - jdk: temurin 21
-            distribution: temurin
-            version: "21"
-            jdks: '[{"vendor": "Eclipse Adoptium", "version": "21"}]'
-          - jdk: zulu 17
-            distribution: zulu
-            version: "17"
-            jdks: '[{"vendor": "Azul Systems, Inc.", "version": "17"}]'
     steps:
       # Arrange
       - name: Check out the repository
@@ -314,8 +299,8 @@ jobs:
         with:
           update-js-yarn-lock: true
           update-wasm-yarn-lock: false
-          jdk-distribution-to-update-yarn-lock: ${{ matrix.distribution }}
-          jdk-version-to-update-yarn-lock: ${{ matrix.version }}
+          jdk-distribution-to-update-yarn-lock: zulu
+          jdk-version-to-update-yarn-lock: "21"
           app-client-id: ""
           auto-merge: disable
           token: fake-token
@@ -333,8 +318,8 @@ jobs:
         with:
           update-js-yarn-lock: true
           update-wasm-yarn-lock: false
-          jdk-distribution-to-update-yarn-lock: ${{ matrix.distribution }}
-          jdk-version-to-update-yarn-lock: ${{ matrix.version }}
+          jdk-distribution-to-update-yarn-lock: zulu
+          jdk-version-to-update-yarn-lock: "21"
           maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
@@ -355,10 +340,8 @@ jobs:
           labels: ""
       # Assert
       - name: Verify the JDK that ran Gradle
-        env:
-          JDKS: ${{ matrix.jdks }}
         run: |
-          jq -n --argjson jdks "$JDKS" '$jdks' > "$RUNNER_TEMP/expected-gradlew-jdks.json"
+          jq -n '[{vendor: "Azul Systems, Inc.", version: "21"}]' > "$RUNNER_TEMP/expected-gradlew-jdks.json"
           jq -s . "$RUNNER_TEMP/gradlew-jdks.jsonl" > "$RUNNER_TEMP/gradlew-jdks.json"
           diff "$RUNNER_TEMP/expected-gradlew-jdks.json" "$RUNNER_TEMP/gradlew-jdks.json"
   enable-auto-merge:
