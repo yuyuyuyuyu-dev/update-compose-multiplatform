@@ -34,6 +34,13 @@ jobs:
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
             waiting: ""
+          - test: should update a catalog that writes libraries with group and name
+            catalog: libraries-with-group-and-name.toml
+            changelog: paired.md
+            released: ""
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+            waiting: ""
           - test: should update without waiting for Material3 Adaptive when the catalog does not use it
             catalog: without-material3-adaptive.toml
             changelog: no-section.md
