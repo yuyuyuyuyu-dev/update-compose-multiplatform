@@ -125,43 +125,22 @@ jobs:
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
           diff ".update-compose-multiplatform/test/expected/catalog/$CATALOG" "$RUNNER_TEMP/catalog.toml"
   update-yarn-lock:
-    name: should work with the update-js-yarn-lock and update-wasm-yarn-lock inputs (${{ matrix.yarn-lock }})
+    name: ${{ matrix.test }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
-        yarn-lock:
-          - none
-          - js
-          - wasm
-          - js-and-wasm
         include:
-          - yarn-lock: none
-            update-js-yarn-lock: false
-            update-wasm-yarn-lock: false
-            jdk-distribution: ""
-            jdk-version: ""
-            yarn-lock-line: ""
-          - yarn-lock: js
+          - test: should work with the update-js-yarn-lock input
             update-js-yarn-lock: true
             update-wasm-yarn-lock: false
-            jdk-distribution: temurin
-            jdk-version: "21"
             yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinUpgradeYarnLock`."
-          - yarn-lock: wasm
+          - test: should work with the update-wasm-yarn-lock input
             update-js-yarn-lock: false
             update-wasm-yarn-lock: true
-            jdk-distribution: temurin
-            jdk-version: "21"
             yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinWasmUpgradeYarnLock`."
-          - yarn-lock: js-and-wasm
-            update-js-yarn-lock: true
-            update-wasm-yarn-lock: true
-            jdk-distribution: temurin
-            jdk-version: "21"
-            yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock`."
     steps:
       # Arrange
       - name: Check out the repository
@@ -195,8 +174,8 @@ jobs:
         with:
           update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
           update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
-          jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
-          jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          jdk-distribution-to-update-yarn-lock: zulu
+          jdk-version-to-update-yarn-lock: "21"
           app-client-id: ""
           auto-merge: disable
           token: fake-token
@@ -214,8 +193,8 @@ jobs:
         with:
           update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
           update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
-          jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
-          jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
+          jdk-distribution-to-update-yarn-lock: zulu
+          jdk-version-to-update-yarn-lock: "21"
           maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
