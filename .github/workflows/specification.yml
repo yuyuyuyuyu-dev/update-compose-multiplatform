@@ -12,22 +12,25 @@ env:
   BRANCH: chore/update-compose-multiplatform
 jobs:
   update-version-catalog:
-    name: ${{ matrix.test }}
+    name: should update Compose Multiplatform along with the ${{ matrix.dependencies }} paired with it
     runs-on: ubuntu-latest
     permissions:
       contents: read
     strategy:
       fail-fast: false
       matrix:
+        dependencies:
+          - material3
+          - material3 and Material3 Adaptive
         include:
-          - test: should update Compose Multiplatform along with the material3 and Material3 Adaptive paired with it
-            catalog: with-material3-adaptive.toml
-            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
-            body: with-material3-adaptive.md
-          - test: should update Compose Multiplatform along with the material3 paired with it when the catalog does not use Material3 Adaptive
+          - dependencies: material3
             catalog: without-material3-adaptive.toml
             title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
             body: without-material3-adaptive.md
+          - dependencies: material3 and Material3 Adaptive
+            catalog: with-material3-adaptive.toml
+            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+            body: with-material3-adaptive.md
     steps:
       # Arrange
       - name: Check out the repository
