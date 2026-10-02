@@ -431,8 +431,8 @@ jobs:
           jq -n --argjson calls "$MERGE_CALLS" '$calls' > "$RUNNER_TEMP/expected-merge-calls.json"
           jq -s '[.[] | select(.[0:2] == ["pr", "merge"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/merge-calls.json"
           diff "$RUNNER_TEMP/expected-merge-calls.json" "$RUNNER_TEMP/merge-calls.json"
-  commit-as-token-owner:
-    name: ${{ matrix.test }}
+  create-pull-request:
+    name: should create a pull request using ${{ matrix.credential }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -440,19 +440,17 @@ jobs:
       fail-fast: false
       matrix:
         credential:
-          - token
-          - app
+          - a personal access token
+          - a GitHub App
         include:
-          - credential: token
-            test: should work with the token secret
+          - credential: a personal access token
             token: fake-token
             app-client-id: ""
             app-private-key: ""
             app-token: ""
             app-slug: ""
             committer: octocat
-          - credential: app
-            test: should work with the app-client-id input and the app-private-key secret
+          - credential: a GitHub App
             token: ""
             app-client-id: fake-client-id
             app-private-key: fake-private-key
@@ -532,6 +530,17 @@ jobs:
           auto-merge: disable
           labels: ""
       # Assert
+      - name: Verify the pull request that is opened
+        run: |
+          jq -n \
+            --arg repository "$REPOSITORY" \
+            --arg base "$BASE" \
+            --arg branch "$BRANCH" \
+            --arg title "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0" \
+            --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
+            '[["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body]]' > "$RUNNER_TEMP/expected-create-calls.json"
+          jq -s '[.[] | select(.[0:2] == ["pr", "create"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/create-calls.json"
+          diff "$RUNNER_TEMP/expected-create-calls.json" "$RUNNER_TEMP/create-calls.json"
       - name: Verify the author of the pushed commit
         env:
           COMMITTER: ${{ matrix.committer }}
