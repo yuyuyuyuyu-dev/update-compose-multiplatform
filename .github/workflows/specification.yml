@@ -23,6 +23,11 @@ jobs:
         with:
           path: .update-compose-multiplatform
           persist-credentials: false
+      - name: Cache the libraries that the Kotlin scripts download
+        uses: actions/cache@v6
+        with:
+          path: ~/.m2/repository
+          key: kotlin-script-libraries-${{ hashFiles('.update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts', '.update-compose-multiplatform/test/fake/gh.main.kts') }}
       - name: Create the calling repository
         env:
           CATALOG: with-material3-adaptive.toml
