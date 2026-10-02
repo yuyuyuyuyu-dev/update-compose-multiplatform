@@ -12,7 +12,7 @@ env:
   BRANCH: chore/update-compose-multiplatform
 jobs:
   update-version-catalog:
-    name: should update Compose Multiplatform and the related libraries that have to match its version in the right combination
+    name: should update Compose Multiplatform and its related libraries in the right combination
     runs-on: ubuntu-latest
     permissions:
       contents: read
