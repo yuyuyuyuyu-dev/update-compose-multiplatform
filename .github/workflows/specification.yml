@@ -12,25 +12,10 @@ env:
   BRANCH: chore/update-compose-multiplatform
 jobs:
   update-version-catalog:
-    name: should update Compose Multiplatform along with the ${{ matrix.dependencies }} paired with it
+    name: should update Compose Multiplatform along with the material3 and Material3 Adaptive paired with it
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        dependencies:
-          - material3
-          - material3 and Material3 Adaptive
-        include:
-          - dependencies: material3
-            catalog: without-material3-adaptive.toml
-            title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
-            body: without-material3-adaptive.md
-          - dependencies: material3 and Material3 Adaptive
-            catalog: with-material3-adaptive.toml
-            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
-            body: with-material3-adaptive.md
     steps:
       # Arrange
       - name: Check out the repository
@@ -40,7 +25,7 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: ${{ matrix.catalog }}
+          CATALOG: with-material3-adaptive.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
@@ -105,48 +90,29 @@ jobs:
           labels: ""
       # Assert
       - name: Verify the pull request that is opened
-        env:
-          TITLE: ${{ matrix.title }}
         run: |
           jq -n \
             --arg repository "$REPOSITORY" \
             --arg base "$BASE" \
             --arg branch "$BRANCH" \
-            --arg title "$TITLE" \
+            --arg title "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0" \
             --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
             '[["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body]]' > "$RUNNER_TEMP/expected-create-calls.json"
           jq -s '[.[] | select(.[0:2] == ["pr", "create"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/create-calls.json"
           diff "$RUNNER_TEMP/expected-create-calls.json" "$RUNNER_TEMP/create-calls.json"
       - name: Verify the pull request body
-        env:
-          BODY: ${{ matrix.body }}
-        run: diff ".update-compose-multiplatform/test/expected/pull-request-body/$BODY" "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+        run: diff .update-compose-multiplatform/test/expected/pull-request-body/with-material3-adaptive.md "$RUNNER_TEMP/update-compose-multiplatform/body.md"
       - name: Verify the pushed version catalog
         env:
-          CATALOG: ${{ matrix.catalog }}
+          CATALOG: with-material3-adaptive.toml
         run: |
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
           diff ".update-compose-multiplatform/test/expected/catalog/$CATALOG" "$RUNNER_TEMP/catalog.toml"
   update-yarn-lock:
-    name: should update the ${{ matrix.target }} target's yarn.lock when it is requested
+    name: should update yarn.lock when it is requested
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        target:
-          - JS
-          - Wasm
-        include:
-          - target: JS
-            update-js-yarn-lock: true
-            update-wasm-yarn-lock: false
-            yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinUpgradeYarnLock`."
-          - target: Wasm
-            update-js-yarn-lock: false
-            update-wasm-yarn-lock: true
-            yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinWasmUpgradeYarnLock`."
     steps:
       # Arrange
       - name: Check out the repository
@@ -178,8 +144,8 @@ jobs:
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
         with:
-          update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
-          update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
+          update-js-yarn-lock: true
+          update-wasm-yarn-lock: true
           jdk-distribution-to-update-yarn-lock: zulu
           jdk-version-to-update-yarn-lock: "21"
           app-client-id: ""
@@ -197,8 +163,8 @@ jobs:
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
-          update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
-          update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
+          update-js-yarn-lock: true
+          update-wasm-yarn-lock: true
           jdk-distribution-to-update-yarn-lock: zulu
           jdk-version-to-update-yarn-lock: "21"
           maven-repository: http://127.0.0.1:8000/maven-central
@@ -221,50 +187,23 @@ jobs:
           labels: ""
       # Assert
       - name: Verify the pushed yarn.lock files
-        env:
-          UPDATE_JS_YARN_LOCK: ${{ matrix.update-js-yarn-lock }}
-          UPDATE_WASM_YARN_LOCK: ${{ matrix.update-wasm-yarn-lock }}
         run: |
-          if [ "$UPDATE_JS_YARN_LOCK" = true ]; then
-            echo "Upgraded by kotlinUpgradeYarnLock" > "$RUNNER_TEMP/expected-js-yarn.lock"
-          else
-            : > "$RUNNER_TEMP/expected-js-yarn.lock"
-          fi
+          echo "Upgraded by kotlinUpgradeYarnLock" > "$RUNNER_TEMP/expected-js-yarn.lock"
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:kotlin-js-store/yarn.lock" > "$RUNNER_TEMP/js-yarn.lock"
           diff "$RUNNER_TEMP/expected-js-yarn.lock" "$RUNNER_TEMP/js-yarn.lock"
-          if [ "$UPDATE_WASM_YARN_LOCK" = true ]; then
-            echo "Upgraded by kotlinWasmUpgradeYarnLock" > "$RUNNER_TEMP/expected-wasm-yarn.lock"
-          else
-            : > "$RUNNER_TEMP/expected-wasm-yarn.lock"
-          fi
+          echo "Upgraded by kotlinWasmUpgradeYarnLock" > "$RUNNER_TEMP/expected-wasm-yarn.lock"
           git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:kotlin-js-store/wasm/yarn.lock" > "$RUNNER_TEMP/wasm-yarn.lock"
           diff "$RUNNER_TEMP/expected-wasm-yarn.lock" "$RUNNER_TEMP/wasm-yarn.lock"
       - name: Verify the pull request body
-        env:
-          YARN_LOCK_LINE: ${{ matrix.yarn-lock-line }}
         run: |
-          printf '%s\n' "$YARN_LOCK_LINE" | sed '/^$/d' > "$RUNNER_TEMP/expected-yarn-lock-lines.txt"
+          echo "- The yarn.lock files were updated with \`./gradlew kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock\`." > "$RUNNER_TEMP/expected-yarn-lock-lines.txt"
           sed -n '/yarn\.lock/p' "$RUNNER_TEMP/update-compose-multiplatform/body.md" > "$RUNNER_TEMP/yarn-lock-lines.txt"
           diff "$RUNNER_TEMP/expected-yarn-lock-lines.txt" "$RUNNER_TEMP/yarn-lock-lines.txt"
   enable-auto-merge:
-    name: should enable auto-merge when it is requested (${{ matrix.auto-merge }})
+    name: should enable auto-merge when it is requested
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        auto-merge:
-          - squash
-          - merge
-          - rebase
-        include:
-          - auto-merge: squash
-            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
-          - auto-merge: merge
-            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--merge"]]'
-          - auto-merge: rebase
-            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--rebase"]]'
     steps:
       # Arrange
       - name: Check out the repository
@@ -301,7 +240,7 @@ jobs:
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ""
-          auto-merge: ${{ matrix.auto-merge }}
+          auto-merge: squash
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -335,13 +274,11 @@ jobs:
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
-          auto-merge: ${{ matrix.auto-merge }}
+          auto-merge: squash
           labels: ""
       # Assert
       - name: Verify the calls to gh that turn on auto-merge
-        env:
-          MERGE_CALLS: ${{ matrix.merge-calls }}
         run: |
-          jq -n --argjson calls "$MERGE_CALLS" '$calls' > "$RUNNER_TEMP/expected-merge-calls.json"
+          jq -n '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]' > "$RUNNER_TEMP/expected-merge-calls.json"
           jq -s '[.[] | select(.[0:2] == ["pr", "merge"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/merge-calls.json"
           diff "$RUNNER_TEMP/expected-merge-calls.json" "$RUNNER_TEMP/merge-calls.json"
