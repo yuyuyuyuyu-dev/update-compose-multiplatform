@@ -6,10 +6,6 @@ on:
       - main
   workflow_dispatch:
 permissions: {}
-env:
-  REPOSITORY: octo-org/octo-app
-  BASE: main
-  BRANCH: chore/update-compose-multiplatform
 jobs:
   update-version-catalog:
     name: should update Compose Multiplatform and its related libraries in the right combination
@@ -24,13 +20,11 @@ jobs:
           path: .update-compose-multiplatform
           persist-credentials: false
       - name: Create the calling repository
-        env:
-          CATALOG: with-material3-adaptive.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
-          cp ".update-compose-multiplatform/test/catalog/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
+          cp .update-compose-multiplatform/test/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
@@ -80,9 +74,9 @@ jobs:
       - name: Open, update or close the pull request
         uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
         with:
-          repository: ${{ env.REPOSITORY }}
-          base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
+          repository: octo-org/octo-app
+          base: main
+          branch: chore/update-compose-multiplatform
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -91,23 +85,22 @@ jobs:
       # Assert
       - name: Verify the pull request that is opened
         run: |
-          jq -n \
-            --arg repository "$REPOSITORY" \
-            --arg base "$BASE" \
-            --arg branch "$BRANCH" \
-            --arg title "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0" \
-            --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
-            '[["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body]]' > "$RUNNER_TEMP/expected-create-calls.json"
+          jq -n --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" '[[
+            "pr", "create",
+            "--repo", "octo-org/octo-app",
+            "--head", "chore/update-compose-multiplatform",
+            "--base", "main",
+            "--title", "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0",
+            "--body-file", $body
+          ]]' > "$RUNNER_TEMP/expected-create-calls.json"
           jq -s '[.[] | select(.[0:2] == ["pr", "create"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/create-calls.json"
           diff "$RUNNER_TEMP/expected-create-calls.json" "$RUNNER_TEMP/create-calls.json"
       - name: Verify the pull request body
         run: diff .update-compose-multiplatform/test/expected/pull-request-body/with-material3-adaptive.md "$RUNNER_TEMP/update-compose-multiplatform/body.md"
       - name: Verify the pushed version catalog
-        env:
-          CATALOG: with-material3-adaptive.toml
         run: |
-          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:gradle/libs.versions.toml" > "$RUNNER_TEMP/catalog.toml"
-          diff ".update-compose-multiplatform/test/expected/catalog/$CATALOG" "$RUNNER_TEMP/catalog.toml"
+          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
+          diff .update-compose-multiplatform/test/expected/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/catalog.toml"
   update-yarn-lock:
     name: should update yarn.lock
     runs-on: ubuntu-latest
@@ -121,13 +114,11 @@ jobs:
           path: .update-compose-multiplatform
           persist-credentials: false
       - name: Create the calling repository
-        env:
-          CATALOG: with-material3-adaptive.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
-          cp ".update-compose-multiplatform/test/catalog/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
+          cp .update-compose-multiplatform/test/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
@@ -177,9 +168,9 @@ jobs:
       - name: Open, update or close the pull request
         uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
         with:
-          repository: ${{ env.REPOSITORY }}
-          base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
+          repository: octo-org/octo-app
+          base: main
+          branch: chore/update-compose-multiplatform
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -189,10 +180,10 @@ jobs:
       - name: Verify the pushed yarn.lock files
         run: |
           echo "Upgraded by kotlinUpgradeYarnLock" > "$RUNNER_TEMP/expected-js-yarn.lock"
-          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:kotlin-js-store/yarn.lock" > "$RUNNER_TEMP/js-yarn.lock"
+          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:kotlin-js-store/yarn.lock > "$RUNNER_TEMP/js-yarn.lock"
           diff "$RUNNER_TEMP/expected-js-yarn.lock" "$RUNNER_TEMP/js-yarn.lock"
           echo "Upgraded by kotlinWasmUpgradeYarnLock" > "$RUNNER_TEMP/expected-wasm-yarn.lock"
-          git -C "$RUNNER_TEMP/origin.git" show "$BRANCH:kotlin-js-store/wasm/yarn.lock" > "$RUNNER_TEMP/wasm-yarn.lock"
+          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:kotlin-js-store/wasm/yarn.lock > "$RUNNER_TEMP/wasm-yarn.lock"
           diff "$RUNNER_TEMP/expected-wasm-yarn.lock" "$RUNNER_TEMP/wasm-yarn.lock"
       - name: Verify the pull request body
         run: |
@@ -212,13 +203,11 @@ jobs:
           path: .update-compose-multiplatform
           persist-credentials: false
       - name: Create the calling repository
-        env:
-          CATALOG: with-material3-adaptive.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
-          cp ".update-compose-multiplatform/test/catalog/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
+          cp .update-compose-multiplatform/test/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
@@ -268,9 +257,9 @@ jobs:
       - name: Open, update or close the pull request
         uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
         with:
-          repository: ${{ env.REPOSITORY }}
-          base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
+          repository: octo-org/octo-app
+          base: main
+          branch: chore/update-compose-multiplatform
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
