@@ -19,28 +19,8 @@ jobs:
         with:
           path: .update-compose-multiplatform
           persist-credentials: false
-      - &create-the-calling-repository
-        name: Create the calling repository
-        run: |
-          git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
-          mkdir -p "$RUNNER_TEMP/fixture/gradle"
-          cp .update-compose-multiplatform/test/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
-          git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
-          git -C "$RUNNER_TEMP/fixture" add --all
-          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
-          git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - &start-the-fake-maven-central-and-changelog
-        name: Start the fake Maven Central and CHANGELOG
-        run: |
-          "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
-      - &create-empty-logs-for-the-fakes
-        name: Create empty logs for the fakes
-        run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
-      - &put-the-fake-gh-first-on-the-path
-        name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
+      - name: Set up the calling repository and the fakes
+        uses: ./.update-compose-multiplatform/test/arrange
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -119,10 +99,8 @@ jobs:
         with:
           path: .update-compose-multiplatform
           persist-credentials: false
-      - *create-the-calling-repository
-      - *start-the-fake-maven-central-and-changelog
-      - *create-empty-logs-for-the-fakes
-      - *put-the-fake-gh-first-on-the-path
+      - name: Set up the calling repository and the fakes
+        uses: ./.update-compose-multiplatform/test/arrange
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -184,10 +162,8 @@ jobs:
         with:
           path: .update-compose-multiplatform
           persist-credentials: false
-      - *create-the-calling-repository
-      - *start-the-fake-maven-central-and-changelog
-      - *create-empty-logs-for-the-fakes
-      - *put-the-fake-gh-first-on-the-path
+      - name: Set up the calling repository and the fakes
+        uses: ./.update-compose-multiplatform/test/arrange
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
