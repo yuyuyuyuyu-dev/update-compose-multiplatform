@@ -82,7 +82,7 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: "'' != ''"
+        if: false
         uses: actions/create-github-app-token@v3
         with:
           client-id: ""
@@ -214,7 +214,7 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: "'' != ''"
+        if: false
         uses: actions/create-github-app-token@v3
         with:
           client-id: ""
@@ -341,7 +341,7 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: "'' != ''"
+        if: false
         uses: actions/create-github-app-token@v3
         with:
           client-id: ""

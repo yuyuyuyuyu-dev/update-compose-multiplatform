@@ -6,4 +6,4 @@ paths:
       - 'missing input "app-id" which is required by action "actions/create-github-app-token@v3"'
   .github/workflows/specification.yml:
     ignore:
-      - 'constant expression "'''' != ''''" in condition'
+      - 'constant expression "false" in condition'
