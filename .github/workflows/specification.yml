@@ -82,8 +82,8 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: false
-        uses: actions/create-github-app-token@v3
+        if: "'' != ''"
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/create-github-app-token
         with:
           client-id: ""
           private-key: ""
@@ -214,8 +214,8 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: false
-        uses: actions/create-github-app-token@v3
+        if: "'' != ''"
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/create-github-app-token
         with:
           client-id: ""
           private-key: ""
@@ -341,8 +341,8 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: false
-        uses: actions/create-github-app-token@v3
+        if: "'' != ''"
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/create-github-app-token
         with:
           client-id: ""
           private-key: ""
