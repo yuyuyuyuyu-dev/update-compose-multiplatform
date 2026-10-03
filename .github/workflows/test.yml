@@ -125,7 +125,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
@@ -279,7 +279,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
@@ -397,7 +397,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
@@ -499,7 +499,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
@@ -671,7 +671,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
@@ -776,7 +776,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
@@ -893,7 +893,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
@@ -991,7 +991,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
@@ -1098,7 +1098,7 @@ jobs:
       - name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 10 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
