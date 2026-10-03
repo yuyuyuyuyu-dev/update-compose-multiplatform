@@ -1,6 +1,9 @@
 paths:
-  .github/workflows/update-compose-multiplatform.yml:
+  .github/workflows/{update-compose-multiplatform,specification}.yml:
     ignore:
       - 'property "workflow_(repository|sha)" is not defined in object type'
       - 'input "client-id" is not defined in action "actions/create-github-app-token@v3"'
       - 'missing input "app-id" which is required by action "actions/create-github-app-token@v3"'
+  .github/workflows/specification.yml:
+    ignore:
+      - 'constant expression "'''' != ''''" in condition'

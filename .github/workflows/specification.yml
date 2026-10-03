@@ -14,14 +14,26 @@ jobs:
       contents: read
     steps:
       # Arrange
+      - name: Check out the tests
+        uses: actions/checkout@v7
+        with:
+          path: .update-compose-multiplatform-test
+          sparse-checkout: test
+          persist-credentials: false
+      - name: Set up the calling repository and the fakes
+        uses: ./.update-compose-multiplatform-test/test/arrange
+      # Act
+      # check-inputs
       - name: Check out the actions
         uses: actions/checkout@v7
         with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
           persist-credentials: false
-      - name: Set up the calling repository and the fakes
-        uses: ./.update-compose-multiplatform/test/arrange
-      # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
         with:
@@ -33,11 +45,22 @@ jobs:
           auto-merge: disable
           token: fake-token
           app-private-key: ""
+      # prepare
       - name: Check out the repository
         id: checkout
-        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
         with:
           ref: main
+          persist-credentials: false
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
           persist-credentials: false
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
@@ -50,19 +73,39 @@ jobs:
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Upload the update
-        uses: ./.update-compose-multiplatform/test/fake/actions/upload-artifact
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/upload-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
           if-no-files-found: error
           retention-days: 1
+      # sync-pull-request
+      - name: Create a token for the app
+        id: app-token
+        if: "'' != ''"
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ""
+          private-key: ""
+          permission-contents: write
+          permission-pull-requests: write
       - name: Check out the repository
-        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
         with:
           ref: ${{ steps.checkout.outputs.commit }}
-          token: fake-token
+          token: ${{ steps.app-token.outputs.token || 'fake-token' }}
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
+          persist-credentials: false
       - name: Download the update
-        uses: ./.update-compose-multiplatform/test/fake/actions/download-artifact
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/download-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
@@ -73,8 +116,8 @@ jobs:
           base: main
           branch: chore/update-compose-multiplatform
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-          token: fake-token
-          app-slug: ""
+          token: ${{ steps.app-token.outputs.token || 'fake-token' }}
+          app-slug: ${{ steps.app-token.outputs.app-slug }}
           auto-merge: disable
           labels: ""
       # Assert
@@ -91,11 +134,11 @@ jobs:
           jq -s '[.[] | select(.[0:2] == ["pr", "create"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/create-calls.json"
           diff "$RUNNER_TEMP/expected-create-calls.json" "$RUNNER_TEMP/create-calls.json"
       - name: Verify the pull request body
-        run: diff .update-compose-multiplatform/test/expected/pull-request-body/with-material3-adaptive.md "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+        run: diff .update-compose-multiplatform-test/test/expected/pull-request-body/with-material3-adaptive.md "$RUNNER_TEMP/update-compose-multiplatform/body.md"
       - name: Verify the pushed version catalog
         run: |
           git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
-          diff .update-compose-multiplatform/test/expected/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/catalog.toml"
+          diff .update-compose-multiplatform-test/test/expected/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/catalog.toml"
   update-yarn-lock:
     name: should update yarn.lock when it is requested
     runs-on: ubuntu-latest
@@ -103,14 +146,26 @@ jobs:
       contents: read
     steps:
       # Arrange
+      - name: Check out the tests
+        uses: actions/checkout@v7
+        with:
+          path: .update-compose-multiplatform-test
+          sparse-checkout: test
+          persist-credentials: false
+      - name: Set up the calling repository and the fakes
+        uses: ./.update-compose-multiplatform-test/test/arrange
+      # Act
+      # check-inputs
       - name: Check out the actions
         uses: actions/checkout@v7
         with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
           persist-credentials: false
-      - name: Set up the calling repository and the fakes
-        uses: ./.update-compose-multiplatform/test/arrange
-      # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
         with:
@@ -122,11 +177,22 @@ jobs:
           auto-merge: disable
           token: fake-token
           app-private-key: ""
+      # prepare
       - name: Check out the repository
         id: checkout
-        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
         with:
           ref: main
+          persist-credentials: false
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
           persist-credentials: false
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
@@ -139,19 +205,39 @@ jobs:
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Upload the update
-        uses: ./.update-compose-multiplatform/test/fake/actions/upload-artifact
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/upload-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
           if-no-files-found: error
           retention-days: 1
+      # sync-pull-request
+      - name: Create a token for the app
+        id: app-token
+        if: "'' != ''"
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ""
+          private-key: ""
+          permission-contents: write
+          permission-pull-requests: write
       - name: Check out the repository
-        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
         with:
           ref: ${{ steps.checkout.outputs.commit }}
-          token: fake-token
+          token: ${{ steps.app-token.outputs.token || 'fake-token' }}
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
+          persist-credentials: false
       - name: Download the update
-        uses: ./.update-compose-multiplatform/test/fake/actions/download-artifact
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/download-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
@@ -162,8 +248,8 @@ jobs:
           base: main
           branch: chore/update-compose-multiplatform
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-          token: fake-token
-          app-slug: ""
+          token: ${{ steps.app-token.outputs.token || 'fake-token' }}
+          app-slug: ${{ steps.app-token.outputs.app-slug }}
           auto-merge: disable
           labels: ""
       # Assert
@@ -187,14 +273,26 @@ jobs:
       contents: read
     steps:
       # Arrange
+      - name: Check out the tests
+        uses: actions/checkout@v7
+        with:
+          path: .update-compose-multiplatform-test
+          sparse-checkout: test
+          persist-credentials: false
+      - name: Set up the calling repository and the fakes
+        uses: ./.update-compose-multiplatform-test/test/arrange
+      # Act
+      # check-inputs
       - name: Check out the actions
         uses: actions/checkout@v7
         with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
           path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
           persist-credentials: false
-      - name: Set up the calling repository and the fakes
-        uses: ./.update-compose-multiplatform/test/arrange
-      # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
         with:
@@ -206,11 +304,22 @@ jobs:
           auto-merge: squash
           token: fake-token
           app-private-key: ""
+      # prepare
       - name: Check out the repository
         id: checkout
-        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
         with:
           ref: main
+          persist-credentials: false
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
           persist-credentials: false
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
@@ -223,19 +332,39 @@ jobs:
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Upload the update
-        uses: ./.update-compose-multiplatform/test/fake/actions/upload-artifact
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/upload-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
           if-no-files-found: error
           retention-days: 1
+      # sync-pull-request
+      - name: Create a token for the app
+        id: app-token
+        if: "'' != ''"
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ""
+          private-key: ""
+          permission-contents: write
+          permission-pull-requests: write
       - name: Check out the repository
-        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
         with:
           ref: ${{ steps.checkout.outputs.commit }}
-          token: fake-token
+          token: ${{ steps.app-token.outputs.token || 'fake-token' }}
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
+          persist-credentials: false
       - name: Download the update
-        uses: ./.update-compose-multiplatform/test/fake/actions/download-artifact
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/download-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
@@ -246,8 +375,8 @@ jobs:
           base: main
           branch: chore/update-compose-multiplatform
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-          token: fake-token
-          app-slug: ""
+          token: ${{ steps.app-token.outputs.token || 'fake-token' }}
+          app-slug: ${{ steps.app-token.outputs.app-slug }}
           auto-merge: squash
           labels: ""
       # Assert
