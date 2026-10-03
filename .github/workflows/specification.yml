@@ -102,7 +102,7 @@ jobs:
           git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
           diff .update-compose-multiplatform/test/expected/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/catalog.toml"
   update-yarn-lock:
-    name: should update yarn.lock
+    name: should update yarn.lock when it is requested
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -191,7 +191,7 @@ jobs:
           sed -n '/yarn\.lock/p' "$RUNNER_TEMP/update-compose-multiplatform/body.md" > "$RUNNER_TEMP/yarn-lock-lines.txt"
           diff "$RUNNER_TEMP/expected-yarn-lock-lines.txt" "$RUNNER_TEMP/yarn-lock-lines.txt"
   enable-auto-merge:
-    name: should enable auto-merge
+    name: should enable auto-merge when it is requested
     runs-on: ubuntu-latest
     permissions:
       contents: read
