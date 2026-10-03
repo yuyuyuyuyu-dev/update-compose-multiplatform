@@ -19,7 +19,8 @@ jobs:
         with:
           path: .update-compose-multiplatform
           persist-credentials: false
-      - name: Create the calling repository
+      - &create-the-calling-repository
+        name: Create the calling repository
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
@@ -29,13 +30,16 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - &start-the-fake-maven-central-and-changelog
+        name: Start the fake Maven Central and CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
-      - name: Create empty logs for the fakes
+      - &create-empty-logs-for-the-fakes
+        name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
-      - name: Put the fake gh first on the PATH
+      - &put-the-fake-gh-first-on-the-path
+        name: Put the fake gh first on the PATH
         run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
@@ -49,7 +53,8 @@ jobs:
           auto-merge: disable
           token: fake-token
           app-private-key: ""
-      - name: Check out the calling repository
+      - &check-out-the-calling-repository
+        name: Check out the calling repository
         id: checkout
         run: |
           git init --quiet --initial-branch=main
@@ -67,7 +72,8 @@ jobs:
           maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-      - name: Check out the calling repository at the prepared commit
+      - &check-out-the-calling-repository-at-the-prepared-commit
+        name: Check out the calling repository at the prepared commit
         env:
           COMMIT: ${{ steps.checkout.outputs.commit }}
         run: git checkout --quiet --force --detach "$COMMIT"
@@ -113,24 +119,10 @@ jobs:
         with:
           path: .update-compose-multiplatform
           persist-credentials: false
-      - name: Create the calling repository
-        run: |
-          git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
-          mkdir -p "$RUNNER_TEMP/fixture/gradle"
-          cp .update-compose-multiplatform/test/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
-          git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
-          git -C "$RUNNER_TEMP/fixture" add --all
-          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
-          git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
-        run: |
-          "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
-      - name: Create empty logs for the fakes
-        run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
-      - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
+      - *create-the-calling-repository
+      - *start-the-fake-maven-central-and-changelog
+      - *create-empty-logs-for-the-fakes
+      - *put-the-fake-gh-first-on-the-path
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -143,14 +135,7 @@ jobs:
           auto-merge: disable
           token: fake-token
           app-private-key: ""
-      - name: Check out the calling repository
-        id: checkout
-        run: |
-          git init --quiet --initial-branch=main
-          git remote add origin "$RUNNER_TEMP/origin.git"
-          git fetch --quiet origin
-          git checkout --quiet --force -B main origin/main
-          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - *check-out-the-calling-repository
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
@@ -161,10 +146,7 @@ jobs:
           maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-      - name: Check out the calling repository at the prepared commit
-        env:
-          COMMIT: ${{ steps.checkout.outputs.commit }}
-        run: git checkout --quiet --force --detach "$COMMIT"
+      - *check-out-the-calling-repository-at-the-prepared-commit
       - name: Open, update or close the pull request
         uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
         with:
@@ -202,24 +184,10 @@ jobs:
         with:
           path: .update-compose-multiplatform
           persist-credentials: false
-      - name: Create the calling repository
-        run: |
-          git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
-          mkdir -p "$RUNNER_TEMP/fixture/gradle"
-          cp .update-compose-multiplatform/test/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
-          git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
-          git -C "$RUNNER_TEMP/fixture" add --all
-          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
-          git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
-        run: |
-          "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
-      - name: Create empty logs for the fakes
-        run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
-      - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake/bin" >> "$GITHUB_PATH"
+      - *create-the-calling-repository
+      - *start-the-fake-maven-central-and-changelog
+      - *create-empty-logs-for-the-fakes
+      - *put-the-fake-gh-first-on-the-path
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -232,14 +200,7 @@ jobs:
           auto-merge: squash
           token: fake-token
           app-private-key: ""
-      - name: Check out the calling repository
-        id: checkout
-        run: |
-          git init --quiet --initial-branch=main
-          git remote add origin "$RUNNER_TEMP/origin.git"
-          git fetch --quiet origin
-          git checkout --quiet --force -B main origin/main
-          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - *check-out-the-calling-repository
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
@@ -250,10 +211,7 @@ jobs:
           maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-      - name: Check out the calling repository at the prepared commit
-        env:
-          COMMIT: ${{ steps.checkout.outputs.commit }}
-        run: git checkout --quiet --force --detach "$COMMIT"
+      - *check-out-the-calling-repository-at-the-prepared-commit
       - name: Open, update or close the pull request
         uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
         with:
