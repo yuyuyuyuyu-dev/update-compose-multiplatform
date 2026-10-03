@@ -9,11 +9,9 @@ inputs:
   jdk-version-to-update-yarn-lock:
     required: false
   maven-repository:
-    required: false
-    default: https://repo1.maven.org/maven2
+    required: true
   changelog:
-    required: false
-    default: https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md
+    required: true
   update-directory:
     required: true
 runs:

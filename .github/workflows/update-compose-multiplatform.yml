@@ -97,6 +97,8 @@ jobs:
           update-wasm-yarn-lock: ${{ inputs.update-wasm-yarn-lock }}
           jdk-distribution-to-update-yarn-lock: ${{ inputs.jdk-distribution-to-update-yarn-lock }}
           jdk-version-to-update-yarn-lock: ${{ inputs.jdk-version-to-update-yarn-lock }}
+          maven-repository: https://repo1.maven.org/maven2
+          changelog: https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Upload the update
         uses: actions/upload-artifact@v7
