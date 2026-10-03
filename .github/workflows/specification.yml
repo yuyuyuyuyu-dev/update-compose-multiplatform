@@ -14,7 +14,7 @@ jobs:
       contents: read
     steps:
       # Arrange
-      - name: Check out the repository
+      - name: Check out the actions
         uses: actions/checkout@v7
         with:
           path: .update-compose-multiplatform
@@ -33,15 +33,12 @@ jobs:
           auto-merge: disable
           token: fake-token
           app-private-key: ""
-      - &check-out-the-calling-repository
-        name: Check out the calling repository
+      - name: Check out the repository
         id: checkout
-        run: |
-          git init --quiet --initial-branch=main
-          git remote add origin "$RUNNER_TEMP/origin.git"
-          git fetch --quiet origin
-          git checkout --quiet --force -B main origin/main
-          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        with:
+          ref: main
+          persist-credentials: false
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
@@ -52,11 +49,23 @@ jobs:
           maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-      - &check-out-the-calling-repository-at-the-prepared-commit
-        name: Check out the calling repository at the prepared commit
-        env:
-          COMMIT: ${{ steps.checkout.outputs.commit }}
-        run: git checkout --quiet --force --detach "$COMMIT"
+      - name: Upload the update
+        uses: ./.update-compose-multiplatform/test/fake/actions/upload-artifact
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
+          if-no-files-found: error
+          retention-days: 1
+      - name: Check out the repository
+        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        with:
+          ref: ${{ steps.checkout.outputs.commit }}
+          token: fake-token
+      - name: Download the update
+        uses: ./.update-compose-multiplatform/test/fake/actions/download-artifact
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
       - name: Open, update or close the pull request
         uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
         with:
@@ -94,7 +103,7 @@ jobs:
       contents: read
     steps:
       # Arrange
-      - name: Check out the repository
+      - name: Check out the actions
         uses: actions/checkout@v7
         with:
           path: .update-compose-multiplatform
@@ -113,7 +122,12 @@ jobs:
           auto-merge: disable
           token: fake-token
           app-private-key: ""
-      - *check-out-the-calling-repository
+      - name: Check out the repository
+        id: checkout
+        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        with:
+          ref: main
+          persist-credentials: false
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
@@ -124,7 +138,23 @@ jobs:
           maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-      - *check-out-the-calling-repository-at-the-prepared-commit
+      - name: Upload the update
+        uses: ./.update-compose-multiplatform/test/fake/actions/upload-artifact
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
+          if-no-files-found: error
+          retention-days: 1
+      - name: Check out the repository
+        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        with:
+          ref: ${{ steps.checkout.outputs.commit }}
+          token: fake-token
+      - name: Download the update
+        uses: ./.update-compose-multiplatform/test/fake/actions/download-artifact
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
       - name: Open, update or close the pull request
         uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
         with:
@@ -157,7 +187,7 @@ jobs:
       contents: read
     steps:
       # Arrange
-      - name: Check out the repository
+      - name: Check out the actions
         uses: actions/checkout@v7
         with:
           path: .update-compose-multiplatform
@@ -176,7 +206,12 @@ jobs:
           auto-merge: squash
           token: fake-token
           app-private-key: ""
-      - *check-out-the-calling-repository
+      - name: Check out the repository
+        id: checkout
+        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        with:
+          ref: main
+          persist-credentials: false
       - name: Update the version catalog and the yarn.lock files
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
@@ -187,7 +222,23 @@ jobs:
           maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-      - *check-out-the-calling-repository-at-the-prepared-commit
+      - name: Upload the update
+        uses: ./.update-compose-multiplatform/test/fake/actions/upload-artifact
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
+          if-no-files-found: error
+          retention-days: 1
+      - name: Check out the repository
+        uses: ./.update-compose-multiplatform/test/fake/actions/checkout
+        with:
+          ref: ${{ steps.checkout.outputs.commit }}
+          token: fake-token
+      - name: Download the update
+        uses: ./.update-compose-multiplatform/test/fake/actions/download-artifact
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
       - name: Open, update or close the pull request
         uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
         with:
