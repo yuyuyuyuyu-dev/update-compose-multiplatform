@@ -1,0 +1,30 @@
+name: Upload a Build Artifact
+inputs:
+  name:
+    required: true
+  path:
+    required: true
+  if-no-files-found:
+    required: false
+    default: warn
+  retention-days:
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Move the files into the fake artifact store
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        FILES: ${{ inputs.path }}
+        IF_NO_FILES_FOUND: ${{ inputs.if-no-files-found }}
+      run: |
+        if [ -z "$(ls -A "$FILES" 2>/dev/null)" ]; then
+          if [ "$IF_NO_FILES_FOUND" = error ]; then
+            echo "No files were found with the provided path: $FILES" >&2
+            exit 1
+          fi
+          exit 0
+        fi
+        mkdir -p "$RUNNER_TEMP/fake-artifacts"
+        mv "$FILES" "$RUNNER_TEMP/fake-artifacts/$NAME"

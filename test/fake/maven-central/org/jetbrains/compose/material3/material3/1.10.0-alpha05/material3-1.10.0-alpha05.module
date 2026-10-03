@@ -1,0 +1,59 @@
+{
+  "formatVersion": "1.1",
+  "component": {
+    "group": "org.jetbrains.compose.material3",
+    "module": "material3",
+    "version": "1.10.0-alpha05"
+  },
+  "variants": [
+    {
+      "name": "metadataApiElements",
+      "dependencies": [
+        {
+          "group": "androidx.collection",
+          "module": "collection",
+          "version": {
+            "requires": "1.5.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.foundation",
+          "module": "foundation",
+          "version": {
+            "requires": "1.10.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.runtime",
+          "module": "runtime",
+          "version": {
+            "requires": "1.10.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.compose.ui",
+          "module": "ui",
+          "version": {
+            "requires": "1.10.0"
+          }
+        },
+        {
+          "group": "org.jetbrains.kotlin",
+          "module": "kotlin-stdlib",
+          "version": {
+            "requires": "2.2.21"
+          }
+        }
+      ]
+    },
+    {
+      "name": "desktopApiElements-published",
+      "available-at": {
+        "url": "../../material3-desktop/1.10.0-alpha05/material3-desktop-1.10.0-alpha05.module",
+        "group": "org.jetbrains.compose.material3",
+        "module": "material3-desktop",
+        "version": "1.10.0-alpha05"
+      }
+    }
+  ]
+}

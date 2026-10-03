@@ -1,0 +1,41 @@
+name: Open, update or close the pull request
+inputs:
+  repository:
+    required: true
+  base:
+    required: true
+  branch:
+    required: true
+  update-directory:
+    required: true
+  token:
+    required: true
+  app-slug:
+    required: false
+  auto-merge:
+    required: true
+  labels:
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Open, update or close the pull request
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.token }}
+        REPOSITORY: ${{ inputs.repository }}
+        BASE: ${{ inputs.base }}
+        BRANCH: ${{ inputs.branch }}
+        UPDATE_DIRECTORY: ${{ inputs.update-directory }}
+        APP_SLUG: ${{ inputs.app-slug }}
+        AUTO_MERGE: ${{ inputs.auto-merge }}
+        LABELS: ${{ inputs.labels }}
+      run: |
+        kotlin "$GITHUB_ACTION_PATH/../../../scripts/update-compose-multiplatform.main.kts" sync-pull-request \
+          --repository "$REPOSITORY" \
+          --base "$BASE" \
+          --branch "$BRANCH" \
+          --update-directory "$UPDATE_DIRECTORY" \
+          --app-slug "$APP_SLUG" \
+          --auto-merge "$AUTO_MERGE" \
+          --labels "$LABELS"
