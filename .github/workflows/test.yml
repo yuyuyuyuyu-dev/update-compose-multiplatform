@@ -173,7 +173,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -323,7 +322,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: ${{ matrix.app-token || matrix.token }}
           app-slug: ${{ matrix.app-slug }}
@@ -441,7 +439,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -543,7 +540,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -715,7 +711,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -820,7 +815,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -937,7 +931,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -1035,7 +1028,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: fake-token
           app-slug: ""
@@ -1142,7 +1134,6 @@ jobs:
         with:
           repository: ${{ env.REPOSITORY }}
           base: ${{ env.BASE }}
-          branch: ${{ env.BRANCH }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
           token: ${{ matrix.app-token || matrix.token }}
           app-slug: ${{ matrix.app-slug }}

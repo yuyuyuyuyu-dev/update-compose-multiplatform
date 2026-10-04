@@ -36,6 +36,7 @@ val adaptiveGroup = "org.jetbrains.compose.material3.adaptive"
 val composeName = "Compose Multiplatform"
 val material3Name = "material3"
 val adaptiveName = "Material3 Adaptive"
+val branch = "chore/update-compose-multiplatform"
 val autoMergeMethods = setOf("disable", "squash", "merge", "rebase")
 val changelogDelay: Duration = Duration.ofDays(3)
 val adaptiveRow = Regex("""org\.jetbrains\.compose\.material3\.adaptive:adaptive\*:([^`\s|]+)""")
@@ -75,7 +76,7 @@ fun main(arguments: Array<String>) {
                 ),
             "sync-pull-request" to
                 Command(
-                    listOf("repository", "base", "branch", "update-directory", "app-slug", "auto-merge", "labels"),
+                    listOf("repository", "base", "update-directory", "app-slug", "auto-merge", "labels"),
                     ::syncPullRequest,
                 ),
         )
@@ -648,7 +649,6 @@ fun tokenOwner(): String =
         )
 
 fun commitChanges(
-    branch: String,
     title: String,
     patch: File,
     appSlug: String,
@@ -668,7 +668,7 @@ fun commitChanges(
     git("commit", "--message", title)
 }
 
-fun holdsTree(branch: String): Boolean {
+fun branchHoldsTree(): Boolean {
     if (git("ls-remote", "--heads", "origin", branch).isEmpty()) {
         return false
     }
@@ -676,8 +676,8 @@ fun holdsTree(branch: String): Boolean {
     return git("rev-parse", "FETCH_HEAD^{tree}") == git("rev-parse", "HEAD^{tree}")
 }
 
-fun pushBranch(branch: String) {
-    if (holdsTree(branch)) {
+fun pushBranch() {
+    if (branchHoldsTree()) {
         println("$branch already holds this update.")
     } else {
         git("push", "--force", "origin", "HEAD:refs/heads/$branch")
@@ -685,7 +685,7 @@ fun pushBranch(branch: String) {
 }
 
 fun pullRequestTarget(arguments: Arguments): List<String> =
-    listOf("--repo", arguments.text("repository"), "--head", arguments.text("branch"), "--base", arguments.text("base"))
+    listOf("--repo", arguments.text("repository"), "--head", branch, "--base", arguments.text("base"))
 
 fun createPullRequest(
     arguments: Arguments,
@@ -706,11 +706,10 @@ fun openPullRequest(
     arguments: Arguments,
     directory: File,
 ) {
-    val branch = arguments.text("branch")
     val title = directory.resolve("title.txt").readText()
     val body = directory.resolve("body.md").path
-    commitChanges(branch, title, directory.resolve("changes.patch"), arguments.text("app-slug"))
-    pushBranch(branch)
+    commitChanges(title, directory.resolve("changes.patch"), arguments.text("app-slug"))
+    pushBranch()
     val url = openPullRequestField("url", pullRequestTarget(arguments))
     if (url != null) {
         gh("pr", "edit", url, "--title", title, "--body-file", body)
