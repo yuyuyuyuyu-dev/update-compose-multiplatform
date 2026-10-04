@@ -5,6 +5,11 @@ on:
     branches:
       - main
   workflow_dispatch:
+  workflow_call:
+    inputs:
+      app-client-id:
+        type: string
+        required: false
 permissions: {}
 jobs:
   update-version-catalog:
@@ -41,7 +46,7 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          app-client-id: ""
+          app-client-id: ${{ inputs.app-client-id }}
           auto-merge: disable
           token: fake-token
           app-private-key: ""
@@ -82,10 +87,10 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: "'' != ''"
-        uses: ./.update-compose-multiplatform-test/test/fake/actions/create-github-app-token
+        if: inputs.app-client-id != ''
+        uses: actions/create-github-app-token@v3
         with:
-          client-id: ""
+          client-id: ${{ inputs.app-client-id }}
           private-key: ""
           permission-contents: write
           permission-pull-requests: write
@@ -173,7 +178,7 @@ jobs:
           update-wasm-yarn-lock: true
           jdk-distribution-to-update-yarn-lock: zulu
           jdk-version-to-update-yarn-lock: "21"
-          app-client-id: ""
+          app-client-id: ${{ inputs.app-client-id }}
           auto-merge: disable
           token: fake-token
           app-private-key: ""
@@ -214,10 +219,10 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: "'' != ''"
-        uses: ./.update-compose-multiplatform-test/test/fake/actions/create-github-app-token
+        if: inputs.app-client-id != ''
+        uses: actions/create-github-app-token@v3
         with:
-          client-id: ""
+          client-id: ${{ inputs.app-client-id }}
           private-key: ""
           permission-contents: write
           permission-pull-requests: write
@@ -300,7 +305,7 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          app-client-id: ""
+          app-client-id: ${{ inputs.app-client-id }}
           auto-merge: squash
           token: fake-token
           app-private-key: ""
@@ -341,10 +346,10 @@ jobs:
       # sync-pull-request
       - name: Create a token for the app
         id: app-token
-        if: "'' != ''"
-        uses: ./.update-compose-multiplatform-test/test/fake/actions/create-github-app-token
+        if: inputs.app-client-id != ''
+        uses: actions/create-github-app-token@v3
         with:
-          client-id: ""
+          client-id: ${{ inputs.app-client-id }}
           private-key: ""
           permission-contents: write
           permission-pull-requests: write
