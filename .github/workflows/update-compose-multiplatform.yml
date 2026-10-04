@@ -66,7 +66,7 @@ jobs:
           token: ${{ secrets.token }}
           app-private-key: ${{ secrets.app-private-key }}
   prepare:
-    name: Update the version catalog and the yarn.lock files
+    name: Update the version catalog and yarn.lock
     needs: check-inputs
     runs-on: ubuntu-latest
     permissions:
@@ -90,7 +90,7 @@ jobs:
             .github/actions
             scripts
           persist-credentials: false
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: ${{ inputs.update-js-yarn-lock }}

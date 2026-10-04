@@ -1,4 +1,4 @@
-name: Update the version catalog and the yarn.lock files
+name: Update the version catalog and yarn.lock
 inputs:
   update-js-yarn-lock:
     required: true
@@ -17,7 +17,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - name: Set up the JDK to update the yarn.lock files
+    - name: Set up the JDK to update yarn.lock
       if: inputs.update-js-yarn-lock == 'true' || inputs.update-wasm-yarn-lock == 'true'
       uses: actions/setup-java@v6
       with:
@@ -28,7 +28,7 @@ runs:
     - name: Set up Gradle
       if: inputs.update-js-yarn-lock == 'true' || inputs.update-wasm-yarn-lock == 'true'
       uses: gradle/actions/setup-gradle@v6
-    - name: Update the version catalog and the yarn.lock files
+    - name: Update the version catalog and yarn.lock
       shell: bash
       env:
         UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}

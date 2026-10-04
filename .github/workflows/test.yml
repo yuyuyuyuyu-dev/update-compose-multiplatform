@@ -150,7 +150,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         id: update
         continue-on-error: true
         uses: ./.update-compose-multiplatform/.github/actions/prepare
@@ -304,7 +304,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: false
@@ -422,7 +422,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
@@ -524,7 +524,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: false
@@ -696,7 +696,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: true
@@ -747,13 +747,13 @@ jobs:
             update-wasm-yarn-lock: false
             jdk-distribution: temurin
             jdk-version: "21"
-            yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinUpgradeYarnLock`."
+            yarn-lock-line: "- The yarn.lock file was updated with `./gradlew kotlinUpgradeYarnLock`."
           - test: should update only the Wasm target's yarn.lock when only it is requested
             update-js-yarn-lock: false
             update-wasm-yarn-lock: true
             jdk-distribution: temurin
             jdk-version: "21"
-            yarn-lock-line: "- The yarn.lock files were updated with `./gradlew kotlinWasmUpgradeYarnLock`."
+            yarn-lock-line: "- The yarn.lock file was updated with `./gradlew kotlinWasmUpgradeYarnLock`."
     steps:
       # Arrange
       - name: Check out the repository
@@ -801,7 +801,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: ${{ matrix.update-js-yarn-lock }}
@@ -918,7 +918,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: false
@@ -1016,7 +1016,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: true
@@ -1123,7 +1123,7 @@ jobs:
           git fetch --quiet origin
           git checkout --quiet --force -B main origin/main
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: false

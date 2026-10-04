@@ -67,7 +67,7 @@ jobs:
             .github/actions
             scripts
           persist-credentials: false
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: false
@@ -199,7 +199,7 @@ jobs:
             .github/actions
             scripts
           persist-credentials: false
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: true
@@ -326,7 +326,7 @@ jobs:
             .github/actions
             scripts
           persist-credentials: false
-      - name: Update the version catalog and the yarn.lock files
+      - name: Update the version catalog and yarn.lock
         uses: ./.update-compose-multiplatform/.github/actions/prepare
         with:
           update-js-yarn-lock: false

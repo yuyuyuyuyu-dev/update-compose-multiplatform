@@ -620,7 +620,8 @@ fun updateVersionCatalog(releases: Releases): Preparation {
 fun updateYarnLock(tasks: List<String>): String {
     val command = listOf("./gradlew") + tasks
     check(ProcessBuilder(command).inheritIO().start().waitFor() == 0) { "${command.joinToString(" ")} failed." }
-    return "- The yarn.lock files were updated with `${command.joinToString(" ")}`.\n"
+    val updated = if (tasks.size == 1) "The yarn.lock file was updated" else "The yarn.lock files were updated"
+    return "- $updated with `${command.joinToString(" ")}`.\n"
 }
 
 fun saveChanges(patch: File) {
@@ -748,7 +749,7 @@ fun checkInputs(arguments: Arguments) {
             }
             if (updatesYarnLock && jdkIsMissing) {
                 add(
-                    "Updating a yarn.lock runs Gradle, " +
+                    "Updating yarn.lock runs Gradle, " +
                         "so pass jdk-distribution-to-update-yarn-lock and jdk-version-to-update-yarn-lock as well.",
                 )
             }
