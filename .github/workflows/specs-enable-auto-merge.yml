@@ -1,4 +1,4 @@
-name: Specification for enabling auto-merge
+name: Specs for enabling auto-merge
 on:
   workflow_call:
     inputs:

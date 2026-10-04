@@ -1,4 +1,4 @@
-name: Specification
+name: Specs
 on:
   pull_request:
   push:
@@ -11,7 +11,7 @@ jobs:
     name: update-version-catalog
     permissions:
       contents: read
-    uses: ./.github/workflows/specification-update-version-catalog.yml
+    uses: ./.github/workflows/specs-update-version-catalog.yml
     with:
       app-client-id: fake-client-id
     secrets:
@@ -20,7 +20,7 @@ jobs:
     name: update-yarn-lock
     permissions:
       contents: read
-    uses: ./.github/workflows/specification-update-yarn-lock.yml
+    uses: ./.github/workflows/specs-update-yarn-lock.yml
     with:
       app-client-id: fake-client-id
     secrets:
@@ -29,7 +29,7 @@ jobs:
     name: enable-auto-merge
     permissions:
       contents: read
-    uses: ./.github/workflows/specification-enable-auto-merge.yml
+    uses: ./.github/workflows/specs-enable-auto-merge.yml
     with:
       app-client-id: fake-client-id
     secrets:

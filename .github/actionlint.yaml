@@ -1,5 +1,5 @@
 paths:
-  .github/workflows/{update-compose-multiplatform,specification-*}.yml:
+  .github/workflows/{update-compose-multiplatform,specs-*}.yml:
     ignore:
       - 'property "workflow_(repository|sha)" is not defined in object type'
   .github/workflows/update-compose-multiplatform.yml:
