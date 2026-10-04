@@ -1,0 +1,36 @@
+name: Specs
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+permissions: {}
+jobs:
+  update-version-catalog:
+    name: update-version-catalog
+    permissions:
+      contents: read
+    uses: ./.github/workflows/specs-update-version-catalog.yml
+    with:
+      app-client-id: fake-client-id
+    secrets:
+      app-private-key: fake-private-key
+  update-yarn-lock:
+    name: update-yarn-lock
+    permissions:
+      contents: read
+    uses: ./.github/workflows/specs-update-yarn-lock.yml
+    with:
+      app-client-id: fake-client-id
+    secrets:
+      app-private-key: fake-private-key
+  enable-auto-merge:
+    name: enable-auto-merge
+    permissions:
+      contents: read
+    uses: ./.github/workflows/specs-enable-auto-merge.yml
+    with:
+      app-client-id: fake-client-id
+    secrets:
+      app-private-key: fake-private-key

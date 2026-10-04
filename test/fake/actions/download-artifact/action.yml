@@ -1,0 +1,17 @@
+name: Download a Build Artifact
+inputs:
+  name:
+    required: true
+  path:
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Copy the files from the fake artifact store
+      shell: bash
+      env:
+        NAME: ${{ inputs.name }}
+        FILES: ${{ inputs.path }}
+      run: |
+        mkdir -p "$FILES"
+        cp -R "$RUNNER_TEMP/fake-artifacts/$NAME/." "$FILES"

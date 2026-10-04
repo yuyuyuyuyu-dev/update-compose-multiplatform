@@ -1,0 +1,31 @@
+name: Checkout
+inputs:
+  ref:
+    required: true
+  token:
+    required: false
+  persist-credentials:
+    required: false
+outputs:
+  commit:
+    value: ${{ steps.checkout.outputs.commit }}
+runs:
+  using: composite
+  steps:
+    - name: Check out the calling repository
+      id: checkout
+      shell: bash
+      env:
+        REF: ${{ inputs.ref }}
+      run: |
+        if [ ! -d .git ]; then
+          git init --quiet --initial-branch=main
+          git remote add origin "$RUNNER_TEMP/origin.git"
+        fi
+        git fetch --quiet origin
+        if git show-ref --verify --quiet "refs/remotes/origin/$REF"; then
+          git checkout --quiet --force -B "$REF" "refs/remotes/origin/$REF"
+        else
+          git checkout --quiet --force --detach "$REF"
+        fi
+        echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
