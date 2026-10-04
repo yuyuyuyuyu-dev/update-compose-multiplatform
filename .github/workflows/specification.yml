@@ -8,7 +8,7 @@ on:
 permissions: {}
 jobs:
   update-version-catalog:
-    name: GitHub App
+    name: should update Compose Multiplatform and its related libraries in the right combination
     permissions:
       contents: read
     uses: ./.github/workflows/specification-update-version-catalog.yml
@@ -17,7 +17,7 @@ jobs:
     secrets:
       app-private-key: fake-private-key
   update-yarn-lock:
-    name: GitHub App
+    name: update-yarn-lock
     permissions:
       contents: read
     uses: ./.github/workflows/specification-update-yarn-lock.yml
