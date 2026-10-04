@@ -862,13 +862,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test: should not enable auto-merge when it is not requested
+          - test: should not enable auto-merge when not requested
             auto-merge: disable
             merge-calls: "[]"
-          - test: should enable auto-merge with the merge method when it is requested
+          - test: should enable auto-merge with the merge method when requested
             auto-merge: merge
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--merge"]]'
-          - test: should enable auto-merge with the rebase method when it is requested
+          - test: should enable auto-merge with the rebase method when requested
             auto-merge: rebase
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--rebase"]]'
     steps:
