@@ -7,11 +7,29 @@ on:
   workflow_dispatch:
 permissions: {}
 jobs:
-  github-app:
+  update-version-catalog:
     name: GitHub App
     permissions:
       contents: read
-    uses: ./.github/workflows/specification-jobs.yml
+    uses: ./.github/workflows/specification-update-version-catalog.yml
+    with:
+      app-client-id: fake-client-id
+    secrets:
+      app-private-key: fake-private-key
+  update-yarn-lock:
+    name: GitHub App
+    permissions:
+      contents: read
+    uses: ./.github/workflows/specification-update-yarn-lock.yml
+    with:
+      app-client-id: fake-client-id
+    secrets:
+      app-private-key: fake-private-key
+  enable-auto-merge:
+    name: GitHub App
+    permissions:
+      contents: read
+    uses: ./.github/workflows/specification-enable-auto-merge.yml
     with:
       app-client-id: fake-client-id
     secrets:

@@ -1,0 +1,132 @@
+name: Specification for enabling auto-merge
+on:
+  workflow_call:
+    inputs:
+      app-client-id:
+        type: string
+        required: false
+    secrets:
+      token:
+        required: false
+      app-private-key:
+        required: false
+permissions: {}
+jobs:
+  enable-auto-merge:
+    name: should enable auto-merge when requested
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Arrange
+      - name: Check out the tests
+        uses: actions/checkout@v7
+        with:
+          path: .update-compose-multiplatform-test
+          sparse-checkout: test
+          persist-credentials: false
+      - name: Set up the calling repository and the fakes
+        uses: ./.update-compose-multiplatform-test/test/arrange
+      # Act
+      # check-inputs
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
+          persist-credentials: false
+      - name: Check the inputs
+        uses: ./.update-compose-multiplatform/.github/actions/check-inputs
+        with:
+          update-js-yarn-lock: false
+          update-wasm-yarn-lock: false
+          jdk-distribution-to-update-yarn-lock: ""
+          jdk-version-to-update-yarn-lock: ""
+          app-client-id: ${{ inputs.app-client-id }}
+          auto-merge: squash
+          token: ${{ secrets.token }}
+          app-private-key: ${{ secrets.app-private-key }}
+      # prepare
+      - name: Check out the repository
+        id: checkout
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
+          persist-credentials: false
+      - name: Update the version catalog and yarn.lock
+        uses: ./.update-compose-multiplatform/.github/actions/prepare
+        with:
+          update-js-yarn-lock: false
+          update-wasm-yarn-lock: false
+          jdk-distribution-to-update-yarn-lock: ""
+          jdk-version-to-update-yarn-lock: ""
+          maven-repository: http://127.0.0.1:8000/maven-central
+          changelog: http://127.0.0.1:8000/changelog/paired.md
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
+      - name: Upload the update
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/upload-artifact
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
+          if-no-files-found: error
+          retention-days: 1
+      # sync-pull-request
+      - name: Create a token for the app
+        id: app-token
+        if: inputs.app-client-id != ''
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/create-github-app-token
+        with:
+          client-id: ${{ inputs.app-client-id }}
+          private-key: ${{ secrets.app-private-key }}
+          permission-contents: write
+          permission-pull-requests: write
+      - name: Check out the repository
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
+        with:
+          ref: ${{ steps.checkout.outputs.commit }}
+          token: ${{ steps.app-token.outputs.token || secrets.token }}
+      - name: Check out the actions
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: |
+            .github/actions
+            scripts
+          persist-credentials: false
+      - name: Download the update
+        uses: ./.update-compose-multiplatform-test/test/fake/actions/download-artifact
+        with:
+          name: update-compose-multiplatform
+          path: ${{ runner.temp }}/update-compose-multiplatform
+      - name: Open, update or close the pull request
+        uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
+        with:
+          repository: octo-org/octo-app
+          base: main
+          update-directory: ${{ runner.temp }}/update-compose-multiplatform
+          token: ${{ steps.app-token.outputs.token || secrets.token }}
+          app-slug: ${{ steps.app-token.outputs.app-slug }}
+          auto-merge: squash
+          labels: ""
+      # Assert
+      - name: Verify the calls to gh that turn on auto-merge
+        run: |
+          jq -n '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]' > "$RUNNER_TEMP/expected-merge-calls.json"
+          jq -s '[.[] | select(.[0:2] == ["pr", "merge"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/merge-calls.json"
+          diff "$RUNNER_TEMP/expected-merge-calls.json" "$RUNNER_TEMP/merge-calls.json"
