@@ -1,0 +1,17 @@
+name: Move the major tag
+inputs:
+  release-tag:
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Move the major tag
+      shell: bash
+      env:
+        RELEASE_TAG: ${{ inputs.release-tag }}
+      run: |
+        if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+          echo "::error::$RELEASE_TAG is not a version such as v1.2.3, so no major tag is moved."
+          exit 1
+        fi
+        git push --force origin "refs/tags/$RELEASE_TAG:refs/tags/${RELEASE_TAG%%.*}"
