@@ -1,0 +1,19 @@
+name: Release
+on:
+  release:
+    types:
+      - released
+permissions: {}
+jobs:
+  move-major-tag:
+    name: Move the major tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out the release
+        uses: actions/checkout@v7
+      - name: Move the major tag
+        uses: ./.github/actions/move-major-tag
+        with:
+          release-tag: ${{ github.event.release.tag_name }}

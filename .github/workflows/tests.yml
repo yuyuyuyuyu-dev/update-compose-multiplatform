@@ -1160,3 +1160,139 @@ jobs:
             echo "::error::The pushed commit was written by $author."
             exit 1
           fi
+  move-major-tag:
+    name: ${{ matrix.test }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - test: should move the major tag to a new release of the same major version
+            release-tag: v1.9.2
+            outcome: success
+            tags: |
+              v1 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+              v1.9.2 New release
+          - test: should ignore prereleases when it looks for a newer release
+            release-tag: v1.9.1
+            outcome: success
+            tags: |
+              v1 New release
+              v1.9.0 Earlier release
+              v1.9.1 New release
+              v1.9.1-rc.1 Prerelease
+          - test: should treat v1.10.0 as newer than v1.9.0
+            release-tag: v1.10.0
+            outcome: success
+            tags: |
+              v1 New release
+              v1.10.0 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+          - test: should create the major tag for the first release of a major version
+            release-tag: v2.0.0
+            outcome: success
+            tags: |
+              v1 Earlier release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+              v2 New release
+              v2.0.0 New release
+          - test: should ignore other major versions when it looks for a newer release
+            release-tag: v0.9.1
+            outcome: success
+            tags: |
+              v0 New release
+              v0.9.1 New release
+              v1 Earlier release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+          - test: should fail without moving any tag when the same major version has a newer release
+            release-tag: v1.8.0
+            outcome: failure
+            tags: |
+              v1 Earlier release
+              v1.8.0 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+          - test: should fail without moving any tag when the release tag is a prerelease version
+            release-tag: v1.10.0-rc.1
+            outcome: failure
+            tags: |
+              v1 Earlier release
+              v1.10.0-rc.1 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+          - test: should fail without moving any tag when the release tag has no v prefix
+            release-tag: "1.9.2"
+            outcome: failure
+            tags: |
+              1.9.2 New release
+              v1 Earlier release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+          - test: should fail without moving any tag when the release tag has no patch version
+            release-tag: v1.10
+            outcome: failure
+            tags: |
+              v1 Earlier release
+              v1.10 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+    steps:
+      # Arrange
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          path: .update-compose-multiplatform
+          persist-credentials: false
+      - name: Create the repository with its release tags
+        env:
+          RELEASE_TAG: ${{ matrix.release-tag }}
+        run: |
+          git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
+          git init --quiet --initial-branch=main "$RUNNER_TEMP/fixture"
+          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --allow-empty --message "Earlier release"
+          git -C "$RUNNER_TEMP/fixture" tag v1.9.0
+          git -C "$RUNNER_TEMP/fixture" tag v1
+          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --allow-empty --message "Prerelease"
+          git -C "$RUNNER_TEMP/fixture" tag v1.9.1-rc.1
+          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --allow-empty --message "New release"
+          git -C "$RUNNER_TEMP/fixture" tag "$RELEASE_TAG"
+          git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main --tags
+      # Act
+      - name: Check out the release
+        env:
+          RELEASE_TAG: ${{ matrix.release-tag }}
+        run: |
+          git init --quiet --initial-branch=main
+          git remote add origin "$RUNNER_TEMP/origin.git"
+          git fetch --quiet --depth=1 origin "+refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+          git checkout --quiet --force "refs/tags/$RELEASE_TAG"
+      - name: Move the major tag
+        id: move
+        continue-on-error: true
+        uses: ./.update-compose-multiplatform/.github/actions/move-major-tag
+        with:
+          release-tag: ${{ matrix.release-tag }}
+      # Assert
+      - name: Verify the outcome of the move
+        env:
+          EXPECTED_OUTCOME: ${{ matrix.outcome }}
+          OUTCOME: ${{ steps.move.outcome }}
+        run: |
+          if [ "$OUTCOME" != "$EXPECTED_OUTCOME" ]; then
+            echo "::error::The move ended with $OUTCOME instead of $EXPECTED_OUTCOME."
+            exit 1
+          fi
+      - name: Verify the tags
+        env:
+          TAGS: ${{ matrix.tags }}
+        run: |
+          printf '%s' "$TAGS" > "$RUNNER_TEMP/expected-tags.txt"
+          git -C "$RUNNER_TEMP/origin.git" for-each-ref --format='%(refname:short) %(subject)' refs/tags > "$RUNNER_TEMP/tags.txt"
+          diff "$RUNNER_TEMP/expected-tags.txt" "$RUNNER_TEMP/tags.txt"

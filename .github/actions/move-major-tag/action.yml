@@ -1,0 +1,25 @@
+name: Move the major tag
+description: Moves the major tag, such as v1, to the release.
+inputs:
+  release-tag:
+    required: true
+runs:
+  using: composite
+  steps:
+    - name: Move the major tag
+      shell: bash
+      env:
+        RELEASE_TAG: ${{ inputs.release-tag }}
+      run: |
+        version='^v[0-9]+\.[0-9]+\.[0-9]+$'
+        if [[ ! "$RELEASE_TAG" =~ $version ]]; then
+          echo "::error::$RELEASE_TAG is not a version such as v1.2.3, so no major tag is moved."
+          exit 1
+        fi
+        major_tag="${RELEASE_TAG%%.*}"
+        newest_tag="$(git ls-remote --refs --tags --sort=version:refname origin "refs/tags/$major_tag.*" | cut -d / -f 3 | grep -E "$version" | tail -n 1)"
+        if [ "$newest_tag" != "$RELEASE_TAG" ]; then
+          echo "::error::$RELEASE_TAG is older than $newest_tag, so $major_tag is not moved."
+          exit 1
+        fi
+        git push --force origin "refs/tags/$RELEASE_TAG:refs/tags/$major_tag"
