@@ -1,4 +1,5 @@
 name: Move the major tag
+description: Moves the major tag, such as v1, to the release.
 inputs:
   release-tag:
     required: true

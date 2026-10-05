@@ -6,6 +6,3 @@ paths:
     ignore:
       - 'input "client-id" is not defined in action "actions/create-github-app-token@v3"'
       - 'missing input "app-id" which is required by action "actions/create-github-app-token@v3"'
-  .github/workflows/release.yml:
-    ignore:
-      - 'description is required in metadata of "Move the major tag" action'
