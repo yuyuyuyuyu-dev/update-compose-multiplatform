@@ -1170,41 +1170,79 @@ jobs:
       matrix:
         include:
           - test: should move the major tag to a new release of the same major version
-            release-tag: v1.1.0
+            release-tag: v1.9.2
             outcome: success
             tags: |
               v1 New release
-              v1.0.0 Earlier release
-              v1.1.0 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+              v1.9.2 New release
+          - test: should ignore prereleases when it looks for a newer release
+            release-tag: v1.9.1
+            outcome: success
+            tags: |
+              v1 New release
+              v1.9.0 Earlier release
+              v1.9.1 New release
+              v1.9.1-rc.1 Prerelease
+          - test: should treat v1.10.0 as newer than v1.9.0
+            release-tag: v1.10.0
+            outcome: success
+            tags: |
+              v1 New release
+              v1.10.0 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
           - test: should create the major tag for the first release of a major version
             release-tag: v2.0.0
             outcome: success
             tags: |
               v1 Earlier release
-              v1.0.0 Earlier release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
               v2 New release
               v2.0.0 New release
+          - test: should ignore other major versions when it looks for a newer release
+            release-tag: v0.9.1
+            outcome: success
+            tags: |
+              v0 New release
+              v0.9.1 New release
+              v1 Earlier release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
+          - test: should fail without moving any tag when the same major version has a newer release
+            release-tag: v1.8.0
+            outcome: failure
+            tags: |
+              v1 Earlier release
+              v1.8.0 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
           - test: should fail without moving any tag when the release tag is a prerelease version
-            release-tag: v1.1.0-rc.1
+            release-tag: v1.10.0-rc.1
             outcome: failure
             tags: |
               v1 Earlier release
-              v1.0.0 Earlier release
-              v1.1.0-rc.1 New release
+              v1.10.0-rc.1 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
           - test: should fail without moving any tag when the release tag has no v prefix
-            release-tag: "1.1.0"
+            release-tag: "1.9.2"
             outcome: failure
             tags: |
-              1.1.0 New release
+              1.9.2 New release
               v1 Earlier release
-              v1.0.0 Earlier release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
           - test: should fail without moving any tag when the release tag has no patch version
-            release-tag: v1.1
+            release-tag: v1.10
             outcome: failure
             tags: |
               v1 Earlier release
-              v1.0.0 Earlier release
-              v1.1 New release
+              v1.10 New release
+              v1.9.0 Earlier release
+              v1.9.1-rc.1 Prerelease
     steps:
       # Arrange
       - name: Check out the repository
@@ -1219,8 +1257,10 @@ jobs:
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           git init --quiet --initial-branch=main "$RUNNER_TEMP/fixture"
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --allow-empty --message "Earlier release"
-          git -C "$RUNNER_TEMP/fixture" tag v1.0.0
+          git -C "$RUNNER_TEMP/fixture" tag v1.9.0
           git -C "$RUNNER_TEMP/fixture" tag v1
+          git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --allow-empty --message "Prerelease"
+          git -C "$RUNNER_TEMP/fixture" tag v1.9.1-rc.1
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --allow-empty --message "New release"
           git -C "$RUNNER_TEMP/fixture" tag "$RELEASE_TAG"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main --tags
