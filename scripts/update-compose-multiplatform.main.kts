@@ -148,8 +148,7 @@ class Library(
 
 class Dependent(
     val description: String,
-    val owner: String,
-    val kind: String?,
+    val kind: String,
     val versionRef: String?,
 )
 
@@ -462,16 +461,21 @@ fun libraryKind(library: Library): String? =
 fun pluginKind(plugin: Plugin): String? = if (plugin.id == composeGroup) composeName else null
 
 fun dependents(catalog: VersionCatalog): List<Dependent> =
-    catalog.libraries.map {
-        Dependent("Library ${it.alias} (${it.group}:${it.name})", it.group, libraryKind(it), it.versionRef)
-    } + catalog.plugins.map { Dependent("Plugin ${it.alias} (${it.id})", it.id, pluginKind(it), it.versionRef) }
+    catalog.libraries.mapNotNull { library ->
+        libraryKind(library)?.let {
+            Dependent("Library ${library.alias} (${library.group}:${library.name})", it, library.versionRef)
+        }
+    } +
+        catalog.plugins.mapNotNull { plugin ->
+            pluginKind(plugin)?.let { Dependent("Plugin ${plugin.alias} (${plugin.id})", it, plugin.versionRef) }
+        }
 
 fun refProblems(
     dependents: List<Dependent>,
     refs: Map<String, List<String?>>,
 ): List<String> =
     dependents
-        .filter { it.kind != null && it.versionRef == null }
+        .filter { it.versionRef == null }
         .map { "${it.description} must take its version from [versions] with version.ref." } +
         refs
             .mapValues { (_, it) -> it.filterNotNull() }
@@ -488,38 +492,14 @@ fun sharingProblems(keys: Map<String, String>): List<String> =
             "${listed(kinds)} must take their versions from different keys, but share versions.$key."
         }
 
-fun borrowingProblems(
-    dependents: List<Dependent>,
-    keys: Map<String, String>,
-): List<String> =
-    dependents.filter { it.kind == null }.mapNotNull { dependent ->
-        val kinds = keys.filterValues { it == dependent.versionRef }.keys
-        val composeArtifact = dependent.owner == composeGroup || dependent.owner.startsWith("$composeGroup.")
-        when {
-            kinds.isEmpty() -> {
-                null
-            }
-
-            composeName in kinds && composeArtifact -> {
-                null
-            }
-
-            else -> {
-                "${dependent.description} must not take its version from versions.${dependent.versionRef}, " +
-                    "which is for ${listed(kinds.toList())}."
-            }
-        }
-    }
-
 fun versionKeys(catalog: VersionCatalog): Map<String, String> {
     val dependents = dependents(catalog)
     val refs =
         dependents
-            .filter { it.kind != null }
-            .groupBy({ it.kind.orEmpty() }, { it.versionRef })
+            .groupBy({ it.kind }, { it.versionRef })
             .mapValues { (_, it) -> it.distinct() }
     val keys = refs.mapNotNull { (kind, it) -> it.singleOrNull()?.let { key -> kind to key } }.toMap()
-    val problems = refProblems(dependents, refs) + sharingProblems(keys) + borrowingProblems(dependents, keys)
+    val problems = refProblems(dependents, refs) + sharingProblems(keys)
     check(problems.isEmpty()) { problems.joinToString("\n") }
     return keys
 }
