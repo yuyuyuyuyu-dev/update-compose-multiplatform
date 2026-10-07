@@ -1296,3 +1296,34 @@ jobs:
           printf '%s' "$TAGS" > "$RUNNER_TEMP/expected-tags.txt"
           git -C "$RUNNER_TEMP/origin.git" for-each-ref --format='%(refname:short) %(subject)' refs/tags > "$RUNNER_TEMP/tags.txt"
           diff "$RUNNER_TEMP/expected-tags.txt" "$RUNNER_TEMP/tags.txt"
+  report-shared-version-key:
+    name: should report only that material3 shares the version key of Compose Multiplatform when other Compose libraries use the key too
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # Arrange
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          path: .update-compose-multiplatform
+          persist-credentials: false
+      - name: Create the version catalog
+        run: |
+          mkdir gradle
+          cp .update-compose-multiplatform/test/catalog/with-material3-sharing-the-compose-multiplatform-key.toml gradle/libs.versions.toml
+      # Act
+      - name: Update the version catalog and yarn.lock
+        continue-on-error: true
+        run: |
+          kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts prepare \
+            --update-js-yarn-lock false \
+            --update-wasm-yarn-lock false \
+            --maven-repository http://127.0.0.1:8000/maven-central \
+            --changelog http://127.0.0.1:8000/changelog/paired.md \
+            --update-directory "$RUNNER_TEMP/update-compose-multiplatform" > "$RUNNER_TEMP/errors.txt"
+      # Assert
+      - name: Verify the errors
+        run: |
+          echo "::error::material3 and Compose Multiplatform must take their versions from different keys, but share versions.composeMultiplatform." > "$RUNNER_TEMP/expected-errors.txt"
+          diff "$RUNNER_TEMP/expected-errors.txt" "$RUNNER_TEMP/errors.txt"
