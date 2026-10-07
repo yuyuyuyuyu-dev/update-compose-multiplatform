@@ -493,20 +493,20 @@ fun borrowingProblems(
     keys: Map<String, String>,
 ): List<String> =
     dependents.filter { it.kind == null }.mapNotNull { dependent ->
-        val kind = keys.entries.firstOrNull { it.value == dependent.versionRef }?.key
+        val kinds = keys.filterValues { it == dependent.versionRef }.keys
         val composeArtifact = dependent.owner == composeGroup || dependent.owner.startsWith("$composeGroup.")
         when {
-            kind == null -> {
+            kinds.isEmpty() -> {
                 null
             }
 
-            kind == composeName && composeArtifact -> {
+            composeName in kinds && composeArtifact -> {
                 null
             }
 
             else -> {
                 "${dependent.description} must not take its version from versions.${dependent.versionRef}, " +
-                    "which is for $kind."
+                    "which is for ${listed(kinds.toList())}."
             }
         }
     }
