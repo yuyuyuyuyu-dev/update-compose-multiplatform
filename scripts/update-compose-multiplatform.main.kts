@@ -453,8 +453,8 @@ fun changelogSection(
 fun libraryKind(library: Library): String? =
     when {
         library.group == composeGroup && library.name == "compose-gradle-plugin" -> composeName
-        library.group == material3Group -> material3Name
-        library.group == adaptiveGroup -> adaptiveName
+        library.group == material3Group && library.name.startsWith("material3") -> material3Name
+        library.group == adaptiveGroup && library.name.startsWith("adaptive") -> adaptiveName
         else -> null
     }
 
@@ -572,7 +572,7 @@ fun updateVersionCatalog(releases: Releases): Preparation {
     val material3 = releases.pairedMaterial3(compose)
     val adaptiveArtifacts =
         catalog.libraries
-            .filter { it.group == adaptiveGroup }
+            .filter { libraryKind(it) == adaptiveName }
             .map { it.name }
             .distinct()
     val adaptive =
