@@ -42,12 +42,26 @@ jobs:
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
             waiting: ""
+          - test: should leave alone the libraries in the material3 and Material3 Adaptive groups whose names do not start with material3 or adaptive
+            catalog: with-other-libraries-in-the-material3-and-adaptive-groups.toml
+            changelog: paired.md
+            released: ""
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+            waiting: ""
           - test: should update a catalog that writes libraries with group and name
             catalog: libraries-with-group-and-name.toml
             changelog: paired.md
             released: ""
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+            waiting: ""
+          - test: should update a catalog where another library and plugin use the version key of Compose Multiplatform
+            catalog: with-another-library-and-plugin-on-the-compose-multiplatform-key.toml
+            changelog: paired.md
+            released: ""
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
             waiting: ""
           - test: should update without waiting for Material3 Adaptive when the catalog does not use it
             catalog: without-material3-adaptive.toml
@@ -93,6 +107,13 @@ jobs:
             waiting: ""
           - test: should fail without updating anything when the catalog does not use material3
             catalog: without-material3.toml
+            changelog: paired.md
+            released: ""
+            outcome: failure
+            title: ""
+            waiting: ""
+          - test: should fail without updating anything when material3 uses the version key of Compose Multiplatform
+            catalog: with-material3-on-the-compose-multiplatform-key.toml
             changelog: paired.md
             released: ""
             outcome: failure

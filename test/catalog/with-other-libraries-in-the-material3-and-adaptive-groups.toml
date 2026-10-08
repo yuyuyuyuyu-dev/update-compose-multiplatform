@@ -1,0 +1,15 @@
+[versions]
+composeMultiplatform = "1.9.0"
+material3 = "1.9.0-beta06"
+compose-multiplatform-adaptive = "1.2.0-alpha06"
+other-in-material3-group = "0.1.0"
+other-in-adaptive-group = "0.2.0"
+
+[libraries]
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "compose-multiplatform-adaptive" }
+other-in-material3-group = { module = "org.jetbrains.compose.material3:other", version.ref = "other-in-material3-group" }
+other-in-adaptive-group = { module = "org.jetbrains.compose.material3.adaptive:other", version.ref = "other-in-adaptive-group" }
+
+[plugins]
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
