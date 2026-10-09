@@ -8,8 +8,6 @@ inputs:
     required: false
   jdk-version-to-update-yarn-lock:
     required: false
-  maven-repository:
-    required: true
   changelog:
     required: true
   update-directory:
@@ -33,13 +31,11 @@ runs:
       env:
         UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}
         UPDATE_WASM_YARN_LOCK: ${{ inputs.update-wasm-yarn-lock }}
-        MAVEN_REPOSITORY: ${{ inputs.maven-repository }}
         CHANGELOG: ${{ inputs.changelog }}
         UPDATE_DIRECTORY: ${{ inputs.update-directory }}
       run: |
         kotlin "$GITHUB_ACTION_PATH/../../../scripts/update-compose-multiplatform.main.kts" prepare \
           --update-js-yarn-lock "$UPDATE_JS_YARN_LOCK" \
           --update-wasm-yarn-lock "$UPDATE_WASM_YARN_LOCK" \
-          --maven-repository "$MAVEN_REPOSITORY" \
           --changelog "$CHANGELOG" \
           --update-directory "$UPDATE_DIRECTORY"
