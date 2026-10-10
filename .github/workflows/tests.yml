@@ -23,102 +23,84 @@ jobs:
           - test: should update Compose Multiplatform along with the material3 paired with it
             catalog: without-material3-adaptive.toml
             changelog: paired.md
-            released: ""
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
             body: without-material3-adaptive.md
-            waiting: ""
           - test: should update the version keys that the libraries use, whatever their names
             catalog: other-version-keys.toml
             changelog: paired.md
-            released: ""
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
-            waiting: ""
           - test: should leave alone the Compose libraries that have versions of their own
             catalog: with-separately-versioned-compose-libraries.toml
             changelog: paired.md
-            released: ""
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
-            waiting: ""
           - test: should leave alone the libraries in the material3 and Material3 Adaptive groups whose names do not start with material3 or adaptive
             catalog: with-other-libraries-in-the-material3-and-adaptive-groups.toml
             changelog: paired.md
-            released: ""
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
-            waiting: ""
           - test: should update a catalog that writes libraries with group and name
             catalog: libraries-with-group-and-name.toml
             changelog: paired.md
-            released: ""
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
-            waiting: ""
           - test: should update a catalog where another library and plugin use the version key of Compose Multiplatform
             catalog: with-another-library-and-plugin-on-the-compose-multiplatform-key.toml
             changelog: paired.md
-            released: ""
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
-            waiting: ""
-          - test: should update without waiting for Material3 Adaptive when the catalog does not use it
+          - test: should update without reading Material3 Adaptive when the catalog does not use it
             catalog: without-material3-adaptive.toml
-            changelog: no-section.md
-            released: ""
+            changelog: no-adaptive.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1 and material3 to 1.10.0-alpha06"
-            waiting: ""
-          - test: should wait and say why when the CHANGELOG has no section within three days of the release
+          - test: should update to the stable release with the largest version when an older line was released after it
             catalog: with-material3-adaptive.toml
-            changelog: no-section.md
-            released: 1 day ago
+            changelog: older-line-released-last.md
             outcome: success
-            title: ""
-            waiting: The Compose Multiplatform CHANGELOG has no section for 1.10.1 yet.
-          - test: should fail without updating anything when the CHANGELOG still has no section three days after the release
-            catalog: with-material3-adaptive.toml
+            title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+          - test: should keep a Compose Multiplatform newer than the latest stable release and update the libraries paired with it
+            catalog: with-newer-compose-multiplatform.toml
+            changelog: paired.md
+            outcome: success
+            title: "build(deps): update material3 to 1.11.0-alpha01 and Material3 Adaptive to 1.3.0-alpha01"
+          - test: should fail without updating anything when the CHANGELOG has no section for the Compose Multiplatform that the catalog uses
+            catalog: with-newer-compose-multiplatform.toml
             changelog: no-section.md
-            released: "2026-01-15T00:00:00Z"
             outcome: failure
             title: ""
-            waiting: ""
-          - test: should wait and say why when Material3 Adaptive is not on Maven Central within three days of the release
+          - test: should fail without updating anything when the CHANGELOG lists no stable release
             catalog: with-material3-adaptive.toml
-            changelog: unpublished-adaptive.md
-            released: 1 day ago
-            outcome: success
-            title: ""
-            waiting: Material3 Adaptive 1.2.1, which the CHANGELOG pairs with Compose Multiplatform 1.10.1, is not on Maven Central yet for adaptive.
-          - test: should fail without updating anything when Material3 Adaptive is still not on Maven Central three days after the release
-            catalog: with-material3-adaptive.toml
-            changelog: unpublished-adaptive.md
-            released: "2026-01-15T00:00:00Z"
+            changelog: no-stable-release.md
             outcome: failure
             title: ""
-            waiting: ""
+          - test: should fail without updating anything when the CHANGELOG section has no version of Compose Multiplatform
+            catalog: with-material3-adaptive.toml
+            changelog: no-compose-multiplatform.md
+            outcome: failure
+            title: ""
+          - test: should fail without updating anything when the CHANGELOG section has no version of material3
+            catalog: with-material3-adaptive.toml
+            changelog: no-material3.md
+            outcome: failure
+            title: ""
           - test: should fail without updating anything when the CHANGELOG section has no version of Material3 Adaptive
             catalog: with-material3-adaptive.toml
             changelog: no-adaptive.md
-            released: ""
             outcome: failure
             title: ""
-            waiting: ""
           - test: should fail without updating anything when the catalog does not use material3
             catalog: without-material3.toml
             changelog: paired.md
-            released: ""
             outcome: failure
             title: ""
-            waiting: ""
           - test: should fail without updating anything when material3 uses the version key of Compose Multiplatform
             catalog: with-material3-on-the-compose-multiplatform-key.toml
             changelog: paired.md
-            released: ""
             outcome: failure
             title: ""
-            waiting: ""
     steps:
       # Arrange
       - name: Check out the repository
@@ -138,12 +120,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Set the release date of Compose Multiplatform 1.10.1
-        if: matrix.released != ''
-        env:
-          RELEASED: ${{ matrix.released }}
-        run: touch -d "$RELEASED" .update-compose-multiplatform/test/fake/maven-central/org/jetbrains/compose/compose-gradle-plugin/1.10.1/compose-gradle-plugin-1.10.1.pom
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -180,7 +157,6 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/${{ matrix.changelog }}
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
@@ -244,13 +220,6 @@ jobs:
             echo "::error::$BRANCH was pushed."
             exit 1
           fi
-      - name: Verify the reason for waiting
-        if: matrix.waiting != ''
-        env:
-          WAITING: ${{ matrix.waiting }}
-        run: |
-          printf '%s' "$WAITING" > "$RUNNER_TEMP/expected-waiting.txt"
-          diff "$RUNNER_TEMP/expected-waiting.txt" "$RUNNER_TEMP/update-compose-multiplatform/waiting.txt"
   look-up-committer:
     name: should look up the committer through the GitHub API (${{ matrix.credential }})
     runs-on: ubuntu-latest
@@ -296,7 +265,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -331,7 +300,6 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
@@ -413,7 +381,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -448,7 +416,6 @@ jobs:
           update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
           jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
@@ -514,7 +481,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -549,7 +516,6 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
@@ -685,7 +651,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -720,7 +686,6 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: temurin
           jdk-version-to-update-yarn-lock: "17"
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
@@ -789,7 +754,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -824,7 +789,6 @@ jobs:
           update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
           jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
@@ -905,7 +869,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -940,7 +904,6 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
@@ -1002,7 +965,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -1037,7 +1000,6 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: zulu
           jdk-version-to-update-yarn-lock: "21"
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
@@ -1108,7 +1070,7 @@ jobs:
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
           git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-      - name: Start the fake Maven Central and CHANGELOG
+      - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform/test/fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
           curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/
@@ -1143,7 +1105,6 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit

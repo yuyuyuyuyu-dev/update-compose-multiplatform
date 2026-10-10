@@ -74,7 +74,6 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          maven-repository: http://127.0.0.1:8000/maven-central
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Upload the update

@@ -12,9 +12,9 @@ _Changes since 1.10.1_
 
 | Library group | Coordinates | Based on Jetpack |
 |---------------|-------------|------------------|
-| Runtime | `org.jetbrains.compose.runtime:runtime*:1.10.2-rc01` | Runtime 1.10.2 |
+| Runtime | `org.jetbrains.compose.runtime:runtime*:1.10.2-rc01` | Runtime 1.10.2-rc01 |
 | Material3 | `org.jetbrains.compose.material3:material3*:1.10.0-alpha07` | Material3 1.5.0-alpha10 |
-| Material3 Adaptive | `org.jetbrains.compose.material3.adaptive:adaptive*:1.2.1-rc01` | Material3 Adaptive 1.2.1 |
+| Material3 Adaptive | `org.jetbrains.compose.material3.adaptive:adaptive*:1.2.1-rc01` | Material3 Adaptive 1.2.1-rc01 |
 
 ---
 
@@ -33,7 +33,7 @@ _Changes since 1.10.0_
 | Library group | Coordinates | Based on Jetpack |
 |---------------|-------------|------------------|
 | Runtime | `org.jetbrains.compose.runtime:runtime*:1.10.1` | Runtime 1.10.1 |
-| Material3 | `org.jetbrains.compose.material3:material3*:1.10.0-alpha05` | Material3 1.5.0-alpha08 |
+| Material3 | `org.jetbrains.compose.material3:material3*:1.10.0-alpha06` | Material3 1.5.0-alpha09 |
 
 ---
 

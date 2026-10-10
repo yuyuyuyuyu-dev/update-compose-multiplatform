@@ -24,10 +24,6 @@ _Changes since 1.10.0_
 
 ## Components
 
-### Gradle plugin
-
-`org.jetbrains.compose` version `1.10.1`
-
 ### Libraries
 
 | Library group | Coordinates | Based on Jetpack |
@@ -35,6 +31,26 @@ _Changes since 1.10.0_
 | Runtime | `org.jetbrains.compose.runtime:runtime*:1.10.1` | Runtime 1.10.1 |
 | Material3 | `org.jetbrains.compose.material3:material3*:1.10.0-alpha06` | Material3 1.5.0-alpha09 |
 | Material3 Adaptive | `org.jetbrains.compose.material3.adaptive:adaptive*:1.2.0` | Material3 Adaptive 1.2.0 |
+
+---
+
+# 1.11.0-alpha01 (January 2026)
+
+_Changes since 1.10.0_
+
+## Components
+
+### Gradle plugin
+
+`org.jetbrains.compose` version `1.11.0-alpha01`
+
+### Libraries
+
+| Library group | Coordinates | Based on Jetpack |
+|---------------|-------------|------------------|
+| Runtime | `org.jetbrains.compose.runtime:runtime*:1.11.0-alpha01` | Runtime 1.11.0-alpha01 |
+| Material3 | `org.jetbrains.compose.material3:material3*:1.11.0-alpha01` | Material3 1.6.0-alpha01 |
+| Material3 Adaptive | `org.jetbrains.compose.material3.adaptive:adaptive*:1.3.0-alpha01` | Material3 Adaptive 1.3.0-alpha01 |
 
 ---
 

@@ -13,7 +13,7 @@ runs:
         git -C "$RUNNER_TEMP/fixture" add --all
         git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
         git -C "$RUNNER_TEMP/fixture" push --quiet "$RUNNER_TEMP/origin.git" main
-    - name: Start the fake Maven Central and CHANGELOG
+    - name: Start the fake CHANGELOG
       shell: bash
       run: |
         "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_ACTION_PATH/../fake" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
