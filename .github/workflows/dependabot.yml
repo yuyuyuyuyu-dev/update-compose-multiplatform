@@ -1,0 +1,22 @@
+name: Dependabot
+on:
+  pull_request:
+permissions: {}
+jobs:
+  enable-auto-merge:
+    name: Enable auto-merge
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Read what the pull request updates
+        id: metadata
+        uses: dependabot/fetch-metadata@v3
+      - name: Enable auto-merge
+        if: contains(fromJSON('["version-update:semver-minor", "version-update:semver-patch"]'), steps.metadata.outputs.update-type)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PULL_REQUEST: ${{ github.event.pull_request.html_url }}
+        run: gh pr merge --auto --squash "$PULL_REQUEST"
