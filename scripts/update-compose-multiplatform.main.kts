@@ -583,14 +583,12 @@ fun setAutoMerge(
 fun createPullRequest(
     arguments: Arguments,
     directory: File,
-) {
+): String {
     val labels = arguments.text("labels")
     val labelOptions = if (labels.isEmpty()) emptyList() else listOf("--label", labels)
     val title = directory.resolve("title.txt").readText()
     val content = listOf("--title", title, "--body-file", directory.resolve("body.md").path) + labelOptions
-    val url = execute(listOf("gh", "pr", "create") + pullRequestTarget(arguments) + content)
-    val updateType = directory.resolve("update-type.txt").readText()
-    setAutoMerge(url, requestedAutoMerge(arguments, updateType))
+    return execute(listOf("gh", "pr", "create") + pullRequestTarget(arguments) + content)
 }
 
 fun openPullRequest(
@@ -598,13 +596,18 @@ fun openPullRequest(
     directory: File,
 ) {
     val title = directory.resolve("title.txt").readText()
+    val autoMerge = requestedAutoMerge(arguments, directory.resolve("update-type.txt").readText())
     commitChanges(title, directory.resolve("changes.patch"), arguments.text("app-slug"))
     pushBranch()
     val url = openPullRequestField("url", pullRequestTarget(arguments))
-    if (url != null) {
-        gh("pr", "edit", url, "--title", title, "--body-file", directory.resolve("body.md").path)
+    if (url == null) {
+        setAutoMerge(createPullRequest(arguments, directory), autoMerge)
     } else {
-        createPullRequest(arguments, directory)
+        val updateChanged = openPullRequestField("title", pullRequestTarget(arguments)) != title
+        gh("pr", "edit", url, "--title", title, "--body-file", directory.resolve("body.md").path)
+        if (updateChanged && autoMerge == null) {
+            setAutoMerge(url, null)
+        }
     }
 }
 

@@ -4,6 +4,7 @@
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -33,7 +34,7 @@ fun response(arguments: List<String>): String? {
         }
 
         command == "pr list" -> {
-            JsonArray(listOfNotNull(openPullRequest()?.let { buildJsonObject { put("url", it) } })).toString()
+            JsonArray(listOfNotNull(openPullRequest(arguments))).toString()
         }
 
         command == "pr edit" -> {
@@ -41,13 +42,7 @@ fun response(arguments: List<String>): String? {
         }
 
         command == "pr create" -> {
-            val repository =
-                arguments
-                    .zipWithNext()
-                    .firstOrNull { (name) -> name == "--repo" }
-                    ?.second
-                    .orEmpty()
-            "https://github.com/$repository/pull/1"
+            pullRequestUrl(arguments)
         }
 
         command == "pr view" -> {
@@ -65,7 +60,23 @@ fun response(arguments: List<String>): String? {
     }
 }
 
-fun openPullRequest(): String? = System.getenv("FAKE_GH_OPEN_PULL_REQUEST")?.ifEmpty { null }
+fun pullRequestUrl(arguments: List<String>): String {
+    val repository =
+        arguments
+            .zipWithNext()
+            .firstOrNull { (name) -> name == "--repo" }
+            ?.second
+            .orEmpty()
+    return "https://github.com/$repository/pull/1"
+}
+
+fun openPullRequest(arguments: List<String>): JsonObject? =
+    System.getenv("FAKE_GH_OPEN_PULL_REQUEST_TITLE")?.ifEmpty { null }?.let {
+        buildJsonObject {
+            put("url", pullRequestUrl(arguments))
+            put("title", it)
+        }
+    }
 
 fun autoMergeMethod(): String? = System.getenv("FAKE_GH_AUTO_MERGE_METHOD")?.ifEmpty { null }
 
