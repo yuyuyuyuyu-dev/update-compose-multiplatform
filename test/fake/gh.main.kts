@@ -3,6 +3,7 @@
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.11.0")
 
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -43,6 +44,10 @@ fun response(arguments: List<String>): String? {
                     ?.second
                     .orEmpty()
             "https://github.com/$repository/pull/1"
+        }
+
+        command == "pr view" -> {
+            buildJsonObject { put("autoMergeRequest", JsonNull) }.toString()
         }
 
         command == "pr merge" -> {

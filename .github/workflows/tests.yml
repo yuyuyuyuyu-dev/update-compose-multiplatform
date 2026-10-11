@@ -199,7 +199,8 @@ jobs:
             --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
             'if $title == "" then [] else [
               ["pr", "list", "--repo", $repository, "--head", $branch, "--base", $base, "--state", "open", "--json", "url"],
-              ["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body]
+              ["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body],
+              ["pr", "view", "https://github.com/\($repository)/pull/1", "--json", "autoMergeRequest"]
             ] end' > "$RUNNER_TEMP/expected-pull-request-calls.json"
           jq -s '[.[] | select(.[0] == "pr")]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/pull-request-calls.json"
           diff "$RUNNER_TEMP/expected-pull-request-calls.json" "$RUNNER_TEMP/pull-request-calls.json"
@@ -878,11 +879,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test: should disable auto-merge when not requested
+          - test: should not enable auto-merge when not requested
             catalog: with-material3-adaptive.toml
             auto-merge: disable
             auto-merge-update-types: ""
-            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
+            merge-calls: "[]"
           - test: should enable auto-merge with the merge method for a minor update when minor is listed
             catalog: with-material3-adaptive.toml
             auto-merge: merge
@@ -893,11 +894,11 @@ jobs:
             auto-merge: rebase
             auto-merge-update-types: minor, patch
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--rebase"]]'
-          - test: should disable auto-merge for a minor update when only patch is listed
+          - test: should not enable auto-merge for a minor update when only patch is listed
             catalog: with-material3-adaptive.toml
             auto-merge: squash
             auto-merge-update-types: patch
-            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
+            merge-calls: "[]"
           - test: should enable auto-merge for a patch update when patch is listed
             catalog: with-compose-multiplatform-one-patch-behind.toml
             auto-merge: squash
@@ -908,16 +909,16 @@ jobs:
             auto-merge: squash
             auto-merge-update-types: major
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
-          - test: should disable auto-merge for a major update when only minor and patch are listed
+          - test: should not enable auto-merge for a major update when only minor and patch are listed
             catalog: with-compose-multiplatform-one-major-behind.toml
             auto-merge: squash
             auto-merge-update-types: minor,patch
-            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
-          - test: should disable auto-merge when Compose Multiplatform itself is not updated
+            merge-calls: "[]"
+          - test: should not enable auto-merge when Compose Multiplatform itself is not updated
             catalog: with-newer-compose-multiplatform.toml
             auto-merge: squash
             auto-merge-update-types: major,minor,patch
-            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
+            merge-calls: "[]"
     steps:
       # Arrange
       - name: Check out the repository
@@ -991,7 +992,7 @@ jobs:
           auto-merge-update-types: ${{ matrix.auto-merge-update-types }}
           labels: ""
       # Assert
-      - name: Verify the calls to gh that turn auto-merge on or off
+      - name: Verify the calls to gh that turn on auto-merge
         env:
           MERGE_CALLS: ${{ matrix.merge-calls }}
         run: |

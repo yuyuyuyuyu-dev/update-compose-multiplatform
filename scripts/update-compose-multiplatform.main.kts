@@ -3,6 +3,7 @@
 @file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.11.0")
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -550,13 +551,29 @@ fun autoMergeUpdateTypes(arguments: Arguments): List<String> {
     return types.split(",").map(String::trim)
 }
 
-fun autoMergeOptions(
+fun requestedAutoMerge(
     arguments: Arguments,
     updateType: String?,
-): List<String> {
-    val method = arguments.text("auto-merge")
-    val enabled = method != "disable" && updateType in autoMergeUpdateTypes(arguments)
-    return if (enabled) listOf("--auto", "--$method") else listOf("--disable-auto")
+): String? = arguments.text("auto-merge").takeIf { it != "disable" && updateType in autoMergeUpdateTypes(arguments) }
+
+fun currentAutoMerge(url: String): String? {
+    val pullRequest = Json.parseToJsonElement(gh("pr", "view", url, "--json", "autoMergeRequest")).jsonObject
+    val request = pullRequest["autoMergeRequest"] as? JsonObject
+    return request
+        ?.get("mergeMethod")
+        ?.jsonPrimitive
+        ?.contentOrNull
+        ?.lowercase()
+}
+
+fun setAutoMerge(
+    url: String,
+    requested: String?,
+) {
+    if (requested != currentAutoMerge(url)) {
+        val options = requested?.let { listOf("--auto", "--$it") } ?: listOf("--disable-auto")
+        execute(listOf("gh", "pr", "merge", url) + options)
+    }
 }
 
 fun createPullRequest(
@@ -569,7 +586,7 @@ fun createPullRequest(
     val content = listOf("--title", title, "--body-file", directory.resolve("body.md").path) + labelOptions
     val url = execute(listOf("gh", "pr", "create") + pullRequestTarget(arguments) + content)
     val updateType = directory.resolve("update-type.txt").takeIf(File::exists)?.readText()
-    execute(listOf("gh", "pr", "merge", url) + autoMergeOptions(arguments, updateType))
+    setAutoMerge(url, requestedAutoMerge(arguments, updateType))
 }
 
 fun openPullRequest(
