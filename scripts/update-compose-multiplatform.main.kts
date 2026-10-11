@@ -106,7 +106,11 @@ class Version private constructor(
 
     val isStable: Boolean get() = order[3] == stages.size
 
-    fun firstDifference(other: Version): Int = order.zip(other.order).indexOfFirst { (mine, theirs) -> mine != theirs }
+    fun updateLevel(to: Version): Int {
+        val target = to.order.take(3)
+        val changed = order.zip(target).indexOfFirst { (mine, theirs) -> mine != theirs }
+        return if (changed >= 0) changed else target.indexOfLast { it != 0 }.coerceAtLeast(0)
+    }
 
     override fun compareTo(other: Version): Int =
         order.zip(other.order).map { (mine, theirs) -> mine.compareTo(theirs) }.firstOrNull { it != 0 } ?: 0
@@ -279,7 +283,7 @@ class Update(
 
 class CatalogUpdate(
     val updates: List<Update>,
-    val type: String?,
+    val type: String,
 ) {
     val changes: List<Update> = updates.filter { it.from != it.to }
 
@@ -468,7 +472,7 @@ fun updateVersionCatalog(changelog: Changelog): CatalogUpdate {
                     Update(adaptiveName, key, current, components.version(adaptiveName).toString())
                 },
             ),
-            updateTypes.getOrNull(current.firstDifference(release)),
+            updateTypes[current.updateLevel(release)],
         )
     if (update.changes.isNotEmpty()) {
         update.changes.forEach { catalog.setVersion(it.key, it.to) }
@@ -553,7 +557,7 @@ fun autoMergeUpdateTypes(arguments: Arguments): List<String> {
 
 fun requestedAutoMerge(
     arguments: Arguments,
-    updateType: String?,
+    updateType: String,
 ): String? = arguments.text("auto-merge").takeIf { it != "disable" && updateType in autoMergeUpdateTypes(arguments) }
 
 fun currentAutoMerge(url: String): String? {
@@ -585,7 +589,7 @@ fun createPullRequest(
     val title = directory.resolve("title.txt").readText()
     val content = listOf("--title", title, "--body-file", directory.resolve("body.md").path) + labelOptions
     val url = execute(listOf("gh", "pr", "create") + pullRequestTarget(arguments) + content)
-    val updateType = directory.resolve("update-type.txt").takeIf(File::exists)?.readText()
+    val updateType = directory.resolve("update-type.txt").readText()
     setAutoMerge(url, requestedAutoMerge(arguments, updateType))
 }
 
@@ -667,7 +671,7 @@ fun prepare(arguments: Arguments) {
     } else {
         val yarnLock = if (tasks.isEmpty()) "" else updateYarnLock(tasks)
         directory.resolve("title.txt").writeText(update.title)
-        update.type?.let { directory.resolve("update-type.txt").writeText(it) }
+        directory.resolve("update-type.txt").writeText(update.type)
         directory.resolve("body.md").writeText(pullRequestBody(update.updates) + yarnLock)
         saveChanges(directory.resolve("changes.patch"))
         println("The catalog now uses ${update.versions}.")

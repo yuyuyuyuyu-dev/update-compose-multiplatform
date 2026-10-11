@@ -928,13 +928,13 @@ jobs:
             open-pull-request: ""
             auto-merge-on-github: ""
             merge-calls: "[]"
-          - test: should not enable auto-merge when Compose Multiplatform itself is not updated
+          - test: should take the update type from the Compose Multiplatform version when only the paired libraries are updated
             catalog: with-newer-compose-multiplatform.toml
             auto-merge: squash
-            auto-merge-update-types: major,minor,patch
+            auto-merge-update-types: minor
             open-pull-request: ""
             auto-merge-on-github: ""
-            merge-calls: "[]"
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
           - test: should disable auto-merge when the new pull request has it and it is not requested
             catalog: with-material3-adaptive.toml
             auto-merge: disable
@@ -970,13 +970,13 @@ jobs:
             open-pull-request: ""
             auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
-          - test: should not enable auto-merge for an update from a prerelease to the stable release of the same number
+          - test: should take the update type from the stable release when the catalog uses a prerelease of the same number
             catalog: with-prerelease-of-the-latest-stable-release.toml
             auto-merge: squash
-            auto-merge-update-types: major,minor,patch
+            auto-merge-update-types: patch
             open-pull-request: ""
             auto-merge-on-github: ""
-            merge-calls: "[]"
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
     steps:
       # Arrange
       - name: Check out the repository
