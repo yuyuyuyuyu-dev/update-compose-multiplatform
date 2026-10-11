@@ -33,7 +33,11 @@ fun response(arguments: List<String>): String? {
         }
 
         command == "pr list" -> {
-            "[]"
+            JsonArray(listOfNotNull(openPullRequest()?.let { buildJsonObject { put("url", it) } })).toString()
+        }
+
+        command == "pr edit" -> {
+            null
         }
 
         command == "pr create" -> {
@@ -47,7 +51,8 @@ fun response(arguments: List<String>): String? {
         }
 
         command == "pr view" -> {
-            buildJsonObject { put("autoMergeRequest", JsonNull) }.toString()
+            val request = autoMergeMethod()?.let { buildJsonObject { put("mergeMethod", it) } }
+            buildJsonObject { put("autoMergeRequest", request ?: JsonNull) }.toString()
         }
 
         command == "pr merge" -> {
@@ -59,6 +64,10 @@ fun response(arguments: List<String>): String? {
         }
     }
 }
+
+fun openPullRequest(): String? = System.getenv("FAKE_GH_OPEN_PULL_REQUEST")?.ifEmpty { null }
+
+fun autoMergeMethod(): String? = System.getenv("FAKE_GH_AUTO_MERGE_METHOD")?.ifEmpty { null }
 
 fun fail(
     status: Int,
