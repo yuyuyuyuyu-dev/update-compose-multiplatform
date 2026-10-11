@@ -963,6 +963,20 @@ jobs:
             open-pull-request: https://github.com/octo-org/octo-app/pull/1
             auto-merge-on-github: ""
             merge-calls: "[]"
+          - test: should enable auto-merge for an update from a prerelease when the release it leads to is a patch update
+            catalog: with-prerelease-of-an-older-patch.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            open-pull-request: ""
+            auto-merge-on-github: ""
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
+          - test: should not enable auto-merge for an update from a prerelease to the stable release of the same number
+            catalog: with-prerelease-of-the-latest-stable-release.toml
+            auto-merge: squash
+            auto-merge-update-types: major,minor,patch
+            open-pull-request: ""
+            auto-merge-on-github: ""
+            merge-calls: "[]"
     steps:
       # Arrange
       - name: Check out the repository
