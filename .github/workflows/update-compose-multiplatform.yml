@@ -23,6 +23,9 @@ on:
         type: string
         required: false
         default: disable
+      auto-merge-update-types:
+        type: string
+        required: false
       labels:
         type: string
         required: false
@@ -62,6 +65,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ${{ inputs.jdk-version-to-update-yarn-lock }}
           app-client-id: ${{ inputs.app-client-id }}
           auto-merge: ${{ inputs.auto-merge }}
+          auto-merge-update-types: ${{ inputs.auto-merge-update-types }}
           token: ${{ secrets.token }}
           app-private-key: ${{ secrets.app-private-key }}
   prepare:
@@ -149,4 +153,5 @@ jobs:
           token: ${{ steps.app-token.outputs.token || secrets.token }}
           app-slug: ${{ steps.app-token.outputs.app-slug }}
           auto-merge: ${{ inputs.auto-merge }}
+          auto-merge-update-types: ${{ inputs.auto-merge-update-types }}
           labels: ${{ inputs.labels }}

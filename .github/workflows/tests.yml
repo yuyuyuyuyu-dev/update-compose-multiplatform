@@ -138,6 +138,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -174,6 +175,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the outcome of the update
@@ -283,6 +285,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ${{ matrix.app-client-id }}
           auto-merge: disable
+          auto-merge-update-types: ""
           token: ${{ matrix.token }}
           app-private-key: ${{ matrix.app-private-key }}
       - name: Check out the calling repository
@@ -315,6 +318,7 @@ jobs:
           token: ${{ matrix.app-token || matrix.token }}
           app-slug: ${{ matrix.app-slug }}
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the calls to gh that look up the committer
@@ -399,6 +403,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -431,6 +436,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the calls to gradlew
@@ -499,6 +505,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -531,6 +538,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ${{ matrix.labels }}
       # Assert
       - name: Verify the labels given to the new pull request
@@ -557,6 +565,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: neither a token nor an app
             token: ""
             app-client-id: ""
@@ -565,6 +574,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: an app client ID without its private key
             token: ""
             app-client-id: fake-client-id
@@ -573,6 +583,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: an app private key without its client ID
             token: ""
             app-client-id: ""
@@ -581,6 +592,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: a yarn.lock update without a JDK
             token: fake-token
             app-client-id: ""
@@ -589,6 +601,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: an unknown auto-merge method
             token: fake-token
             app-client-id: ""
@@ -597,6 +610,25 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: fast-forward
+            auto-merge-update-types: minor,patch
+          - problem: auto-merge without update types
+            token: fake-token
+            app-client-id: ""
+            app-private-key: ""
+            update-js-yarn-lock: false
+            jdk-distribution: ""
+            jdk-version: ""
+            auto-merge: squash
+            auto-merge-update-types: ""
+          - problem: an unknown auto-merge update type
+            token: fake-token
+            app-client-id: ""
+            app-private-key: ""
+            update-js-yarn-lock: false
+            jdk-distribution: ""
+            jdk-version: ""
+            auto-merge: squash
+            auto-merge-update-types: minor,security
     steps:
       # Arrange
       - name: Check out the repository
@@ -616,6 +648,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
           app-client-id: ${{ matrix.app-client-id }}
           auto-merge: ${{ matrix.auto-merge }}
+          auto-merge-update-types: ${{ matrix.auto-merge-update-types }}
           token: ${{ matrix.token }}
           app-private-key: ${{ matrix.app-private-key }}
       # Assert
@@ -669,6 +702,7 @@ jobs:
           jdk-version-to-update-yarn-lock: "17"
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -701,6 +735,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the JDK that ran Gradle
@@ -772,6 +807,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -804,6 +840,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the pushed yarn.lock files
@@ -841,15 +878,46 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - test: should not enable auto-merge when not requested
+          - test: should disable auto-merge when not requested
+            catalog: with-material3-adaptive.toml
             auto-merge: disable
-            merge-calls: "[]"
-          - test: should enable auto-merge with the merge method when requested
+            auto-merge-update-types: ""
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
+          - test: should enable auto-merge with the merge method for a minor update when minor is listed
+            catalog: with-material3-adaptive.toml
             auto-merge: merge
+            auto-merge-update-types: minor
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--merge"]]'
-          - test: should enable auto-merge with the rebase method when requested
+          - test: should enable auto-merge with the rebase method for a minor update when minor and patch are listed
+            catalog: with-material3-adaptive.toml
             auto-merge: rebase
+            auto-merge-update-types: minor, patch
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--rebase"]]'
+          - test: should disable auto-merge for a minor update when only patch is listed
+            catalog: with-material3-adaptive.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
+          - test: should enable auto-merge for a patch update when patch is listed
+            catalog: with-compose-multiplatform-one-patch-behind.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
+          - test: should enable auto-merge for a major update when major is listed
+            catalog: with-compose-multiplatform-one-major-behind.toml
+            auto-merge: squash
+            auto-merge-update-types: major
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
+          - test: should disable auto-merge for a major update when only minor and patch are listed
+            catalog: with-compose-multiplatform-one-major-behind.toml
+            auto-merge: squash
+            auto-merge-update-types: minor,patch
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
+          - test: should disable auto-merge when Compose Multiplatform itself is not updated
+            catalog: with-newer-compose-multiplatform.toml
+            auto-merge: squash
+            auto-merge-update-types: major,minor,patch
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
     steps:
       # Arrange
       - name: Check out the repository
@@ -859,7 +927,7 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: with-material3-adaptive.toml
+          CATALOG: ${{ matrix.catalog }}
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
@@ -887,6 +955,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ""
           auto-merge: ${{ matrix.auto-merge }}
+          auto-merge-update-types: ${{ matrix.auto-merge-update-types }}
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -919,9 +988,10 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: ${{ matrix.auto-merge }}
+          auto-merge-update-types: ${{ matrix.auto-merge-update-types }}
           labels: ""
       # Assert
-      - name: Verify the calls to gh that turn on auto-merge
+      - name: Verify the calls to gh that turn auto-merge on or off
         env:
           MERGE_CALLS: ${{ matrix.merge-calls }}
         run: |
@@ -983,6 +1053,7 @@ jobs:
           jdk-version-to-update-yarn-lock: "21"
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -1015,6 +1086,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the JDK that ran Gradle
@@ -1088,6 +1160,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ${{ matrix.app-client-id }}
           auto-merge: disable
+          auto-merge-update-types: ""
           token: ${{ matrix.token }}
           app-private-key: ${{ matrix.app-private-key }}
       - name: Check out the calling repository
@@ -1120,6 +1193,7 @@ jobs:
           token: ${{ matrix.app-token || matrix.token }}
           app-slug: ${{ matrix.app-slug }}
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the pull request that is opened

@@ -48,6 +48,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ${{ inputs.app-client-id }}
           auto-merge: squash
+          auto-merge-update-types: minor,patch
           token: ${{ secrets.token }}
           app-private-key: ${{ secrets.app-private-key }}
       # prepare
@@ -122,9 +123,10 @@ jobs:
           token: ${{ steps.app-token.outputs.token || secrets.token }}
           app-slug: ${{ steps.app-token.outputs.app-slug }}
           auto-merge: squash
+          auto-merge-update-types: minor,patch
           labels: ""
       # Assert
-      - name: Verify the calls to gh that turn on auto-merge
+      - name: Verify the calls to gh that turn auto-merge on or off
         run: |
           jq -n '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]' > "$RUNNER_TEMP/expected-merge-calls.json"
           jq -s '[.[] | select(.[0:2] == ["pr", "merge"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/merge-calls.json"

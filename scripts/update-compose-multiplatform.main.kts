@@ -26,6 +26,7 @@ val material3Name = "material3"
 val adaptiveName = "Material3 Adaptive"
 val branch = "chore/update-compose-multiplatform"
 val autoMergeMethods = setOf("disable", "squash", "merge", "rebase")
+val updateTypes = listOf("major", "minor", "patch")
 val componentRows =
     mapOf(
         composeName to Regex("""`org\.jetbrains\.compose` version `([^`]+)`"""),
@@ -54,6 +55,7 @@ fun main(arguments: Array<String>) {
                         "jdk-version-to-update-yarn-lock",
                         "app-client-id",
                         "auto-merge",
+                        "auto-merge-update-types",
                     ),
                     ::checkInputs,
                 ),
@@ -69,7 +71,15 @@ fun main(arguments: Array<String>) {
                 ),
             "sync-pull-request" to
                 Command(
-                    listOf("repository", "base", "update-directory", "app-slug", "auto-merge", "labels"),
+                    listOf(
+                        "repository",
+                        "base",
+                        "update-directory",
+                        "app-slug",
+                        "auto-merge",
+                        "auto-merge-update-types",
+                        "labels",
+                    ),
                     ::syncPullRequest,
                 ),
         )
@@ -94,6 +104,8 @@ class Version private constructor(
     val line: String get() = order.take(2).joinToString(".")
 
     val isStable: Boolean get() = order[3] == stages.size
+
+    fun firstDifference(other: Version): Int = order.zip(other.order).indexOfFirst { (mine, theirs) -> mine != theirs }
 
     override fun compareTo(other: Version): Int =
         order.zip(other.order).map { (mine, theirs) -> mine.compareTo(theirs) }.firstOrNull { it != 0 } ?: 0
@@ -266,6 +278,7 @@ class Update(
 
 class CatalogUpdate(
     val updates: List<Update>,
+    val type: String?,
 ) {
     val changes: List<Update> = updates.filter { it.from != it.to }
 
@@ -440,12 +453,10 @@ fun updateVersionCatalog(changelog: Changelog): CatalogUpdate {
             key to (catalog.version(key) ?: error("${catalogFile.path} has no versions.$key."))
         }
 
-    val release =
-        maxOf(
-            changelog.latestStable(),
-            Version.parse(currentCompose)
-                ?: error("versions.$composeKey = \"$currentCompose\" is not a version that this workflow can compare."),
-        )
+    val current =
+        Version.parse(currentCompose)
+            ?: error("versions.$composeKey = \"$currentCompose\" is not a version that this workflow can compare.")
+    val release = maxOf(changelog.latestStable(), current)
     val components = changelog.components(release)
     val update =
         CatalogUpdate(
@@ -456,6 +467,7 @@ fun updateVersionCatalog(changelog: Changelog): CatalogUpdate {
                     Update(adaptiveName, key, current, components.version(adaptiveName).toString())
                 },
             ),
+            updateTypes.getOrNull(current.firstDifference(release)),
         )
     if (update.changes.isNotEmpty()) {
         update.changes.forEach { catalog.setVersion(it.key, it.to) }
@@ -533,19 +545,31 @@ fun pushBranch() {
 fun pullRequestTarget(arguments: Arguments): List<String> =
     listOf("--repo", arguments.text("repository"), "--head", branch, "--base", arguments.text("base"))
 
+fun autoMergeUpdateTypes(arguments: Arguments): List<String> {
+    val types = arguments.text("auto-merge-update-types")
+    return types.split(",").map(String::trim)
+}
+
+fun autoMergeOptions(
+    arguments: Arguments,
+    updateType: String?,
+): List<String> {
+    val method = arguments.text("auto-merge")
+    val enabled = method != "disable" && updateType in autoMergeUpdateTypes(arguments)
+    return if (enabled) listOf("--auto", "--$method") else listOf("--disable-auto")
+}
+
 fun createPullRequest(
     arguments: Arguments,
-    title: String,
-    body: String,
+    directory: File,
 ) {
     val labels = arguments.text("labels")
     val labelOptions = if (labels.isEmpty()) emptyList() else listOf("--label", labels)
-    val content = listOf("--title", title, "--body-file", body) + labelOptions
+    val title = directory.resolve("title.txt").readText()
+    val content = listOf("--title", title, "--body-file", directory.resolve("body.md").path) + labelOptions
     val url = execute(listOf("gh", "pr", "create") + pullRequestTarget(arguments) + content)
-    val autoMerge = arguments.text("auto-merge")
-    if (autoMerge != "disable") {
-        gh("pr", "merge", url, "--auto", "--$autoMerge")
-    }
+    val updateType = directory.resolve("update-type.txt").takeIf(File::exists)?.readText()
+    execute(listOf("gh", "pr", "merge", url) + autoMergeOptions(arguments, updateType))
 }
 
 fun openPullRequest(
@@ -553,14 +577,13 @@ fun openPullRequest(
     directory: File,
 ) {
     val title = directory.resolve("title.txt").readText()
-    val body = directory.resolve("body.md").path
     commitChanges(title, directory.resolve("changes.patch"), arguments.text("app-slug"))
     pushBranch()
     val url = openPullRequestField("url", pullRequestTarget(arguments))
     if (url != null) {
-        gh("pr", "edit", url, "--title", title, "--body-file", body)
+        gh("pr", "edit", url, "--title", title, "--body-file", directory.resolve("body.md").path)
     } else {
-        createPullRequest(arguments, title, body)
+        createPullRequest(arguments, directory)
     }
 }
 
@@ -584,6 +607,7 @@ fun checkInputs(arguments: Arguments) {
     val jdkIsMissing =
         arguments.text("jdk-distribution-to-update-yarn-lock").isEmpty() ||
             arguments.text("jdk-version-to-update-yarn-lock").isEmpty()
+    val autoMerge = arguments.text("auto-merge")
     val problems =
         buildList {
             if (usesToken == usesApp || usesApp != hasSecret("APP_PRIVATE_KEY")) {
@@ -598,8 +622,14 @@ fun checkInputs(arguments: Arguments) {
                         "so pass jdk-distribution-to-update-yarn-lock and jdk-version-to-update-yarn-lock as well.",
                 )
             }
-            if (arguments.text("auto-merge") !in autoMergeMethods) {
+            if (autoMerge !in autoMergeMethods) {
                 add("auto-merge must be disable, squash, merge or rebase.")
+            }
+            if (autoMerge != "disable" && !updateTypes.containsAll(autoMergeUpdateTypes(arguments))) {
+                add(
+                    "auto-merge-update-types must list the update types to merge automatically, " +
+                        "such as minor,patch, unless auto-merge is disable.",
+                )
             }
         }
     check(problems.isEmpty()) { problems.joinToString("\n") }
@@ -620,6 +650,7 @@ fun prepare(arguments: Arguments) {
     } else {
         val yarnLock = if (tasks.isEmpty()) "" else updateYarnLock(tasks)
         directory.resolve("title.txt").writeText(update.title)
+        update.type?.let { directory.resolve("update-type.txt").writeText(it) }
         directory.resolve("body.md").writeText(pullRequestBody(update.updates) + yarnLock)
         saveChanges(directory.resolve("changes.patch"))
         println("The catalog now uses ${update.versions}.")
