@@ -6,7 +6,6 @@ A reusable workflow that updates Compose Multiplatform and its related libraries
 
 - [Why it was built](#why-it-was-built)
 - [What it does](#what-it-does)
-- [Prerequisites](#prerequisites)
 - [How to use](#how-to-use)
 - [License](#license)
 
@@ -18,15 +17,17 @@ I was maintaining my Compose Multiplatform apps with Dependabot, and learned tha
 
 It reads the [CHANGELOG](https://github.com/JetBrains/compose-multiplatform/blob/master/CHANGELOG.md) in the Compose Multiplatform repository on GitHub, updates the version catalog to match the latest stable release listed there, and opens a pull request. Optionally, it can also update yarn.lock and enable auto-merge.
 
-## Prerequisites
+## How to use
+
+### Prerequisites
 
 - A GitHub App that has read and write access to the contents and the pull requests of your repository, and is installed on your repository. The workflow opens the pull request as this app.
 - The client ID of the app, saved as a variable in your repository.
 - A private key of the app, saved as a secret in your repository.
 
-If you already have such an app, for example to enable auto-merge on Dependabot pull requests, you can use it here too. To set these up, follow steps 1 to 4 of [Authenticating with a GitHub App](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/making-authenticated-api-requests-with-a-github-app-in-a-github-actions-workflow#authenticating-with-a-github-app) in the GitHub documentation.
+If you already have such an app, for example to enable auto-merge on Dependabot pull requests, you can use it here too. To set these up, follow [Authenticating with a GitHub App](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/making-authenticated-api-requests-with-a-github-app-in-a-github-actions-workflow#authenticating-with-a-github-app) in the GitHub documentation.
 
-## How to use
+### Installation
 
 Add the following file to your repository as `.github/workflows/update-compose-multiplatform.yml`:
 
