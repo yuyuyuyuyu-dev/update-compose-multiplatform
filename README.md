@@ -11,7 +11,7 @@ A reusable workflow that updates Compose Multiplatform and its related libraries
 
 ## Why it was built
 
-I was maintaining my Compose Multiplatform apps with Dependabot, and the tests broke. I had AI deal with it, and the sessions split neatly in half by repository: some simply followed my instructions and some did not. Persuading them myself was a hassle, so I had the AIs hold a meeting with each other, and they ended up concluding that my instructions would cause a problem. Shutting them up was a hassle too, so I had them build something that removes the problem instead.
+I was maintaining my Compose Multiplatform apps with Dependabot, and one day the tests started to fail. I asked AI to handle it in each repository, and the sessions split evenly in two: half followed my instructions as given, and half raised concerns about them. Rather than work through the disagreement in every repository myself, I let the sessions discuss it with each other, and they concluded that, since JetBrains publishes a table of the versions that go together, the versions should follow that table. Following the official guidance seemed reasonable to me. But doing so separately in each repository seemed wasteful, so I had them build a reusable workflow in a repository of its own.
 
 ## What it does
 
