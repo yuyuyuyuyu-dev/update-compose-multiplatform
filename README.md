@@ -11,7 +11,7 @@ A reusable workflow that updates Compose Multiplatform and its related libraries
 
 ## Why it was built
 
-I was maintaining my Compose Multiplatform apps with Dependabot, and one day the tests started to fail. I asked AI to handle it in each repository, and the sessions split evenly in two: half followed my instructions as given, and half raised concerns about them. Rather than work through the disagreement in every repository myself, I let the sessions discuss it with each other, and they concluded that, since JetBrains publishes a table of the versions that go together, the versions should follow that table. Following the official guidance seemed reasonable to me. But doing so separately in each repository seemed wasteful, so I had them build a reusable workflow in a repository of its own.
+I was maintaining my Compose Multiplatform apps with Dependabot, and learned that simply bumping each library to its latest version does not work: the versions of the libraries around Compose Multiplatform have to be chosen to match Compose Multiplatform itself. Matching them by hand on every update was tedious, so I built a workflow just for that.
 
 ## What it does
 
