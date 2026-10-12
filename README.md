@@ -63,7 +63,6 @@ jobs:
       app-client-id: ${{ vars.UPDATE_COMPOSE_MULTIPLATFORM_APP_CLIENT_ID }}
       auto-merge: squash
       auto-merge-update-types: minor,patch
-      labels: dependencies
     secrets:
       app-private-key: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_APP_PRIVATE_KEY }}
 ```
@@ -81,7 +80,6 @@ The app needs read and write access to the contents and the pull requests of you
 | `app-client-id` | | The client ID of the GitHub App that opens the pull request. Pass it together with the `app-private-key` secret. |
 | `auto-merge` | `disable` | The merge method to enable auto-merge with: `squash`, `merge` or `rebase`. `disable` leaves auto-merge off. |
 | `auto-merge-update-types` | | The update types of Compose Multiplatform to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`. |
-| `labels` | | The labels to add to the pull request when it is opened, separated by commas. |
 
 ### Secrets
 
