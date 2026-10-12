@@ -1,23 +1,95 @@
 # update-compose-multiplatform
 
-Compose Multiplatformとその関連ライブラリを正しい組み合わせで更新するための再利用可能なワークフロー。
+A reusable workflow that updates Compose Multiplatform and its related libraries in the right combination.
 
-## 目次
+## Table of contents
 
-TODO
+- [Why I made this](#why-i-made-this)
+- [What it does](#what-it-does)
+- [How to use](#how-to-use)
+  - [Inputs](#inputs)
+  - [Secrets](#secrets)
+- [License](#license)
 
-## なぜ作ったのか
+## Why I made this
 
-Compose Multiplatformで作ったアプリたちのメンテナンスをDependabotで行っていたらテストがコケて、AIに対応してもらっていたらリポジトリによって私の指示に素直に従うセッションと従わないセッションで綺麗に半々で分かれて、自分で説得するのは面倒だからAI同士で会議させたら最終的に私の指示だと問題があるという結論になっていて、黙らせるのが面倒だったのでその問題を解消するためのものを作らせることにしました。
+I was maintaining my Compose Multiplatform apps with Dependabot, and the tests broke. I had AI deal with it, and the sessions split neatly in half by repository: some simply followed my instructions and some did not. Persuading them myself was a hassle, so I had the AIs hold a meeting with each other, and they ended up concluding that my instructions would cause a problem. Shutting them up was a hassle too, so I had them build something that removes the problem instead.
 
-## 何をするのか
+## What it does
 
-TODO: まずはどの粒度で書くかを決める
+TODO: decide how much detail to write first
 
 ## How to use
 
-TODO
+Call the workflow from a workflow in your repository, and give it either a token or a GitHub App to open the pull request with.
 
-## ライセンス
+With a personal access token:
 
-TODO
+```yaml
+name: Update Compose Multiplatform
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  update-compose-multiplatform:
+    permissions:
+      contents: read
+    uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@v1
+    secrets:
+      token: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_TOKEN }}
+```
+
+With a GitHub App, and with every option turned on:
+
+```yaml
+name: Update Compose Multiplatform
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  update-compose-multiplatform:
+    permissions:
+      contents: read
+    uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@v1
+    with:
+      update-js-yarn-lock: true
+      update-wasm-yarn-lock: true
+      jdk-distribution-to-update-yarn-lock: temurin
+      jdk-version-to-update-yarn-lock: "21"
+      app-client-id: ${{ vars.UPDATE_COMPOSE_MULTIPLATFORM_APP_CLIENT_ID }}
+      auto-merge: squash
+      auto-merge-update-types: minor,patch
+      labels: dependencies
+    secrets:
+      app-private-key: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_APP_PRIVATE_KEY }}
+```
+
+The token or the app needs read and write access to the contents and the pull requests of your repository. The `GITHUB_TOKEN` cannot be used, because pull requests opened with it do not run workflows.
+
+### Inputs
+
+| Name | Default | Description |
+| --- | --- | --- |
+| `update-js-yarn-lock` | `false` | Set to `true` to update `kotlin-js-store/yarn.lock` with `./gradlew kotlinUpgradeYarnLock`. |
+| `update-wasm-yarn-lock` | `false` | Set to `true` to update `kotlin-js-store/wasm/yarn.lock` with `./gradlew kotlinWasmUpgradeYarnLock`. |
+| `jdk-distribution-to-update-yarn-lock` | | The JDK distribution to run Gradle on, as [actions/setup-java](https://github.com/actions/setup-java) names it. Required when yarn.lock is updated. |
+| `jdk-version-to-update-yarn-lock` | | The JDK version to run Gradle on. Required when yarn.lock is updated. |
+| `app-client-id` | | The client ID of the GitHub App that opens the pull request. Pass it together with the `app-private-key` secret, instead of the `token` secret. |
+| `auto-merge` | `disable` | The merge method to enable auto-merge with: `squash`, `merge` or `rebase`. `disable` leaves auto-merge off. |
+| `auto-merge-update-types` | | The update types of Compose Multiplatform to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`. |
+| `labels` | | The labels to add to the pull request when it is opened, separated by commas. |
+
+### Secrets
+
+| Name | Description |
+| --- | --- |
+| `token` | A token that belongs to a user, such as a personal access token. Pass it instead of `app-client-id` and `app-private-key`. |
+| `app-private-key` | The private key of the GitHub App that opens the pull request. Pass it together with the `app-client-id` input. |
+
+## License
+
+[MIT](LICENSE)
