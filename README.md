@@ -44,15 +44,15 @@ jobs:
       contents: read
     uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@<version>
     with:
-      app-client-id: ${{ vars.PULL_REQUEST_APP_CLIENT_ID }}
+      app-client-id: ${{ vars.<PULL_REQUEST_APP_CLIENT_ID> }}
     secrets:
-      app-private-key: ${{ secrets.PULL_REQUEST_APP_PRIVATE_KEY }}
+      app-private-key: ${{ secrets.<PULL_REQUEST_APP_PRIVATE_KEY> }}
 ```
 
 In the file, replace:
 
 - `<version>` with the version of this workflow to use, such as `v1`.
-- `PULL_REQUEST_APP_CLIENT_ID` and `PULL_REQUEST_APP_PRIVATE_KEY` with the names of your variable and your secret.
+- `<PULL_REQUEST_APP_CLIENT_ID>` and `<PULL_REQUEST_APP_PRIVATE_KEY>` with the names of your variable and your secret.
 
 The file runs the workflow every day at 7:31 UTC. To run it at another time, see how to write the schedule in [the GitHub Actions documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). Each run opens a pull request when an update is available.
 
@@ -66,7 +66,7 @@ To update yarn.lock or enable auto-merge as well, add inputs under `with` in the
       update-wasm-yarn-lock: true
       jdk-distribution-to-update-yarn-lock: temurin
       jdk-version-to-update-yarn-lock: "21"
-      app-client-id: ${{ vars.PULL_REQUEST_APP_CLIENT_ID }}
+      app-client-id: ${{ vars.<PULL_REQUEST_APP_CLIENT_ID> }}
       auto-merge: squash
       auto-merge-update-types: minor,patch
 ```
