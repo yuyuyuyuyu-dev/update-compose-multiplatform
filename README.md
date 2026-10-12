@@ -4,12 +4,12 @@ A reusable workflow that updates Compose Multiplatform and its related libraries
 
 ## Table of contents
 
-- [Why I made this](#why-i-made-this)
+- [Why it exists](#why-it-exists)
 - [What it does](#what-it-does)
 - [How to use](#how-to-use)
 - [License](#license)
 
-## Why I made this
+## Why it exists
 
 I was maintaining my Compose Multiplatform apps with Dependabot, and the tests broke. I had AI deal with it, and the sessions split neatly in half by repository: some simply followed my instructions and some did not. Persuading them myself was a hassle, so I had the AIs hold a meeting with each other, and they ended up concluding that my instructions would cause a problem. Shutting them up was a hassle too, so I had them build something that removes the problem instead.
 
