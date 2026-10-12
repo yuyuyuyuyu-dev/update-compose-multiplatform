@@ -19,9 +19,9 @@ It reads the [CHANGELOG](https://github.com/JetBrains/compose-multiplatform/blob
 
 ## How to use
 
-Call the workflow from a workflow in your repository, and give it either a token or a GitHub App to open the pull request with. In the workflows below, replace `<version>` with the version to use, such as `v1`.
+Call the workflow from a workflow in your repository, and give it a GitHub App to open the pull request with. In the workflows below, replace `<version>` with the version to use, such as `v1`.
 
-With a personal access token:
+With the required settings only:
 
 ```yaml
 name: Update Compose Multiplatform
@@ -35,11 +35,13 @@ jobs:
     permissions:
       contents: read
     uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@<version>
+    with:
+      app-client-id: ${{ vars.UPDATE_COMPOSE_MULTIPLATFORM_APP_CLIENT_ID }}
     secrets:
-      token: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_TOKEN }}
+      app-private-key: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_APP_PRIVATE_KEY }}
 ```
 
-With a GitHub App, and with every option turned on:
+With every option turned on:
 
 ```yaml
 name: Update Compose Multiplatform
@@ -66,7 +68,7 @@ jobs:
       app-private-key: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_APP_PRIVATE_KEY }}
 ```
 
-The token or the app needs read and write access to the contents and the pull requests of your repository. The `GITHUB_TOKEN` cannot be used, because pull requests opened with it do not run workflows.
+The app needs read and write access to the contents and the pull requests of your repository.
 
 ### Inputs
 
@@ -76,7 +78,7 @@ The token or the app needs read and write access to the contents and the pull re
 | `update-wasm-yarn-lock` | `false` | Set to `true` to update `kotlin-js-store/wasm/yarn.lock` with `./gradlew kotlinWasmUpgradeYarnLock`. |
 | `jdk-distribution-to-update-yarn-lock` | | The JDK distribution to run Gradle on, as [actions/setup-java](https://github.com/actions/setup-java) names it. Required when yarn.lock is updated. |
 | `jdk-version-to-update-yarn-lock` | | The JDK version to run Gradle on. Required when yarn.lock is updated. |
-| `app-client-id` | | The client ID of the GitHub App that opens the pull request. Pass it together with the `app-private-key` secret, instead of the `token` secret. |
+| `app-client-id` | | The client ID of the GitHub App that opens the pull request. Pass it together with the `app-private-key` secret. |
 | `auto-merge` | `disable` | The merge method to enable auto-merge with: `squash`, `merge` or `rebase`. `disable` leaves auto-merge off. |
 | `auto-merge-update-types` | | The update types of Compose Multiplatform to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`. |
 | `labels` | | The labels to add to the pull request when it is opened, separated by commas. |
@@ -85,7 +87,6 @@ The token or the app needs read and write access to the contents and the pull re
 
 | Name | Description |
 | --- | --- |
-| `token` | A token that belongs to a user, such as a personal access token. Pass it instead of `app-client-id` and `app-private-key`. |
 | `app-private-key` | The private key of the GitHub App that opens the pull request. Pass it together with the `app-client-id` input. |
 
 ## License
