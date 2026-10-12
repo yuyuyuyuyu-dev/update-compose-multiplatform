@@ -12,6 +12,8 @@ inputs:
     required: false
   auto-merge:
     required: true
+  auto-merge-update-types:
+    required: false
   token:
     required: false
   app-private-key:
@@ -30,6 +32,7 @@ runs:
         JDK_VERSION_TO_UPDATE_YARN_LOCK: ${{ inputs.jdk-version-to-update-yarn-lock }}
         APP_CLIENT_ID: ${{ inputs.app-client-id }}
         AUTO_MERGE: ${{ inputs.auto-merge }}
+        AUTO_MERGE_UPDATE_TYPES: ${{ inputs.auto-merge-update-types }}
       run: |
         kotlin "$GITHUB_ACTION_PATH/../../../scripts/update-compose-multiplatform.main.kts" check-inputs \
           --update-js-yarn-lock "$UPDATE_JS_YARN_LOCK" \
@@ -37,4 +40,5 @@ runs:
           --jdk-distribution-to-update-yarn-lock "$JDK_DISTRIBUTION_TO_UPDATE_YARN_LOCK" \
           --jdk-version-to-update-yarn-lock "$JDK_VERSION_TO_UPDATE_YARN_LOCK" \
           --app-client-id "$APP_CLIENT_ID" \
-          --auto-merge "$AUTO_MERGE"
+          --auto-merge "$AUTO_MERGE" \
+          --auto-merge-update-types "$AUTO_MERGE_UPDATE_TYPES"

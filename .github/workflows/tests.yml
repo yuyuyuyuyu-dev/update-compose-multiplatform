@@ -138,6 +138,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -174,6 +175,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the outcome of the update
@@ -197,7 +199,8 @@ jobs:
             --arg body "$RUNNER_TEMP/update-compose-multiplatform/body.md" \
             'if $title == "" then [] else [
               ["pr", "list", "--repo", $repository, "--head", $branch, "--base", $base, "--state", "open", "--json", "url"],
-              ["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body]
+              ["pr", "create", "--repo", $repository, "--head", $branch, "--base", $base, "--title", $title, "--body-file", $body],
+              ["pr", "view", "https://github.com/\($repository)/pull/1", "--json", "autoMergeRequest"]
             ] end' > "$RUNNER_TEMP/expected-pull-request-calls.json"
           jq -s '[.[] | select(.[0] == "pr")]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/pull-request-calls.json"
           diff "$RUNNER_TEMP/expected-pull-request-calls.json" "$RUNNER_TEMP/pull-request-calls.json"
@@ -283,6 +286,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ${{ matrix.app-client-id }}
           auto-merge: disable
+          auto-merge-update-types: ""
           token: ${{ matrix.token }}
           app-private-key: ${{ matrix.app-private-key }}
       - name: Check out the calling repository
@@ -315,6 +319,7 @@ jobs:
           token: ${{ matrix.app-token || matrix.token }}
           app-slug: ${{ matrix.app-slug }}
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the calls to gh that look up the committer
@@ -399,6 +404,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -431,6 +437,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the calls to gradlew
@@ -499,6 +506,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -531,6 +539,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ${{ matrix.labels }}
       # Assert
       - name: Verify the labels given to the new pull request
@@ -557,6 +566,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: neither a token nor an app
             token: ""
             app-client-id: ""
@@ -565,6 +575,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: an app client ID without its private key
             token: ""
             app-client-id: fake-client-id
@@ -573,6 +584,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: an app private key without its client ID
             token: ""
             app-client-id: ""
@@ -581,6 +593,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: a yarn.lock update without a JDK
             token: fake-token
             app-client-id: ""
@@ -589,6 +602,7 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: disable
+            auto-merge-update-types: ""
           - problem: an unknown auto-merge method
             token: fake-token
             app-client-id: ""
@@ -597,6 +611,25 @@ jobs:
             jdk-distribution: ""
             jdk-version: ""
             auto-merge: fast-forward
+            auto-merge-update-types: minor,patch
+          - problem: auto-merge without update types
+            token: fake-token
+            app-client-id: ""
+            app-private-key: ""
+            update-js-yarn-lock: false
+            jdk-distribution: ""
+            jdk-version: ""
+            auto-merge: squash
+            auto-merge-update-types: ""
+          - problem: an unknown auto-merge update type
+            token: fake-token
+            app-client-id: ""
+            app-private-key: ""
+            update-js-yarn-lock: false
+            jdk-distribution: ""
+            jdk-version: ""
+            auto-merge: squash
+            auto-merge-update-types: minor,security
     steps:
       # Arrange
       - name: Check out the repository
@@ -616,6 +649,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
           app-client-id: ${{ matrix.app-client-id }}
           auto-merge: ${{ matrix.auto-merge }}
+          auto-merge-update-types: ${{ matrix.auto-merge-update-types }}
           token: ${{ matrix.token }}
           app-private-key: ${{ matrix.app-private-key }}
       # Assert
@@ -669,6 +703,7 @@ jobs:
           jdk-version-to-update-yarn-lock: "17"
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -701,6 +736,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the JDK that ran Gradle
@@ -772,6 +808,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -804,6 +841,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the pushed yarn.lock files
@@ -842,14 +880,124 @@ jobs:
       matrix:
         include:
           - test: should not enable auto-merge when not requested
+            catalog: with-material3-adaptive.toml
             auto-merge: disable
+            auto-merge-update-types: ""
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
             merge-calls: "[]"
-          - test: should enable auto-merge with the merge method when requested
+          - test: should enable auto-merge with the merge method for a minor update when minor is listed
+            catalog: with-material3-adaptive.toml
             auto-merge: merge
+            auto-merge-update-types: minor
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--merge"]]'
-          - test: should enable auto-merge with the rebase method when requested
+          - test: should enable auto-merge with the rebase method for a minor update when minor and patch are listed
+            catalog: with-material3-adaptive.toml
             auto-merge: rebase
+            auto-merge-update-types: minor, patch
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--rebase"]]'
+          - test: should not enable auto-merge for a minor update when only patch is listed
+            catalog: with-material3-adaptive.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
+            merge-calls: "[]"
+          - test: should enable auto-merge for a patch update when patch is listed
+            catalog: with-compose-multiplatform-one-patch-behind.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
+          - test: should enable auto-merge for a major update when major is listed
+            catalog: with-compose-multiplatform-one-major-behind.toml
+            auto-merge: squash
+            auto-merge-update-types: major
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
+          - test: should not enable auto-merge for a major update when only minor and patch are listed
+            catalog: with-compose-multiplatform-one-major-behind.toml
+            auto-merge: squash
+            auto-merge-update-types: minor,patch
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
+            merge-calls: "[]"
+          - test: should take the update type from the Compose Multiplatform version when only the paired libraries are updated
+            catalog: with-newer-compose-multiplatform.toml
+            auto-merge: squash
+            auto-merge-update-types: minor
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
+          - test: should disable auto-merge when the new pull request has it and it is not requested
+            catalog: with-material3-adaptive.toml
+            auto-merge: disable
+            auto-merge-update-types: ""
+            open-pull-request-title: ""
+            auto-merge-on-github: SQUASH
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
+          - test: should leave auto-merge alone when the new pull request already has the requested method
+            catalog: with-material3-adaptive.toml
+            auto-merge: squash
+            auto-merge-update-types: minor
+            open-pull-request-title: ""
+            auto-merge-on-github: SQUASH
+            merge-calls: "[]"
+          - test: should change the merge method when the new pull request has another one
+            catalog: with-material3-adaptive.toml
+            auto-merge: merge
+            auto-merge-update-types: minor
+            open-pull-request-title: ""
+            auto-merge-on-github: SQUASH
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--merge"]]'
+          - test: should not enable auto-merge when the pull request is already open
+            catalog: with-material3-adaptive.toml
+            auto-merge: squash
+            auto-merge-update-types: minor
+            open-pull-request-title: "build(deps): update Compose Multiplatform to 1.9.3"
+            auto-merge-on-github: ""
+            merge-calls: "[]"
+          - test: should disable auto-merge when an open pull request changes to an update type that is not listed
+            catalog: with-material3-adaptive.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            open-pull-request-title: "build(deps): update Compose Multiplatform to 1.9.3"
+            auto-merge-on-github: SQUASH
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
+          - test: should leave auto-merge alone when an open pull request changes to an update type that is listed
+            catalog: with-material3-adaptive.toml
+            auto-merge: squash
+            auto-merge-update-types: minor
+            open-pull-request-title: "build(deps): update Compose Multiplatform to 1.9.3"
+            auto-merge-on-github: SQUASH
+            merge-calls: "[]"
+          - test: should leave auto-merge alone when an open pull request still holds the same update
+            catalog: with-material3-adaptive.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            open-pull-request-title: "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0"
+            auto-merge-on-github: SQUASH
+            merge-calls: "[]"
+          - test: should enable auto-merge for an update from a prerelease when the release it leads to is a patch update
+            catalog: with-prerelease-of-an-older-patch.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
+          - test: should take the update type from the stable release when the catalog uses a prerelease of the same number
+            catalog: with-prerelease-of-the-latest-stable-release.toml
+            auto-merge: squash
+            auto-merge-update-types: patch
+            open-pull-request-title: ""
+            auto-merge-on-github: ""
+            merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
     steps:
       # Arrange
       - name: Check out the repository
@@ -859,7 +1007,7 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: with-material3-adaptive.toml
+          CATALOG: ${{ matrix.catalog }}
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
@@ -887,6 +1035,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ""
           auto-merge: ${{ matrix.auto-merge }}
+          auto-merge-update-types: ${{ matrix.auto-merge-update-types }}
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -919,7 +1068,11 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: ${{ matrix.auto-merge }}
+          auto-merge-update-types: ${{ matrix.auto-merge-update-types }}
           labels: ""
+        env:
+          FAKE_GH_OPEN_PULL_REQUEST_TITLE: ${{ matrix.open-pull-request-title }}
+          FAKE_GH_AUTO_MERGE_METHOD: ${{ matrix.auto-merge-on-github }}
       # Assert
       - name: Verify the calls to gh that turn on auto-merge
         env:
@@ -983,6 +1136,7 @@ jobs:
           jdk-version-to-update-yarn-lock: "21"
           app-client-id: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           token: fake-token
           app-private-key: ""
       - name: Check out the calling repository
@@ -1015,6 +1169,7 @@ jobs:
           token: fake-token
           app-slug: ""
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the JDK that ran Gradle
@@ -1088,6 +1243,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ""
           app-client-id: ${{ matrix.app-client-id }}
           auto-merge: disable
+          auto-merge-update-types: ""
           token: ${{ matrix.token }}
           app-private-key: ${{ matrix.app-private-key }}
       - name: Check out the calling repository
@@ -1120,6 +1276,7 @@ jobs:
           token: ${{ matrix.app-token || matrix.token }}
           app-slug: ${{ matrix.app-slug }}
           auto-merge: disable
+          auto-merge-update-types: ""
           labels: ""
       # Assert
       - name: Verify the pull request that is opened
