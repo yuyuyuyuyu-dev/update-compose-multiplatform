@@ -6,6 +6,7 @@ A reusable workflow that updates Compose Multiplatform and its related libraries
 
 - [Why it was built](#why-it-was-built)
 - [What it does](#what-it-does)
+- [Prerequisites](#prerequisites)
 - [How to use](#how-to-use)
 - [License](#license)
 
@@ -17,13 +18,17 @@ I was maintaining my Compose Multiplatform apps with Dependabot, and learned tha
 
 It reads the [CHANGELOG](https://github.com/JetBrains/compose-multiplatform/blob/master/CHANGELOG.md) in the Compose Multiplatform repository on GitHub, updates the version catalog to match the latest stable release listed there, and opens a pull request. Optionally, it can also update yarn.lock and enable auto-merge.
 
+## Prerequisites
+
+- A GitHub App that has read and write access to the contents and the pull requests of your repository, and is installed on your repository. The workflow opens the pull request as this app.
+- The client ID of the app, saved as a variable in your repository.
+- A private key of the app, saved as a secret in your repository.
+
+If you already have such an app, for example to enable auto-merge on Dependabot pull requests, you can use it here too. To set these up, follow steps 1 to 4 of [Authenticating with a GitHub App](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/making-authenticated-api-requests-with-a-github-app-in-a-github-actions-workflow#authenticating-with-a-github-app) in the GitHub documentation.
+
 ## How to use
 
-Call the workflow from a workflow in your repository, and give it a GitHub App to open the pull request with. In the workflows below, replace `<version>` with the version to use, such as `v1`.
-
-Both workflows below run every day at 7:31 UTC. To run at another time, see how to write the schedule in [the GitHub Actions documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
-
-With the required settings only:
+Add the following file to your repository as `.github/workflows/update-compose-multiplatform.yml`:
 
 ```yaml
 name: Update Compose Multiplatform
@@ -38,38 +43,32 @@ jobs:
       contents: read
     uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@<version>
     with:
-      app-client-id: ${{ vars.UPDATE_COMPOSE_MULTIPLATFORM_APP_CLIENT_ID }}
+      app-client-id: ${{ vars.PULL_REQUEST_APP_CLIENT_ID }}
     secrets:
-      app-private-key: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_APP_PRIVATE_KEY }}
+      app-private-key: ${{ secrets.PULL_REQUEST_APP_PRIVATE_KEY }}
 ```
 
-With every option turned on:
+In the file, replace:
+
+- `<version>` with the version of this workflow to use, such as `v1`.
+- `PULL_REQUEST_APP_CLIENT_ID` and `PULL_REQUEST_APP_PRIVATE_KEY` with the names of your variable and your secret.
+
+The file runs the workflow every day at 7:31 UTC. To run it at another time, see how to write the schedule in [the GitHub Actions documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule). Each run opens a pull request when an update is available.
+
+### Options
+
+To update yarn.lock or enable auto-merge as well, add inputs under `with` in the file. With every option turned on, that part of the file becomes:
 
 ```yaml
-name: Update Compose Multiplatform
-on:
-  schedule:
-    - cron: "31 7 * * *"
-  workflow_dispatch:
-permissions: {}
-jobs:
-  update-compose-multiplatform:
-    permissions:
-      contents: read
-    uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@<version>
     with:
       update-js-yarn-lock: true
       update-wasm-yarn-lock: true
       jdk-distribution-to-update-yarn-lock: temurin
       jdk-version-to-update-yarn-lock: "21"
-      app-client-id: ${{ vars.UPDATE_COMPOSE_MULTIPLATFORM_APP_CLIENT_ID }}
+      app-client-id: ${{ vars.PULL_REQUEST_APP_CLIENT_ID }}
       auto-merge: squash
       auto-merge-update-types: minor,patch
-    secrets:
-      app-private-key: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_APP_PRIVATE_KEY }}
 ```
-
-The app needs read and write access to the contents and the pull requests of your repository.
 
 ### Inputs
 
