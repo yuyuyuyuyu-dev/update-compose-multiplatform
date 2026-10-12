@@ -64,7 +64,7 @@ To update yarn.lock or enable auto-merge as well, add inputs under `with` in the
     with:
       update-js-yarn-lock: true
       update-wasm-yarn-lock: true
-      jdk-distribution-to-update-yarn-lock: temurin
+      jdk-distribution-to-update-yarn-lock: zulu
       jdk-version-to-update-yarn-lock: "21"
       app-client-id: ${{ vars.<PULL_REQUEST_APP_CLIENT_ID> }}
       auto-merge: squash
