@@ -7,8 +7,6 @@ A reusable workflow that updates Compose Multiplatform and its related libraries
 - [Why I made this](#why-i-made-this)
 - [What it does](#what-it-does)
 - [How to use](#how-to-use)
-  - [Inputs](#inputs)
-  - [Secrets](#secrets)
 - [License](#license)
 
 ## Why I made this
