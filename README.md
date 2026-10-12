@@ -17,11 +17,11 @@ I was maintaining my Compose Multiplatform apps with Dependabot, and the tests b
 
 ## What it does
 
-TODO: decide how much detail to write first
+It reads the [CHANGELOG](https://github.com/JetBrains/compose-multiplatform/blob/master/CHANGELOG.md) in the Compose Multiplatform repository on GitHub, updates the version catalog to match the latest stable release listed there, and opens a pull request. Optionally, it can also update yarn.lock and enable auto-merge.
 
 ## How to use
 
-Call the workflow from a workflow in your repository, and give it either a token or a GitHub App to open the pull request with.
+Call the workflow from a workflow in your repository, and give it either a token or a GitHub App to open the pull request with. In the workflows below, replace `<version>` with the version to use, such as `v1`.
 
 With a personal access token:
 
@@ -36,7 +36,7 @@ jobs:
   update-compose-multiplatform:
     permissions:
       contents: read
-    uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@v1
+    uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@<version>
     secrets:
       token: ${{ secrets.UPDATE_COMPOSE_MULTIPLATFORM_TOKEN }}
 ```
@@ -54,7 +54,7 @@ jobs:
   update-compose-multiplatform:
     permissions:
       contents: read
-    uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@v1
+    uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@<version>
     with:
       update-js-yarn-lock: true
       update-wasm-yarn-lock: true
