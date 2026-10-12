@@ -21,13 +21,15 @@ It reads the [CHANGELOG](https://github.com/JetBrains/compose-multiplatform/blob
 
 Call the workflow from a workflow in your repository, and give it a GitHub App to open the pull request with. In the workflows below, replace `<version>` with the version to use, such as `v1`.
 
+Both workflows below run every day at 7:31 UTC. To run at another time, see how to write the schedule in [the GitHub Actions documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+
 With the required settings only:
 
 ```yaml
 name: Update Compose Multiplatform
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "31 7 * * *"
   workflow_dispatch:
 permissions: {}
 jobs:
@@ -47,7 +49,7 @@ With every option turned on:
 name: Update Compose Multiplatform
 on:
   schedule:
-    - cron: "0 0 * * *"
+    - cron: "31 7 * * *"
   workflow_dispatch:
 permissions: {}
 jobs:
