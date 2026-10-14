@@ -484,8 +484,13 @@ fun updateVersionCatalog(changelog: Changelog): CatalogUpdate {
 fun updateYarnLock(tasks: List<String>): String {
     val command = listOf("./gradlew") + tasks
     check(ProcessBuilder(command).inheritIO().start().waitFor() == 0) { "${command.joinToString(" ")} failed." }
-    val updated = if (tasks.size == 1) "The yarn.lock file was updated" else "The yarn.lock files were updated"
-    return "- $updated with `${command.joinToString(" ")}`.\n"
+    val changed = git("diff", "--name-only", "-z").split("\u0000").filter { File(it).name == "yarn.lock" }
+    val gradle = "`${command.joinToString(" ")}`"
+    return when (changed.size) {
+        0 -> "- No yarn.lock file was changed by $gradle.\n"
+        1 -> "- The yarn.lock file `${changed.single()}` was updated with $gradle.\n"
+        else -> "- The yarn.lock files were updated with $gradle.\n"
+    }
 }
 
 fun saveChanges(patch: File) {

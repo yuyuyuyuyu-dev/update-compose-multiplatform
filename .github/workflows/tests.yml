@@ -764,13 +764,27 @@ jobs:
             update-wasm-yarn-lock: false
             jdk-distribution: temurin
             jdk-version: "21"
-            yarn-lock-line: "- The yarn.lock file was updated with `./gradlew kotlinUpgradeYarnLock`."
+            yarn-lock-line: "- The yarn.lock file `kotlin-js-store/yarn.lock` was updated with `./gradlew kotlinUpgradeYarnLock`."
           - test: should update only the Wasm target's yarn.lock when only it is requested
             update-js-yarn-lock: false
             update-wasm-yarn-lock: true
             jdk-distribution: temurin
             jdk-version: "21"
-            yarn-lock-line: "- The yarn.lock file was updated with `./gradlew kotlinWasmUpgradeYarnLock`."
+            yarn-lock-line: "- The yarn.lock file `kotlin-js-store/wasm/yarn.lock` was updated with `./gradlew kotlinWasmUpgradeYarnLock`."
+          - test: should name the only yarn.lock that changed when both are requested
+            update-js-yarn-lock: true
+            update-wasm-yarn-lock: true
+            jdk-distribution: temurin
+            jdk-version: "21"
+            wasm-yarn-lock: "Upgraded by kotlinWasmUpgradeYarnLock\n"
+            yarn-lock-line: "- The yarn.lock file `kotlin-js-store/yarn.lock` was updated with `./gradlew kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock`."
+          - test: should say that no yarn.lock changed when the requested update changes nothing
+            update-js-yarn-lock: true
+            update-wasm-yarn-lock: false
+            jdk-distribution: temurin
+            jdk-version: "21"
+            js-yarn-lock: "Upgraded by kotlinUpgradeYarnLock\n"
+            yarn-lock-line: "- No yarn.lock file was changed by `./gradlew kotlinUpgradeYarnLock`."
     steps:
       # Arrange
       - name: Check out the repository
@@ -781,11 +795,15 @@ jobs:
       - name: Create the calling repository
         env:
           CATALOG: with-material3-adaptive.toml
+          JS_YARN_LOCK: ${{ matrix.js-yarn-lock }}
+          WASM_YARN_LOCK: ${{ matrix.wasm-yarn-lock }}
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
           cp -R .update-compose-multiplatform/test/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/test/catalog/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
+          printf "%s" "$JS_YARN_LOCK" > "$RUNNER_TEMP/fixture/kotlin-js-store/yarn.lock"
+          printf "%s" "$WASM_YARN_LOCK" > "$RUNNER_TEMP/fixture/kotlin-js-store/wasm/yarn.lock"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
           git -C "$RUNNER_TEMP/fixture" add --all
           git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"
