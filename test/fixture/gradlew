@@ -9,10 +9,10 @@ jq -cn \
 for task in "$@"; do
   case "$task" in
     kotlinUpgradeYarnLock)
-      echo "Upgraded by kotlinUpgradeYarnLock" >> kotlin-js-store/yarn.lock
+      echo "Upgraded by kotlinUpgradeYarnLock" > kotlin-js-store/yarn.lock
       ;;
     kotlinWasmUpgradeYarnLock)
-      echo "Upgraded by kotlinWasmUpgradeYarnLock" >> kotlin-js-store/wasm/yarn.lock
+      echo "Upgraded by kotlinWasmUpgradeYarnLock" > kotlin-js-store/wasm/yarn.lock
       ;;
     *)
       echo "The fake gradlew does not support the $task task." >&2
