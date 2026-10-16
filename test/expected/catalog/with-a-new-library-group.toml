@@ -1,0 +1,9 @@
+[versions]
+composeMultiplatform = "1.10.1"
+example = "0.1.0"
+
+[libraries]
+example-compose = { module = "org.jetbrains.androidx.example:example-compose", version.ref = "example" }
+
+[plugins]
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }

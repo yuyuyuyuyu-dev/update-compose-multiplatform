@@ -131,14 +131,14 @@ jobs:
             "--repo", "octo-org/octo-app",
             "--head", "chore/update-compose-multiplatform",
             "--base", "main",
-            "--title", "build(deps): update Compose Multiplatform to 1.10.1, material3 to 1.10.0-alpha06 and Material3 Adaptive to 1.2.0",
+            "--title", "build(deps): update Compose Multiplatform to 1.10.1",
             "--body-file", $body
           ]]' > "$RUNNER_TEMP/expected-create-calls.json"
           jq -s '[.[] | select(.[0:2] == ["pr", "create"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/create-calls.json"
           diff "$RUNNER_TEMP/expected-create-calls.json" "$RUNNER_TEMP/create-calls.json"
       - name: Verify the pull request body
-        run: diff .update-compose-multiplatform-test/test/expected/pull-request-body/with-material3-adaptive.md "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+        run: diff .update-compose-multiplatform-test/test/expected/pull-request-body/with-every-library-group.md "$RUNNER_TEMP/update-compose-multiplatform/body.md"
       - name: Verify the pushed version catalog
         run: |
           git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
-          diff .update-compose-multiplatform-test/test/expected/catalog/with-material3-adaptive.toml "$RUNNER_TEMP/catalog.toml"
+          diff .update-compose-multiplatform-test/test/expected/catalog/with-every-library-group.toml "$RUNNER_TEMP/catalog.toml"

@@ -1,0 +1,27 @@
+[versions]
+composeMultiplatform = "1.10.1"
+material3 = "1.10.0-alpha06"
+compose-multiplatform-adaptive = "1.2.0"
+androidx-lifecycle = "2.10.0-alpha06"
+androidx-navigation = "2.9.2"
+androidx-navigation3 = "1.0.0-alpha06"
+androidx-navigationevent = "1.0.1"
+androidx-savedstate = "1.4.0"
+androidx-window = "1.5.1"
+
+[libraries]
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
+compose-material = { module = "org.jetbrains.compose.material:material", version.ref = "composeMultiplatform" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "material3" }
+compose-material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "compose-multiplatform-adaptive" }
+androidx-lifecycle-viewmodelCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "androidx-lifecycle" }
+androidx-navigation-compose = { module = "org.jetbrains.androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
+androidx-navigation3-ui = { module = "org.jetbrains.androidx.navigation3:navigation3-ui", version.ref = "androidx-navigation3" }
+androidx-navigationevent-compose = { module = "org.jetbrains.androidx.navigationevent:navigationevent-compose", version.ref = "androidx-navigationevent" }
+androidx-savedstate-compose = { module = "org.jetbrains.androidx.savedstate:savedstate-compose", version.ref = "androidx-savedstate" }
+androidx-window-core = { module = "org.jetbrains.androidx.window:window-core", version.ref = "androidx-window" }
+
+[plugins]
+composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
