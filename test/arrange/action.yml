@@ -8,7 +8,7 @@ runs:
         git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
         cp -R "$GITHUB_ACTION_PATH/../fixture" "$RUNNER_TEMP/fixture"
         mkdir -p "$RUNNER_TEMP/fixture/gradle"
-        cp "$GITHUB_ACTION_PATH/../catalog/with-material3-adaptive.toml" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
+        cp "$GITHUB_ACTION_PATH/../catalog/with-every-library-group.toml" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
         git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
         git -C "$RUNNER_TEMP/fixture" add --all
         git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"

@@ -20,20 +20,17 @@ import java.time.Duration
 import kotlin.system.exitProcess
 
 val composeGroup = "org.jetbrains.compose"
-val material3Group = "org.jetbrains.compose.material3"
-val adaptiveGroup = "org.jetbrains.compose.material3.adaptive"
 val composeName = "Compose Multiplatform"
-val material3Name = "material3"
-val adaptiveName = "Material3 Adaptive"
+val pinnedLibraries =
+    setOf(
+        "org.jetbrains.compose.material:material-icons-core",
+        "org.jetbrains.compose.material:material-icons-extended",
+    )
 val branch = "chore/update-compose-multiplatform"
 val autoMergeMethods = setOf("disable", "squash", "merge", "rebase")
 val updateTypes = listOf("major", "minor", "patch")
-val componentRows =
-    mapOf(
-        composeName to Regex("""`org\.jetbrains\.compose` version `([^`]+)`"""),
-        material3Name to Regex("""org\.jetbrains\.compose\.material3:material3\*:([^`\s|]+)"""),
-        adaptiveName to Regex("""org\.jetbrains\.compose\.material3\.adaptive:adaptive\*:([^`\s|]+)"""),
-    )
+val gradlePluginRow = Regex("""`org\.jetbrains\.compose` version `([^`]+)`""")
+val libraryRow = Regex("""\|\s*([^|`]*?)\s*\|\s*`([^`:\s]+):([^`:\s]+):([^`\s]+)`\s*\|.*""")
 val componentsHeading = Regex("""##\s+Components\s*""")
 val secondLevelHeading = Regex("""##\s.*""")
 val releaseHeading = Regex("""#+\s+(\d+\.\d+\.\d+\S*)\s+\(.*""")
@@ -228,18 +225,41 @@ class VersionCatalog(
     }
 }
 
+class LibraryGroup(
+    val name: String,
+    val coordinates: String,
+) {
+    private val group = coordinates.substringBefore(":")
+    private val artifact = coordinates.substringAfter(":")
+
+    fun contains(library: Library): Boolean =
+        library.group == group &&
+            "${library.group}:${library.name}" !in pinnedLibraries &&
+            if (artifact.endsWith("*")) library.name.startsWith(artifact.dropLast(1)) else library.name == artifact
+}
+
 class Components(
     private val release: Version,
-    private val text: String,
+    private val lines: List<String>,
 ) {
-    fun version(name: String): Version =
-        componentRows
-            .getValue(name)
-            .find(text)
+    fun composeVersion(): Version =
+        lines
+            .firstNotNullOfOrNull { gradlePluginRow.find(it) }
             ?.groupValues
             ?.get(1)
             ?.let(Version::parse)
-            ?: error("The Compose Multiplatform CHANGELOG section for $release has no $name version that can be read.")
+            ?: unreadable(composeName)
+
+    fun version(group: LibraryGroup): Version =
+        lines
+            .mapNotNull { libraryRow.matchEntire(it)?.groupValues }
+            .firstOrNull { "${it[2]}:${it[3]}" == group.coordinates }
+            ?.get(4)
+            ?.let(Version::parse)
+            ?: unreadable(group.name)
+
+    private fun unreadable(name: String): Nothing =
+        error("The Compose Multiplatform CHANGELOG section for $release has no $name version that can be read.")
 }
 
 class Changelog(
@@ -263,8 +283,14 @@ class Changelog(
                 .dropWhile { !componentsHeading.matches(it) }
                 .drop(1)
                 .takeWhile { !secondLevelHeading.matches(it) }
-        return Components(release, components.joinToString("\n"))
+        return Components(release, components)
     }
+
+    fun libraryGroups(): List<LibraryGroup> =
+        lines
+            .mapNotNull { libraryRow.matchEntire(it)?.groupValues }
+            .map { LibraryGroup(it[1], "${it[2]}:${it[3]}") }
+            .distinctBy { it.coordinates }
 
     private fun headingVersion(line: String): Version? =
         releaseHeading
@@ -285,9 +311,16 @@ class CatalogUpdate(
     val updates: List<Update>,
     val type: String,
 ) {
-    val changes: List<Update> = updates.filter { it.from != it.to }
+    val changes: List<Update> = updates.filter { it.from != it.to }.distinctBy { it.key }
 
-    val title: String = "build(deps): update ${listed(changes.map { "${it.library} to ${it.to}" })}"
+    val title: String =
+        updates.first().let {
+            if (it.from == it.to) {
+                "build(deps): update the libraries paired with $composeName ${it.to}"
+            } else {
+                "build(deps): update $composeName to ${it.to}"
+            }
+        }
 
     val versions: String = listed(updates.map { "${it.library} ${it.to}" })
 }
@@ -347,19 +380,24 @@ fun fetch(url: String): String {
     return response.body()
 }
 
-fun libraryKind(library: Library): String? =
-    when {
-        library.group == composeGroup && library.name == "compose-gradle-plugin" -> composeName
-        library.group == material3Group && library.name.startsWith("material3") -> material3Name
-        library.group == adaptiveGroup && library.name.startsWith("adaptive") -> adaptiveName
-        else -> null
+fun libraryKind(
+    library: Library,
+    groups: List<LibraryGroup>,
+): String? =
+    if (library.group == composeGroup && library.name == "compose-gradle-plugin") {
+        composeName
+    } else {
+        groups.firstOrNull { it.contains(library) }?.name
     }
 
 fun pluginKind(plugin: Plugin): String? = if (plugin.id == composeGroup) composeName else null
 
-fun dependents(catalog: VersionCatalog): List<Dependent> =
+fun dependents(
+    catalog: VersionCatalog,
+    groups: List<LibraryGroup>,
+): List<Dependent> =
     catalog.libraries.mapNotNull { library ->
-        libraryKind(library)?.let {
+        libraryKind(library, groups)?.let {
             Dependent("Library ${library.alias} (${library.group}:${library.name})", it, library.versionRef)
         }
     } +
@@ -381,24 +419,28 @@ fun refProblems(
                 "$kind must take its version from one key, but uses ${listed(keys.map { "versions.$it" })}."
             }
 
-fun sharingProblems(keys: Map<String, String>): List<String> =
-    keys.entries
-        .groupBy({ it.value }, { it.key })
-        .filterValues { it.size > 1 }
-        .map { (key, kinds) ->
-            "${listed(kinds)} must take their versions from different keys, but share versions.$key."
+fun sharingProblems(updates: List<Update>): List<String> =
+    updates
+        .groupBy { it.key }
+        .filterValues { shared -> shared.map { it.to }.distinct().size > 1 }
+        .map { (key, shared) ->
+            "${listed(shared.map { it.library })} share versions.$key, " +
+                "but the Compose Multiplatform CHANGELOG gives them different versions: " +
+                "${listed(shared.map { it.to })}."
         }
 
-fun versionKeys(catalog: VersionCatalog): Map<String, String> {
-    val dependents = dependents(catalog)
+fun versionKeys(
+    catalog: VersionCatalog,
+    groups: List<LibraryGroup>,
+): Map<String, String> {
+    val dependents = dependents(catalog, groups)
     val refs =
         dependents
             .groupBy({ it.kind }, { it.versionRef })
             .mapValues { (_, it) -> it.distinct() }
-    val keys = refs.mapNotNull { (kind, it) -> it.singleOrNull()?.let { key -> kind to key } }.toMap()
-    val problems = refProblems(dependents, refs) + sharingProblems(keys)
+    val problems = refProblems(dependents, refs)
     check(problems.isEmpty()) { problems.joinToString("\n") }
-    return keys
+    return refs.mapValues { (_, it) -> it.filterNotNull().single() }
 }
 
 fun listed(items: List<String>): String =
@@ -416,8 +458,8 @@ fun pullRequestBody(updates: List<Update>): String =
         appendLine()
         append("- Compose Multiplatform is the latest stable release in the Compose Multiplatform CHANGELOG, ")
         appendLine("unless the catalog already has a newer version.")
-        updates.filter { it.library != composeName }.forEach {
-            append("- ${it.library} is the version that the Compose Multiplatform CHANGELOG pairs ")
+        if (updates.size > 1) {
+            append("- The other libraries are the versions that the Compose Multiplatform CHANGELOG pairs ")
             appendLine("with this Compose Multiplatform release.")
         }
     }
@@ -438,42 +480,33 @@ fun openPullRequestField(
 fun updateVersionCatalog(changelog: Changelog): CatalogUpdate {
     val catalogFile = File("gradle/libs.versions.toml")
     val catalog = VersionCatalog(catalogFile)
-    val keys = versionKeys(catalog)
+    val groups = changelog.libraryGroups()
+    val keys = versionKeys(catalog, groups)
     val composeKey =
         keys[composeName]
             ?: error(
                 "${catalogFile.path} has no org.jetbrains.compose plugin or compose-gradle-plugin library. " +
                     "This workflow is only for projects that take Compose Multiplatform from the version catalog.",
             )
-    val material3Key =
-        keys[material3Name]
-            ?: error(
-                "${catalogFile.path} has no material3 library. " +
-                    "This workflow is only for projects that take material3 from the version catalog.",
-            )
-    val currentCompose = catalog.version(composeKey) ?: error("${catalogFile.path} has no versions.$composeKey.")
-    val currentMaterial3 = catalog.version(material3Key) ?: error("${catalogFile.path} has no versions.$material3Key.")
-    val currentAdaptive =
-        keys[adaptiveName]?.let { key ->
-            key to (catalog.version(key) ?: error("${catalogFile.path} has no versions.$key."))
-        }
+    val currentVersions =
+        keys.mapValues { (_, key) -> catalog.version(key) ?: error("${catalogFile.path} has no versions.$key.") }
+    val currentCompose = currentVersions.getValue(composeName)
 
     val current =
         Version.parse(currentCompose)
             ?: error("versions.$composeKey = \"$currentCompose\" is not a version that this workflow can compare.")
     val release = maxOf(changelog.latestStable(), current)
     val components = changelog.components(release)
-    val update =
-        CatalogUpdate(
-            listOfNotNull(
-                Update(composeName, composeKey, currentCompose, components.version(composeName).toString()),
-                Update(material3Name, material3Key, currentMaterial3, components.version(material3Name).toString()),
-                currentAdaptive?.let { (key, current) ->
-                    Update(adaptiveName, key, current, components.version(adaptiveName).toString())
-                },
-            ),
-            updateTypes[current.updateLevel(release)],
-        )
+    val versions =
+        mapOf(composeName to components.composeVersion()) +
+            groups.filter { it.name in keys }.associate { it.name to components.version(it) }
+    val updates =
+        versions.map { (kind, version) ->
+            Update(kind, keys.getValue(kind), currentVersions.getValue(kind), version.toString())
+        }
+    val problems = sharingProblems(updates)
+    check(problems.isEmpty()) { problems.joinToString("\n") }
+    val update = CatalogUpdate(updates, updateTypes[current.updateLevel(release)])
     if (update.changes.isNotEmpty()) {
         update.changes.forEach { catalog.setVersion(it.key, it.to) }
         catalog.save()
