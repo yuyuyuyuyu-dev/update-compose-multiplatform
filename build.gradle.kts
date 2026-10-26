@@ -1,9 +1,7 @@
-import org.jmailen.gradle.kotlinter.tasks.FormatTask
-import org.jmailen.gradle.kotlinter.tasks.LintTask
-
 plugins {
     alias(libs.plugins.detekt)
-    alias(libs.plugins.kotlinter)
+    alias(libs.plugins.ktlint)
+    alias(libs.plugins.versionCatalogUpdate)
 }
 
 val kotlinScripts = files("scripts", "test", "build.gradle.kts", "settings.gradle.kts")
@@ -12,12 +10,16 @@ detekt {
     source.setFrom(kotlinScripts)
 }
 
-tasks.register<LintTask>("lintKotlin") {
-    source(kotlinScripts)
+ktlint {
+    version = libs.versions.ktlintCli.get()
 }
 
-tasks.register<FormatTask>("formatKotlin") {
-    source(kotlinScripts)
+tasks.runKtlintCheckOverKotlinScripts {
+    source("scripts", "test")
+}
+
+tasks.runKtlintFormatOverKotlinScripts {
+    source("scripts", "test")
 }
 
 tasks.wrapper {

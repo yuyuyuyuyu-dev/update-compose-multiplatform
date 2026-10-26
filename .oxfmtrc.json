@@ -1,0 +1,7 @@
+{
+  "ignorePatterns": [
+    "gradle/libs.versions.toml",
+    "test/expected/pull-request-body/",
+    "test/fake/changelog/"
+  ]
+}
