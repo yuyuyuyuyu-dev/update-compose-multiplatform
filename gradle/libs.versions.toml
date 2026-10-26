@@ -1,3 +1,10 @@
+[versions]
+ktlintCli = "1.8.0"
+
+[libraries]
+ktlint-cli = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "ktlintCli" }
+
 [plugins]
-detekt = { id = "io.gitlab.arturbosch.detekt", version = "1.23.8" }
-kotlinter = { id = "org.jmailen.kotlinter", version = "5.7.0" }
+detekt = "io.gitlab.arturbosch.detekt:1.23.8"
+ktlint = "org.jlleitschuh.gradle.ktlint:14.2.0"
+versionCatalogUpdate = "nl.littlerobots.version-catalog-update:1.1.1"

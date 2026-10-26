@@ -7,34 +7,16 @@ on:
   workflow_dispatch:
 permissions: {}
 jobs:
-  detekt:
-    name: Detekt
-    runs-on: ubuntu-latest
+  oxfmt:
+    name: Oxfmt
     permissions:
       contents: read
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-      - name: Run Detekt
-        run: ./gradlew detekt
-  ktlint:
-    name: ktlint
-    runs-on: ubuntu-latest
+    uses: yuyuyuyuyu-dev/repo-config/.github/workflows/oxfmt.yml@main
+  kotlin-lint:
+    name: Kotlin lint
     permissions:
       contents: read
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
-      - name: Run ktlint
-        run: ./gradlew lintKotlin
+    uses: yuyuyuyuyu-dev/repo-config/.github/workflows/kotlin-lint.yml@main
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
@@ -54,20 +36,3 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - name: Run actionlint
         run: actionlint
-  yamlfmt:
-    name: yamlfmt
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version: stable
-          cache: false
-      - name: Run yamlfmt
-        run: go run github.com/google/yamlfmt/cmd/yamlfmt@latest -lint .
