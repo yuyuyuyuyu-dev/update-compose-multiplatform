@@ -7,4 +7,4 @@ ktlint-cli = { module = "com.pinterest.ktlint:ktlint-cli", version.ref = "ktlint
 [plugins]
 detekt = "io.gitlab.arturbosch.detekt:1.23.8"
 ktlint = "org.jlleitschuh.gradle.ktlint:14.2.0"
-versionCatalogUpdate = "nl.littlerobots.version-catalog-update:1.1.1"
+versionCatalogUpdate = "nl.littlerobots.version-catalog-update:1.1.2"
