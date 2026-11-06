@@ -13,7 +13,7 @@ on:
 permissions: {}
 jobs:
   update-to-the-next-prerelease:
-    name: should update a beta to the next beta when the next beta is released
+    name: should update a prerelease to the next prerelease of the same version when it is released
     runs-on: ubuntu-latest
     permissions:
       contents: read
