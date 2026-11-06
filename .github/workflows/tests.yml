@@ -76,6 +76,27 @@ jobs:
             changelog: paired.md
             outcome: success
             title: "build(deps): update the libraries paired with Compose Multiplatform 1.11.0-alpha01"
+          - test: should update a prerelease to the latest prerelease of its version and skip the ones between
+            catalog: with-first-alpha.toml
+            changelog: second-beta.md
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.11.0-beta02"
+            body: with-first-alpha.md
+          - test: should update a prerelease to its stable release even when a prerelease of a later version is newer
+            catalog: with-prerelease-of-the-latest-stable-release.toml
+            changelog: paired.md
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.10.1"
+          - test: should update a prerelease to the latest stable release when it is newer than the version of the prerelease
+            catalog: with-prerelease-of-an-older-patch.toml
+            changelog: paired.md
+            outcome: success
+            title: "build(deps): update Compose Multiplatform to 1.10.1"
+          - test: should keep a prerelease and update the libraries paired with it when only a prerelease of a later version is newer
+            catalog: with-prerelease-of-the-next-patch.toml
+            changelog: paired.md
+            outcome: success
+            title: "build(deps): update the libraries paired with Compose Multiplatform 1.10.2-rc01"
           - test: should fail without updating anything when the CHANGELOG has no section for the Compose Multiplatform that the catalog uses
             catalog: with-newer-compose-multiplatform.toml
             changelog: no-section.md

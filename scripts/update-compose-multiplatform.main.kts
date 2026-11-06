@@ -103,6 +103,8 @@ class Version private constructor(
 
     val isStable: Boolean get() = order[3] == stages.size
 
+    fun hasNumberOf(other: Version): Boolean = order.take(3) == other.order.take(3)
+
     fun updateLevel(to: Version): Int {
         val target = to.order.take(3)
         val changed = order.zip(target).indexOfFirst { (mine, theirs) -> mine != theirs }
@@ -267,12 +269,11 @@ class Changelog(
 ) {
     private val lines = text.lines()
 
-    fun latestStable(): Version =
-        lines
-            .mapNotNull(::headingVersion)
-            .filter { it.isStable }
-            .maxOrNull()
-            ?: error("The Compose Multiplatform CHANGELOG lists no stable release.")
+    fun latestRelease(current: Version): Version {
+        val releases = lines.mapNotNull(::headingVersion)
+        check(releases.any { it.isStable }) { "The Compose Multiplatform CHANGELOG lists no stable release." }
+        return (releases.filter { it.isStable || it.hasNumberOf(current) } + current).max()
+    }
 
     fun components(release: Version): Components {
         val heading = lines.indexOfFirst { headingVersion(it) == release }
@@ -457,7 +458,9 @@ fun pullRequestBody(updates: List<Update>): String =
         updates.forEach { appendLine("| ${it.library} | `${it.key}` | `${it.from}` | `${it.to}` |") }
         appendLine()
         append("- Compose Multiplatform is the latest stable release in the Compose Multiplatform CHANGELOG, ")
-        appendLine("unless the catalog already has a newer version.")
+        append("unless the catalog already has a newer version. ")
+        append("When the catalog uses a prerelease, it follows the later prereleases of that version ")
+        appendLine("until its stable release.")
         if (updates.size > 1) {
             append("- The other libraries are the versions that the Compose Multiplatform CHANGELOG pairs ")
             appendLine("with this Compose Multiplatform release.")
@@ -495,7 +498,7 @@ fun updateVersionCatalog(changelog: Changelog): CatalogUpdate {
     val current =
         Version.parse(currentCompose)
             ?: error("versions.$composeKey = \"$currentCompose\" is not a version that this workflow can compare.")
-    val release = maxOf(changelog.latestStable(), current)
+    val release = changelog.latestRelease(current)
     val components = changelog.components(release)
     val versions =
         mapOf(composeName to components.composeVersion()) +
