@@ -19,14 +19,14 @@ jobs:
       contents: read
     steps:
       # Arrange
-      - name: Check out the tests
+      - name: Check out the specs
         uses: actions/checkout@v7
         with:
-          path: .update-compose-multiplatform-test
-          sparse-checkout: test
+          path: .update-compose-multiplatform-spec
+          sparse-checkout: spec
           persist-credentials: false
       - name: Set up the calling repository and the fakes
-        uses: ./.update-compose-multiplatform-test/test/arrange
+        uses: ./.update-compose-multiplatform-spec/spec/arrange
       # Act
       # check-inputs
       - name: Check out the actions
@@ -53,7 +53,7 @@ jobs:
       # prepare
       - name: Check out the repository
         id: checkout
-        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/checkout
         with:
           ref: main
           persist-credentials: false
@@ -77,7 +77,7 @@ jobs:
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Upload the update
-        uses: ./.update-compose-multiplatform-test/test/fake/actions/upload-artifact
+        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/upload-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
@@ -87,14 +87,14 @@ jobs:
       - name: Create a token for the app
         id: app-token
         if: inputs.app-client-id != ''
-        uses: ./.update-compose-multiplatform-test/test/fake/actions/create-github-app-token
+        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/create-github-app-token
         with:
           client-id: ${{ inputs.app-client-id }}
           private-key: ${{ secrets.app-private-key }}
           permission-contents: write
           permission-pull-requests: write
       - name: Check out the repository
-        uses: ./.update-compose-multiplatform-test/test/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/checkout
         with:
           ref: ${{ steps.checkout.outputs.commit }}
           token: ${{ steps.app-token.outputs.token || secrets.token }}
@@ -109,7 +109,7 @@ jobs:
             scripts
           persist-credentials: false
       - name: Download the update
-        uses: ./.update-compose-multiplatform-test/test/fake/actions/download-artifact
+        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/download-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
@@ -137,8 +137,8 @@ jobs:
           jq -s '[.[] | select(.[0:2] == ["pr", "create"])]' "$RUNNER_TEMP/gh-calls.jsonl" > "$RUNNER_TEMP/create-calls.json"
           diff "$RUNNER_TEMP/expected-create-calls.json" "$RUNNER_TEMP/create-calls.json"
       - name: Verify the pull request body
-        run: diff .update-compose-multiplatform-test/test/expected/pull-request-body/with-every-library-group.md "$RUNNER_TEMP/update-compose-multiplatform/body.md"
+        run: diff .update-compose-multiplatform-spec/spec/expected/pull-request-body/with-every-library-group.md "$RUNNER_TEMP/update-compose-multiplatform/body.md"
       - name: Verify the pushed version catalog
         run: |
           git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
-          diff .update-compose-multiplatform-test/test/expected/catalog/with-every-library-group.toml "$RUNNER_TEMP/catalog.toml"
+          diff .update-compose-multiplatform-spec/spec/expected/catalog/with-every-library-group.toml "$RUNNER_TEMP/catalog.toml"

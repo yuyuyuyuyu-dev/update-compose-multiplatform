@@ -4,7 +4,7 @@ plugins {
     alias(libs.plugins.versionCatalogUpdate)
 }
 
-val kotlinScripts = files("scripts", "test", "build.gradle.kts", "settings.gradle.kts")
+val kotlinScripts = files("scripts", "spec", "build.gradle.kts", "settings.gradle.kts")
 
 detekt {
     source.setFrom(kotlinScripts)
@@ -15,11 +15,11 @@ ktlint {
 }
 
 tasks.runKtlintCheckOverKotlinScripts {
-    source("scripts", "test")
+    source("scripts", "spec")
 }
 
 tasks.runKtlintFormatOverKotlinScripts {
-    source("scripts", "test")
+    source("scripts", "spec")
 }
 
 tasks.wrapper {
