@@ -19,14 +19,14 @@ jobs:
       contents: read
     steps:
       # Arrange
-      - name: Check out the specs
+      - name: Check out the spec test resources
         uses: actions/checkout@v7
         with:
-          path: .update-compose-multiplatform-spec
-          sparse-checkout: spec
+          path: .update-compose-multiplatform-spec-test-resources
+          sparse-checkout: spec-test-resources
           persist-credentials: false
       - name: Set up the calling repository and the fakes
-        uses: ./.update-compose-multiplatform-spec/spec/arrange
+        uses: ./.update-compose-multiplatform-spec-test-resources/spec-test-resources/arrange
       # Act
       # check-inputs
       - name: Check out the actions
@@ -54,7 +54,7 @@ jobs:
       # prepare
       - name: Check out the repository
         id: checkout
-        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-spec-test-resources/spec-test-resources/fake/actions/checkout
         with:
           ref: main
           persist-credentials: false
@@ -78,7 +78,7 @@ jobs:
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Upload the update
-        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/upload-artifact
+        uses: ./.update-compose-multiplatform-spec-test-resources/spec-test-resources/fake/actions/upload-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform
@@ -88,14 +88,14 @@ jobs:
       - name: Create a token for the app
         id: app-token
         if: inputs.app-client-id != ''
-        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/create-github-app-token
+        uses: ./.update-compose-multiplatform-spec-test-resources/spec-test-resources/fake/actions/create-github-app-token
         with:
           client-id: ${{ inputs.app-client-id }}
           private-key: ${{ secrets.app-private-key }}
           permission-contents: write
           permission-pull-requests: write
       - name: Check out the repository
-        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/checkout
+        uses: ./.update-compose-multiplatform-spec-test-resources/spec-test-resources/fake/actions/checkout
         with:
           ref: ${{ steps.checkout.outputs.commit }}
           token: ${{ steps.app-token.outputs.token || secrets.token }}
@@ -110,7 +110,7 @@ jobs:
             scripts
           persist-credentials: false
       - name: Download the update
-        uses: ./.update-compose-multiplatform-spec/spec/fake/actions/download-artifact
+        uses: ./.update-compose-multiplatform-spec-test-resources/spec-test-resources/fake/actions/download-artifact
         with:
           name: update-compose-multiplatform
           path: ${{ runner.temp }}/update-compose-multiplatform

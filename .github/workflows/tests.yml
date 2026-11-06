@@ -23,44 +23,44 @@ jobs:
           - test: should update only the library groups that the catalog uses
             catalog: test/catalog/without-material3-adaptive.toml
             expected-catalog: test/expected/catalog/without-material3-adaptive.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
             body: test/expected/pull-request-body/without-material3-adaptive.md
           - test: should update the version keys that the libraries use, whatever their names
             catalog: test/catalog/other-version-keys.toml
             expected-catalog: test/expected/catalog/other-version-keys.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should leave alone the Compose libraries that have versions of their own
             catalog: test/catalog/with-separately-versioned-compose-libraries.toml
             expected-catalog: test/expected/catalog/with-separately-versioned-compose-libraries.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should leave alone the libraries in a library group whose names do not match its coordinates
             catalog: test/catalog/with-other-libraries-in-the-library-groups.toml
             expected-catalog: test/expected/catalog/with-other-libraries-in-the-library-groups.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a catalog that writes libraries with group and name
             catalog: test/catalog/libraries-with-group-and-name.toml
             expected-catalog: test/expected/catalog/libraries-with-group-and-name.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a catalog where another library and plugin use the version key of Compose Multiplatform
             catalog: test/catalog/with-another-library-and-plugin-on-the-compose-multiplatform-key.toml
             expected-catalog: test/expected/catalog/with-another-library-and-plugin-on-the-compose-multiplatform-key.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a catalog that does not use Material3
             catalog: test/catalog/without-material3.toml
             expected-catalog: test/expected/catalog/without-material3.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a library group that the CHANGELOG adds
@@ -76,40 +76,40 @@ jobs:
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update to the stable release with the largest version when an older line was released after it
-            catalog: spec/catalog/with-every-library-group.toml
-            expected-catalog: spec/expected/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
+            expected-catalog: spec-test-resources/expected/catalog/with-every-library-group.toml
             changelog: test/fake/changelog/older-line-released-last.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should keep a Compose Multiplatform newer than the latest stable release and update the libraries paired with it
             catalog: test/catalog/with-newer-compose-multiplatform.toml
             expected-catalog: test/expected/catalog/with-newer-compose-multiplatform.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update the libraries paired with Compose Multiplatform 1.11.0-alpha01"
           - test: should update a prerelease to the latest prerelease of its version and skip the ones between
             catalog: test/catalog/with-first-alpha.toml
             expected-catalog: test/expected/catalog/with-first-alpha.toml
-            changelog: spec/fake/changelog/second-beta.md
+            changelog: spec-test-resources/fake/changelog/second-beta.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.11.0-beta02"
             body: test/expected/pull-request-body/with-first-alpha.md
           - test: should update a prerelease to its stable release even when a prerelease of a later version is newer
             catalog: test/catalog/with-prerelease-of-the-latest-stable-release.toml
             expected-catalog: test/expected/catalog/with-prerelease-of-the-latest-stable-release.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a prerelease to the latest stable release when it is newer than the version of the prerelease
             catalog: test/catalog/with-prerelease-of-an-older-patch.toml
             expected-catalog: test/expected/catalog/with-prerelease-of-an-older-patch.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should keep a prerelease and update the libraries paired with it when only a prerelease of a later version is newer
             catalog: test/catalog/with-prerelease-of-the-next-patch.toml
             expected-catalog: test/expected/catalog/with-prerelease-of-the-next-patch.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update the libraries paired with Compose Multiplatform 1.10.2-rc01"
           - test: should fail without updating anything when the CHANGELOG has no section for the Compose Multiplatform that the catalog uses
@@ -118,28 +118,28 @@ jobs:
             outcome: failure
             title: ""
           - test: should fail without updating anything when the CHANGELOG lists no stable release
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             changelog: test/fake/changelog/no-stable-release.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when the CHANGELOG section has no version of Compose Multiplatform
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             changelog: test/fake/changelog/no-compose-multiplatform.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when the CHANGELOG section has no version of Material3
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             changelog: test/fake/changelog/no-material3.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when the CHANGELOG section has no version of Material3 Adaptive
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             changelog: test/fake/changelog/no-adaptive.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when library groups that share a version key have different versions in the CHANGELOG
             catalog: test/catalog/with-material3-on-the-compose-multiplatform-key.toml
-            changelog: spec/fake/changelog/paired.md
+            changelog: spec-test-resources/fake/changelog/paired.md
             outcome: failure
             title: ""
     steps:
@@ -154,7 +154,7 @@ jobs:
           CATALOG: ${{ matrix.catalog }}
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
@@ -164,11 +164,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -299,10 +299,10 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: spec/catalog/with-every-library-group.toml
+          CATALOG: spec-test-resources/catalog/with-every-library-group.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
@@ -312,11 +312,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -345,7 +345,7 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          changelog: http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          changelog: http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -417,10 +417,10 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: spec/catalog/with-every-library-group.toml
+          CATALOG: spec-test-resources/catalog/with-every-library-group.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
@@ -430,11 +430,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -463,7 +463,7 @@ jobs:
           update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
           jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
-          changelog: http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          changelog: http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -519,10 +519,10 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: spec/catalog/with-every-library-group.toml
+          CATALOG: spec-test-resources/catalog/with-every-library-group.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
@@ -532,11 +532,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -565,7 +565,7 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          changelog: http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          changelog: http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -716,10 +716,10 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: spec/catalog/with-every-library-group.toml
+          CATALOG: spec-test-resources/catalog/with-every-library-group.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
@@ -729,11 +729,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -762,7 +762,7 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: temurin
           jdk-version-to-update-yarn-lock: "17"
-          changelog: http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          changelog: http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -835,12 +835,12 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: spec/catalog/with-every-library-group.toml
+          CATALOG: spec-test-resources/catalog/with-every-library-group.toml
           JS_YARN_LOCK: ${{ matrix.js-yarn-lock }}
           WASM_YARN_LOCK: ${{ matrix.wasm-yarn-lock }}
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           printf "%s" "$JS_YARN_LOCK" > "$RUNNER_TEMP/fixture/kotlin-js-store/yarn.lock"
@@ -852,11 +852,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -885,7 +885,7 @@ jobs:
           update-wasm-yarn-lock: ${{ matrix.update-wasm-yarn-lock }}
           jdk-distribution-to-update-yarn-lock: ${{ matrix.jdk-distribution }}
           jdk-version-to-update-yarn-lock: ${{ matrix.jdk-version }}
-          changelog: http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          changelog: http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -939,28 +939,28 @@ jobs:
       matrix:
         include:
           - test: should not enable auto-merge when not requested
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: disable
             auto-merge-update-types: ""
             open-pull-request-title: ""
             auto-merge-on-github: ""
             merge-calls: "[]"
           - test: should enable auto-merge with the merge method for a minor update when minor is listed
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: merge
             auto-merge-update-types: minor
             open-pull-request-title: ""
             auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--merge"]]'
           - test: should enable auto-merge with the rebase method for a minor update when minor and patch are listed
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: rebase
             auto-merge-update-types: minor, patch
             open-pull-request-title: ""
             auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--rebase"]]'
           - test: should not enable auto-merge for a minor update when only patch is listed
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: squash
             auto-merge-update-types: patch
             open-pull-request-title: ""
@@ -995,49 +995,49 @@ jobs:
             auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
           - test: should disable auto-merge when the new pull request has it and it is not requested
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: disable
             auto-merge-update-types: ""
             open-pull-request-title: ""
             auto-merge-on-github: SQUASH
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
           - test: should leave auto-merge alone when the new pull request already has the requested method
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: squash
             auto-merge-update-types: minor
             open-pull-request-title: ""
             auto-merge-on-github: SQUASH
             merge-calls: "[]"
           - test: should change the merge method when the new pull request has another one
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: merge
             auto-merge-update-types: minor
             open-pull-request-title: ""
             auto-merge-on-github: SQUASH
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--merge"]]'
           - test: should not enable auto-merge when the pull request is already open
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: squash
             auto-merge-update-types: minor
             open-pull-request-title: "build(deps): update Compose Multiplatform to 1.9.3"
             auto-merge-on-github: ""
             merge-calls: "[]"
           - test: should disable auto-merge when an open pull request changes to an update type that is not listed
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: squash
             auto-merge-update-types: patch
             open-pull-request-title: "build(deps): update Compose Multiplatform to 1.9.3"
             auto-merge-on-github: SQUASH
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--disable-auto"]]'
           - test: should leave auto-merge alone when an open pull request changes to an update type that is listed
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: squash
             auto-merge-update-types: minor
             open-pull-request-title: "build(deps): update Compose Multiplatform to 1.9.3"
             auto-merge-on-github: SQUASH
             merge-calls: "[]"
           - test: should leave auto-merge alone when an open pull request still holds the same update
-            catalog: spec/catalog/with-every-library-group.toml
+            catalog: spec-test-resources/catalog/with-every-library-group.toml
             auto-merge: squash
             auto-merge-update-types: patch
             open-pull-request-title: "build(deps): update Compose Multiplatform to 1.10.1"
@@ -1069,7 +1069,7 @@ jobs:
           CATALOG: ${{ matrix.catalog }}
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
@@ -1079,11 +1079,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -1112,7 +1112,7 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          changelog: http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          changelog: http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -1167,10 +1167,10 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: spec/catalog/with-every-library-group.toml
+          CATALOG: spec-test-resources/catalog/with-every-library-group.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
@@ -1180,11 +1180,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -1213,7 +1213,7 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: zulu
           jdk-version-to-update-yarn-lock: "21"
-          changelog: http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          changelog: http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
@@ -1274,10 +1274,10 @@ jobs:
           persist-credentials: false
       - name: Create the calling repository
         env:
-          CATALOG: spec/catalog/with-every-library-group.toml
+          CATALOG: spec-test-resources/catalog/with-every-library-group.toml
         run: |
           git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-          cp -R .update-compose-multiplatform/spec/fixture "$RUNNER_TEMP/fixture"
+          cp -R .update-compose-multiplatform/spec-test-resources/fixture "$RUNNER_TEMP/fixture"
           mkdir -p "$RUNNER_TEMP/fixture/gradle"
           cp ".update-compose-multiplatform/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
           git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
@@ -1287,11 +1287,11 @@ jobs:
       - name: Start the fake CHANGELOG
         run: |
           "$JAVA_HOME_21_X64/bin/jwebserver" --bind-address 127.0.0.1 --port 8000 --directory "$GITHUB_WORKSPACE/.update-compose-multiplatform" > "$RUNNER_TEMP/fake-server.log" 2>&1 &
-          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          curl --silent --show-error --fail --retry 60 --retry-connrefused --retry-delay 1 --output /dev/null http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
       - name: Create empty logs for the fakes
         run: touch "$RUNNER_TEMP/gh-calls.jsonl" "$RUNNER_TEMP/gradlew-calls.jsonl" "$RUNNER_TEMP/gradlew-jdks.jsonl"
       - name: Put the fake gh first on the PATH
-        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec/fake/bin" >> "$GITHUB_PATH"
+        run: echo "$GITHUB_WORKSPACE/.update-compose-multiplatform/spec-test-resources/fake/bin" >> "$GITHUB_PATH"
       # Act
       - name: Check the inputs
         uses: ./.update-compose-multiplatform/.github/actions/check-inputs
@@ -1320,7 +1320,7 @@ jobs:
           update-wasm-yarn-lock: false
           jdk-distribution-to-update-yarn-lock: ""
           jdk-version-to-update-yarn-lock: ""
-          changelog: http://127.0.0.1:8000/spec/fake/changelog/paired.md
+          changelog: http://127.0.0.1:8000/spec-test-resources/fake/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
       - name: Check out the calling repository at the prepared commit
         env:
