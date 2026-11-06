@@ -21,124 +21,124 @@ jobs:
       matrix:
         include:
           - test: should update only the library groups that the catalog uses
-            catalog: test/catalog/without-material3-adaptive.toml
-            expected-catalog: test/expected/catalog/without-material3-adaptive.toml
+            catalog: test-resources/catalog/without-material3-adaptive.toml
+            expected-catalog: test-resources/expected/catalog/without-material3-adaptive.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
-            body: test/expected/pull-request-body/without-material3-adaptive.md
+            body: test-resources/expected/pull-request-body/without-material3-adaptive.md
           - test: should update the version keys that the libraries use, whatever their names
-            catalog: test/catalog/other-version-keys.toml
-            expected-catalog: test/expected/catalog/other-version-keys.toml
+            catalog: test-resources/catalog/other-version-keys.toml
+            expected-catalog: test-resources/expected/catalog/other-version-keys.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should leave alone the Compose libraries that have versions of their own
-            catalog: test/catalog/with-separately-versioned-compose-libraries.toml
-            expected-catalog: test/expected/catalog/with-separately-versioned-compose-libraries.toml
+            catalog: test-resources/catalog/with-separately-versioned-compose-libraries.toml
+            expected-catalog: test-resources/expected/catalog/with-separately-versioned-compose-libraries.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should leave alone the libraries in a library group whose names do not match its coordinates
-            catalog: test/catalog/with-other-libraries-in-the-library-groups.toml
-            expected-catalog: test/expected/catalog/with-other-libraries-in-the-library-groups.toml
+            catalog: test-resources/catalog/with-other-libraries-in-the-library-groups.toml
+            expected-catalog: test-resources/expected/catalog/with-other-libraries-in-the-library-groups.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a catalog that writes libraries with group and name
-            catalog: test/catalog/libraries-with-group-and-name.toml
-            expected-catalog: test/expected/catalog/libraries-with-group-and-name.toml
+            catalog: test-resources/catalog/libraries-with-group-and-name.toml
+            expected-catalog: test-resources/expected/catalog/libraries-with-group-and-name.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a catalog where another library and plugin use the version key of Compose Multiplatform
-            catalog: test/catalog/with-another-library-and-plugin-on-the-compose-multiplatform-key.toml
-            expected-catalog: test/expected/catalog/with-another-library-and-plugin-on-the-compose-multiplatform-key.toml
+            catalog: test-resources/catalog/with-another-library-and-plugin-on-the-compose-multiplatform-key.toml
+            expected-catalog: test-resources/expected/catalog/with-another-library-and-plugin-on-the-compose-multiplatform-key.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a catalog that does not use Material3
-            catalog: test/catalog/without-material3.toml
-            expected-catalog: test/expected/catalog/without-material3.toml
+            catalog: test-resources/catalog/without-material3.toml
+            expected-catalog: test-resources/expected/catalog/without-material3.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a library group that the CHANGELOG adds
-            catalog: test/catalog/with-a-new-library-group.toml
-            expected-catalog: test/expected/catalog/with-a-new-library-group.toml
-            changelog: test/fake/changelog/new-library-group.md
+            catalog: test-resources/catalog/with-a-new-library-group.toml
+            expected-catalog: test-resources/expected/catalog/with-a-new-library-group.toml
+            changelog: test-resources/fake/changelog/new-library-group.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update without reading the library groups that the catalog does not use
-            catalog: test/catalog/without-material3-adaptive.toml
-            expected-catalog: test/expected/catalog/without-material3-adaptive.toml
-            changelog: test/fake/changelog/no-adaptive.md
+            catalog: test-resources/catalog/without-material3-adaptive.toml
+            expected-catalog: test-resources/expected/catalog/without-material3-adaptive.toml
+            changelog: test-resources/fake/changelog/no-adaptive.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update to the stable release with the largest version when an older line was released after it
             catalog: spec-test-resources/catalog/with-every-library-group.toml
             expected-catalog: spec-test-resources/expected/catalog/with-every-library-group.toml
-            changelog: test/fake/changelog/older-line-released-last.md
+            changelog: test-resources/fake/changelog/older-line-released-last.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should keep a Compose Multiplatform newer than the latest stable release and update the libraries paired with it
-            catalog: test/catalog/with-newer-compose-multiplatform.toml
-            expected-catalog: test/expected/catalog/with-newer-compose-multiplatform.toml
+            catalog: test-resources/catalog/with-newer-compose-multiplatform.toml
+            expected-catalog: test-resources/expected/catalog/with-newer-compose-multiplatform.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update the libraries paired with Compose Multiplatform 1.11.0-alpha01"
           - test: should update a prerelease to the latest prerelease of its version and skip the ones between
-            catalog: test/catalog/with-first-alpha.toml
-            expected-catalog: test/expected/catalog/with-first-alpha.toml
+            catalog: test-resources/catalog/with-first-alpha.toml
+            expected-catalog: test-resources/expected/catalog/with-first-alpha.toml
             changelog: spec-test-resources/fake/changelog/second-beta.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.11.0-beta02"
-            body: test/expected/pull-request-body/with-first-alpha.md
+            body: test-resources/expected/pull-request-body/with-first-alpha.md
           - test: should update a prerelease to its stable release even when a prerelease of a later version is newer
-            catalog: test/catalog/with-prerelease-of-the-latest-stable-release.toml
-            expected-catalog: test/expected/catalog/with-prerelease-of-the-latest-stable-release.toml
+            catalog: test-resources/catalog/with-prerelease-of-the-latest-stable-release.toml
+            expected-catalog: test-resources/expected/catalog/with-prerelease-of-the-latest-stable-release.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should update a prerelease to the latest stable release when it is newer than the version of the prerelease
-            catalog: test/catalog/with-prerelease-of-an-older-patch.toml
-            expected-catalog: test/expected/catalog/with-prerelease-of-an-older-patch.toml
+            catalog: test-resources/catalog/with-prerelease-of-an-older-patch.toml
+            expected-catalog: test-resources/expected/catalog/with-prerelease-of-an-older-patch.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update Compose Multiplatform to 1.10.1"
           - test: should keep a prerelease and update the libraries paired with it when only a prerelease of a later version is newer
-            catalog: test/catalog/with-prerelease-of-the-next-patch.toml
-            expected-catalog: test/expected/catalog/with-prerelease-of-the-next-patch.toml
+            catalog: test-resources/catalog/with-prerelease-of-the-next-patch.toml
+            expected-catalog: test-resources/expected/catalog/with-prerelease-of-the-next-patch.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: success
             title: "build(deps): update the libraries paired with Compose Multiplatform 1.10.2-rc01"
           - test: should fail without updating anything when the CHANGELOG has no section for the Compose Multiplatform that the catalog uses
-            catalog: test/catalog/with-newer-compose-multiplatform.toml
-            changelog: test/fake/changelog/no-section.md
+            catalog: test-resources/catalog/with-newer-compose-multiplatform.toml
+            changelog: test-resources/fake/changelog/no-section.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when the CHANGELOG lists no stable release
             catalog: spec-test-resources/catalog/with-every-library-group.toml
-            changelog: test/fake/changelog/no-stable-release.md
+            changelog: test-resources/fake/changelog/no-stable-release.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when the CHANGELOG section has no version of Compose Multiplatform
             catalog: spec-test-resources/catalog/with-every-library-group.toml
-            changelog: test/fake/changelog/no-compose-multiplatform.md
+            changelog: test-resources/fake/changelog/no-compose-multiplatform.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when the CHANGELOG section has no version of Material3
             catalog: spec-test-resources/catalog/with-every-library-group.toml
-            changelog: test/fake/changelog/no-material3.md
+            changelog: test-resources/fake/changelog/no-material3.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when the CHANGELOG section has no version of Material3 Adaptive
             catalog: spec-test-resources/catalog/with-every-library-group.toml
-            changelog: test/fake/changelog/no-adaptive.md
+            changelog: test-resources/fake/changelog/no-adaptive.md
             outcome: failure
             title: ""
           - test: should fail without updating anything when library groups that share a version key have different versions in the CHANGELOG
-            catalog: test/catalog/with-material3-on-the-compose-multiplatform-key.toml
+            catalog: test-resources/catalog/with-material3-on-the-compose-multiplatform-key.toml
             changelog: spec-test-resources/fake/changelog/paired.md
             outcome: failure
             title: ""
@@ -967,28 +967,28 @@ jobs:
             auto-merge-on-github: ""
             merge-calls: "[]"
           - test: should enable auto-merge for a patch update when patch is listed
-            catalog: test/catalog/with-compose-multiplatform-one-patch-behind.toml
+            catalog: test-resources/catalog/with-compose-multiplatform-one-patch-behind.toml
             auto-merge: squash
             auto-merge-update-types: patch
             open-pull-request-title: ""
             auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
           - test: should enable auto-merge for a major update when major is listed
-            catalog: test/catalog/with-compose-multiplatform-one-major-behind.toml
+            catalog: test-resources/catalog/with-compose-multiplatform-one-major-behind.toml
             auto-merge: squash
             auto-merge-update-types: major
             open-pull-request-title: ""
             auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
           - test: should not enable auto-merge for a major update when only minor and patch are listed
-            catalog: test/catalog/with-compose-multiplatform-one-major-behind.toml
+            catalog: test-resources/catalog/with-compose-multiplatform-one-major-behind.toml
             auto-merge: squash
             auto-merge-update-types: minor,patch
             open-pull-request-title: ""
             auto-merge-on-github: ""
             merge-calls: "[]"
           - test: should take the update type from the Compose Multiplatform version when only the paired libraries are updated
-            catalog: test/catalog/with-newer-compose-multiplatform.toml
+            catalog: test-resources/catalog/with-newer-compose-multiplatform.toml
             auto-merge: squash
             auto-merge-update-types: minor
             open-pull-request-title: ""
@@ -1044,14 +1044,14 @@ jobs:
             auto-merge-on-github: SQUASH
             merge-calls: "[]"
           - test: should enable auto-merge for an update from a prerelease when the release it leads to is a patch update
-            catalog: test/catalog/with-prerelease-of-an-older-patch.toml
+            catalog: test-resources/catalog/with-prerelease-of-an-older-patch.toml
             auto-merge: squash
             auto-merge-update-types: patch
             open-pull-request-title: ""
             auto-merge-on-github: ""
             merge-calls: '[["pr", "merge", "https://github.com/octo-org/octo-app/pull/1", "--auto", "--squash"]]'
           - test: should take the update type from the stable release when the catalog uses a prerelease of the same number
-            catalog: test/catalog/with-prerelease-of-the-latest-stable-release.toml
+            catalog: test-resources/catalog/with-prerelease-of-the-latest-stable-release.toml
             auto-merge: squash
             auto-merge-update-types: patch
             open-pull-request-title: ""
