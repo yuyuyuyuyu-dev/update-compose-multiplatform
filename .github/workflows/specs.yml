@@ -34,3 +34,21 @@ jobs:
       app-client-id: fake-client-id
     secrets:
       app-private-key: fake-private-key
+  update-to-the-next-prerelease:
+    name: update-to-the-next-prerelease
+    permissions:
+      contents: read
+    uses: ./.github/workflows/specs-update-to-the-next-prerelease.yml
+    with:
+      app-client-id: fake-client-id
+    secrets:
+      app-private-key: fake-private-key
+  update-to-the-stable-release:
+    name: update-to-the-stable-release
+    permissions:
+      contents: read
+    uses: ./.github/workflows/specs-update-to-the-stable-release.yml
+    with:
+      app-client-id: fake-client-id
+    secrets:
+      app-private-key: fake-private-key
