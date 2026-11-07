@@ -15,7 +15,7 @@ I was maintaining my Compose Multiplatform apps with Dependabot, and learned tha
 
 ## What it does
 
-It reads the [CHANGELOG](https://github.com/JetBrains/compose-multiplatform/blob/master/CHANGELOG.md) in the Compose Multiplatform repository on GitHub, updates the version catalog to match the latest stable release listed there, and opens a pull request. Optionally, it can also update yarn.lock and enable auto-merge.
+It reads the [CHANGELOG](https://github.com/JetBrains/compose-multiplatform/blob/master/CHANGELOG.md) in the Compose Multiplatform repository on GitHub, updates the version catalog to match the latest stable release listed there, and opens a pull request. When the catalog uses a prerelease, it follows the later prereleases of that version until its stable release comes out. Optionally, it can also update yarn.lock and enable auto-merge.
 
 ## How to use
 
