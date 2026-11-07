@@ -138,4 +138,4 @@ jobs:
       - name: Verify the pushed version catalog
         run: |
           git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
-          diff .update-compose-multiplatform-spec-test-resources/spec-test-resources/expected/catalog/with-first-beta.toml "$RUNNER_TEMP/catalog.toml"
+          diff .update-compose-multiplatform-spec-test-resources/spec-test-resources/expected/catalog/with-second-beta.toml "$RUNNER_TEMP/catalog.toml"
