@@ -239,7 +239,7 @@ jobs:
       - name: Verify the version catalog on the default branch
         run: |
           git -C "$RUNNER_TEMP/origin.git" show main:gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
-          diff .update-compose-multiplatform-spec-test-resources/spec-test-resources/expected/catalog/with-release-candidate.toml "$RUNNER_TEMP/catalog.toml"
+          diff .update-compose-multiplatform-spec-test-resources/spec-test-resources/expected/catalog/with-stable-release.toml "$RUNNER_TEMP/catalog.toml"
       - name: Verify that nothing is pushed after the next prerelease
         run: |
           if git -C "$RUNNER_TEMP/origin.git" rev-parse --verify --quiet refs/heads/chore/update-compose-multiplatform; then
