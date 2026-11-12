@@ -7,16 +7,16 @@ on:
   workflow_dispatch:
 permissions: {}
 jobs:
-  oxfmt:
-    name: Oxfmt
+  biome:
+    name: Biome
     permissions:
       contents: read
-    uses: yuyuyuyuyu-dev/repo-config/.github/workflows/oxfmt.yml@67cc1a26392550fd5ba9318bd90cc4f869392cf1
+    uses: yuyuyuyuyu-dev/repo-config/.github/workflows/biome.yml@main
   kotlin-lint:
     name: Kotlin lint
     permissions:
       contents: read
-    uses: yuyuyuyuyu-dev/repo-config/.github/workflows/kotlin-lint.yml@67cc1a26392550fd5ba9318bd90cc4f869392cf1
+    uses: yuyuyuyuyu-dev/repo-config/.github/workflows/kotlin-lint.yml@main
   actionlint:
     name: actionlint
     runs-on: ubuntu-latest
