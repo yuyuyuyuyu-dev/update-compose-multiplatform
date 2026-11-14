@@ -5,13 +5,7 @@
 		"clientKind": "git",
 		"useIgnoreFile": true
 	},
-	"files": {
-		"includes": [
-			"**",
-			"!spec-test-resources/expected/pull-request-body",
-			"!spec-test-resources/fake/changelog",
-			"!test-resources/expected/pull-request-body",
-			"!test-resources/fake/changelog"
-		]
+	"formatter": {
+		"includes": ["**", "!spec-test-resources/**", "!test-resources/**"]
 	}
 }
