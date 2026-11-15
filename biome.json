@@ -1,0 +1,15 @@
+{
+	"$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true
+	},
+	"formatter": {
+		"includes": [
+			"**",
+			"!spec-test-resources/expected/pull-request-body/**",
+			"!test-resources/expected/pull-request-body/**"
+		]
+	}
+}
