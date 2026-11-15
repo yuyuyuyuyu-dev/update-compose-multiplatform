@@ -6,6 +6,10 @@
 		"useIgnoreFile": true
 	},
 	"formatter": {
-		"includes": ["**", "!spec-test-resources/**", "!test-resources/**"]
+		"includes": [
+			"**",
+			"!spec-test-resources/expected/pull-request-body/**",
+			"!test-resources/expected/pull-request-body/**"
+		]
 	}
 }
