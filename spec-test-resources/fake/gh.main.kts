@@ -1,6 +1,6 @@
 #!/usr/bin/env -S kotlin -howtorun .main.kts
 
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.11.0")
+@file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.13.0")
 
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonNull

@@ -1,6 +1,6 @@
-@file:DependsOn("org.tomlj:tomlj:2.0.1")
-@file:DependsOn("org.checkerframework:checker-qual:4.2.3")
-@file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.11.0")
+@file:DependsOn("org.tomlj:tomlj:2.2.0")
+@file:DependsOn("org.checkerframework:checker-qual:4.4.0")
+@file:DependsOn("org.jetbrains.kotlinx:kotlinx-serialization-json-jvm:1.13.0")
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
