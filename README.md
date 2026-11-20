@@ -82,6 +82,7 @@ with:
 | `app-client-id`                        |           | The client ID of the GitHub App that opens the pull request. Pass it together with the `app-private-key` secret.                                                  |
 | `auto-merge`                           | `disable` | The merge method to enable auto-merge with: `squash`, `merge` or `rebase`. `disable` leaves auto-merge off.                                                       |
 | `auto-merge-update-types`              |           | The update types of Compose Multiplatform to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`. |
+| `working-directory`                    | `.`       | The directory that has `gradlew` and `gradle/libs.versions.toml`.                                                                                                 |
 
 ### Secrets
 
