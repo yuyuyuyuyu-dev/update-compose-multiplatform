@@ -74,16 +74,16 @@ with:
 
 ### Inputs
 
-| Name                                   | Default   | Description                                                                                                                                                       |
-| -------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `update-js-yarn-lock`                  | `false`   | Set to `true` to update `kotlin-js-store/yarn.lock` with `./gradlew kotlinUpgradeYarnLock`.                                                                       |
-| `update-wasm-yarn-lock`                | `false`   | Set to `true` to update `kotlin-js-store/wasm/yarn.lock` with `./gradlew kotlinWasmUpgradeYarnLock`.                                                              |
-| `jdk-distribution-to-update-yarn-lock` |           | The JDK distribution to run Gradle on, as [actions/setup-java](https://github.com/actions/setup-java) names it. Required when yarn.lock is updated.               |
-| `jdk-version-to-update-yarn-lock`      |           | The JDK version to run Gradle on. Required when yarn.lock is updated.                                                                                             |
-| `app-client-id`                        |           | The client ID of the GitHub App that opens the pull request. Pass it together with the `app-private-key` secret.                                                  |
-| `auto-merge`                           | `disable` | The merge method to enable auto-merge with: `squash`, `merge` or `rebase`. `disable` leaves auto-merge off.                                                       |
-| `auto-merge-update-types`              |           | The update types of Compose Multiplatform to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`. |
-| `project-directory-to-update`          | `.`       | The directory that has `gradlew` and `gradle/libs.versions.toml`.                                                                                                 |
+| Name                                   | Default   | Description                                                                                                                                                                                                                                                     |
+| -------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `update-js-yarn-lock`                  | `false`   | Set to `true` to update `kotlin-js-store/yarn.lock` with `./gradlew kotlinUpgradeYarnLock`.                                                                                                                                                                     |
+| `update-wasm-yarn-lock`                | `false`   | Set to `true` to update `kotlin-js-store/wasm/yarn.lock` with `./gradlew kotlinWasmUpgradeYarnLock`.                                                                                                                                                            |
+| `jdk-distribution-to-update-yarn-lock` |           | The JDK distribution to run Gradle on, as [actions/setup-java](https://github.com/actions/setup-java) names it. Required when yarn.lock is updated.                                                                                                             |
+| `jdk-version-to-update-yarn-lock`      |           | The JDK version to run Gradle on. Required when yarn.lock is updated.                                                                                                                                                                                           |
+| `app-client-id`                        |           | The client ID of the GitHub App that opens the pull request. Pass it together with the `app-private-key` secret.                                                                                                                                                |
+| `auto-merge`                           | `disable` | The merge method to enable auto-merge with: `squash`, `merge` or `rebase`. `disable` leaves auto-merge off.                                                                                                                                                     |
+| `auto-merge-update-types`              |           | The update types of Compose Multiplatform to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`.                                                                                               |
+| `project-directory-to-update`          | `.`       | The directory of the Compose Multiplatform project to keep up to date, relative to the root of your repository. Set it when the project is not at the root. The paths in the other inputs, such as `kotlin-js-store/yarn.lock`, are relative to this directory. |
 
 ### Secrets
 
