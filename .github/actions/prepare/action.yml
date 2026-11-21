@@ -12,6 +12,9 @@ inputs:
     required: true
   update-directory:
     required: true
+  project-directory-to-update:
+    required: false
+    default: .
 runs:
   using: composite
   steps:
@@ -28,6 +31,7 @@ runs:
       uses: gradle/actions/setup-gradle@v6
     - name: Update the version catalog and yarn.lock
       shell: bash
+      working-directory: ${{ inputs.project-directory-to-update }}
       env:
         UPDATE_JS_YARN_LOCK: ${{ inputs.update-js-yarn-lock }}
         UPDATE_WASM_YARN_LOCK: ${{ inputs.update-wasm-yarn-lock }}
