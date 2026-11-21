@@ -28,7 +28,7 @@ jobs:
       - name: Set up the calling repository and the fakes
         uses: ./.update-compose-multiplatform-spec-test-resources/spec-test-resources/arrange
         with:
-          project-directory: app
+          project-directory-to-update: example
       # Act
       # check-inputs
       - name: Check out the actions
@@ -78,7 +78,7 @@ jobs:
           jdk-version-to-update-yarn-lock: "21"
           changelog: http://127.0.0.1:8000/changelog/paired.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-          project-directory: app
+          project-directory-to-update: example
       - name: Upload the update
         uses: ./.update-compose-multiplatform-spec-test-resources/spec-test-resources/fake/actions/upload-artifact
         with:
@@ -129,13 +129,13 @@ jobs:
       # Assert
       - name: Verify the pushed version catalog
         run: |
-          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:app/gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
+          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:example/gradle/libs.versions.toml > "$RUNNER_TEMP/catalog.toml"
           diff .update-compose-multiplatform-spec-test-resources/spec-test-resources/expected/catalog/with-every-library-group.toml "$RUNNER_TEMP/catalog.toml"
       - name: Verify the pushed yarn.lock files
         run: |
           echo "Upgraded by kotlinUpgradeYarnLock" > "$RUNNER_TEMP/expected-js-yarn.lock"
-          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:app/kotlin-js-store/yarn.lock > "$RUNNER_TEMP/js-yarn.lock"
+          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:example/kotlin-js-store/yarn.lock > "$RUNNER_TEMP/js-yarn.lock"
           diff "$RUNNER_TEMP/expected-js-yarn.lock" "$RUNNER_TEMP/js-yarn.lock"
           echo "Upgraded by kotlinWasmUpgradeYarnLock" > "$RUNNER_TEMP/expected-wasm-yarn.lock"
-          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:app/kotlin-js-store/wasm/yarn.lock > "$RUNNER_TEMP/wasm-yarn.lock"
+          git -C "$RUNNER_TEMP/origin.git" show chore/update-compose-multiplatform:example/kotlin-js-store/wasm/yarn.lock > "$RUNNER_TEMP/wasm-yarn.lock"
           diff "$RUNNER_TEMP/expected-wasm-yarn.lock" "$RUNNER_TEMP/wasm-yarn.lock"

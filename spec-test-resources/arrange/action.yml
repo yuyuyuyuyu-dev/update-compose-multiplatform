@@ -3,7 +3,7 @@ inputs:
   catalog:
     required: false
     default: with-every-library-group.toml
-  project-directory:
+  project-directory-to-update:
     required: false
     default: .
 runs:
@@ -13,7 +13,7 @@ runs:
       shell: bash
       env:
         CATALOG: ${{ inputs.catalog }}
-        PROJECT: ${{ runner.temp }}/fixture/${{ inputs.project-directory }}
+        PROJECT: ${{ runner.temp }}/fixture/${{ inputs.project-directory-to-update }}
       run: |
         git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
         mkdir -p "$PROJECT/gradle"
