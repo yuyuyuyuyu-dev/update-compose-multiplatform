@@ -25,11 +25,11 @@ jobs:
       app-client-id: fake-client-id
     secrets:
       app-private-key: fake-private-key
-  update-the-project-directory:
-    name: update-the-project-directory
+  update-projects-in-a-subdirectory:
+    name: update-projects-in-a-subdirectory
     permissions:
       contents: read
-    uses: ./.github/workflows/specs-update-the-project-directory.yml
+    uses: ./.github/workflows/specs-update-projects-in-a-subdirectory.yml
     with:
       app-client-id: fake-client-id
     secrets:

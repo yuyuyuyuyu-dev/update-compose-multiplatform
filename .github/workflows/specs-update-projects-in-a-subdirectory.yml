@@ -1,4 +1,4 @@
-name: Specs for updating a project in a subdirectory
+name: Specs for updating projects in a subdirectory
 on:
   workflow_call:
     inputs:
@@ -12,8 +12,8 @@ on:
         required: false
 permissions: {}
 jobs:
-  update-the-project-directory:
-    name: should update the project in the requested project directory
+  update-projects-in-a-subdirectory:
+    name: should update projects in a subdirectory too
     runs-on: ubuntu-latest
     permissions:
       contents: read
