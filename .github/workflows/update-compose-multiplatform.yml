@@ -29,7 +29,7 @@ on:
       labels:
         type: string
         required: false
-      working-directory:
+      project-directory:
         type: string
         required: false
         default: .
@@ -106,7 +106,7 @@ jobs:
           jdk-version-to-update-yarn-lock: ${{ inputs.jdk-version-to-update-yarn-lock }}
           changelog: https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md
           update-directory: ${{ runner.temp }}/update-compose-multiplatform
-          working-directory: ${{ inputs.working-directory }}
+          project-directory: ${{ inputs.project-directory }}
       - name: Upload the update
         uses: actions/upload-artifact@v7
         with:

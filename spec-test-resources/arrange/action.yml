@@ -3,6 +3,9 @@ inputs:
   catalog:
     required: false
     default: with-every-library-group.toml
+  project-directory:
+    required: false
+    default: .
 runs:
   using: composite
   steps:
@@ -10,11 +13,12 @@ runs:
       shell: bash
       env:
         CATALOG: ${{ inputs.catalog }}
+        PROJECT: ${{ runner.temp }}/fixture/${{ inputs.project-directory }}
       run: |
         git init --quiet --bare --initial-branch=main "$RUNNER_TEMP/origin.git"
-        cp -R "$GITHUB_ACTION_PATH/../fixture" "$RUNNER_TEMP/fixture"
-        mkdir -p "$RUNNER_TEMP/fixture/gradle"
-        cp "$GITHUB_ACTION_PATH/../catalog/$CATALOG" "$RUNNER_TEMP/fixture/gradle/libs.versions.toml"
+        mkdir -p "$PROJECT/gradle"
+        cp -R "$GITHUB_ACTION_PATH/../fixture/." "$PROJECT"
+        cp "$GITHUB_ACTION_PATH/../catalog/$CATALOG" "$PROJECT/gradle/libs.versions.toml"
         git -C "$RUNNER_TEMP/fixture" init --quiet --initial-branch=main
         git -C "$RUNNER_TEMP/fixture" add --all
         git -C "$RUNNER_TEMP/fixture" -c user.name=Octocat -c user.email=octocat@example.com commit --quiet --message "Add the version catalog"

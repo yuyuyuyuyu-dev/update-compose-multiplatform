@@ -25,6 +25,15 @@ jobs:
       app-client-id: fake-client-id
     secrets:
       app-private-key: fake-private-key
+  update-the-project-directory:
+    name: update-the-project-directory
+    permissions:
+      contents: read
+    uses: ./.github/workflows/specs-update-the-project-directory.yml
+    with:
+      app-client-id: fake-client-id
+    secrets:
+      app-private-key: fake-private-key
   enable-auto-merge:
     name: enable-auto-merge
     permissions:
