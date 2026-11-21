@@ -58,7 +58,7 @@ The file runs the workflow every day at 7:31 UTC. To run it at another time, see
 
 ### Options
 
-To update yarn.lock or enable auto-merge as well, add inputs under `with` in the file. With every option turned on, that part of the file becomes:
+To update yarn.lock, enable auto-merge, or update a project that is not at the root of your repository, add inputs under `with` in the file. With every option turned on, that part of the file becomes:
 
 ```yaml
 with:
@@ -69,6 +69,7 @@ with:
   app-client-id: ${{ vars.<PULL_REQUEST_APP_CLIENT_ID> }}
   auto-merge: squash
   auto-merge-update-types: minor,patch
+  working-directory: app
 ```
 
 ### Inputs
