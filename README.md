@@ -58,7 +58,7 @@ The file runs the workflow every day at 7:31 UTC. To run it at another time, see
 
 ### Options
 
-To update yarn.lock or enable auto-merge as well, add inputs under `with` in the file. With every option turned on, that part of the file becomes:
+To update yarn.lock, enable auto-merge, or update a project that is not at the root of your repository, add inputs under `with` in the file. With every option turned on, that part of the file becomes:
 
 ```yaml
 with:
@@ -69,6 +69,7 @@ with:
   app-client-id: ${{ vars.<PULL_REQUEST_APP_CLIENT_ID> }}
   auto-merge: squash
   auto-merge-update-types: minor,patch
+  project-directory-to-update: example
 ```
 
 ### Inputs
@@ -82,6 +83,7 @@ with:
 | `app-client-id`                        |           | The client ID of the GitHub App that opens the pull request. Pass it together with the `app-private-key` secret.                                                  |
 | `auto-merge`                           | `disable` | The merge method to enable auto-merge with: `squash`, `merge` or `rebase`. `disable` leaves auto-merge off.                                                       |
 | `auto-merge-update-types`              |           | The update types of Compose Multiplatform to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`. |
+| `project-directory-to-update`          | `.`       | The directory of the Compose Multiplatform project to keep up to date, relative to the root of your repository. Set it when the project is not at the root.       |
 
 ### Secrets
 
