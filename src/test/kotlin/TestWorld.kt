@@ -203,13 +203,12 @@ class TestWorld : AutoCloseable {
 
 private val workflowInputs =
     mapOf(
-        "project-directory-to-update" to "",
         "jdk-distribution" to "zulu",
         "jdk-version" to "21",
-        "app-client-id" to "",
+        "project-directory-to-update" to "",
         "auto-merge" to "",
         "auto-merge-update-types" to "",
-        "labels" to "",
+        "app-client-id" to "",
     )
 
 private val publishStageSecrets = setOf("TOKEN", "APP_TOKEN", "APP_SLUG")

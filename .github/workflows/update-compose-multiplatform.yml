@@ -2,26 +2,24 @@ name: Update Compose Multiplatform
 on:
   workflow_call:
     inputs:
-      project-directory-to-update:
-        type: string
       jdk-distribution:
         type: string
         default: zulu
       jdk-version:
         type: string
         default: "21"
-      app-client-id:
+      project-directory-to-update:
         type: string
       auto-merge:
         type: string
       auto-merge-update-types:
         type: string
-      labels:
+      app-client-id:
         type: string
     secrets:
-      token:
-        required: false
       app-private-key:
+        required: false
+      token:
         required: false
 permissions: {}
 concurrency:

@@ -145,7 +145,6 @@ class Publishing(
     private val token = environment["TOKEN"].orEmpty()
     private val appToken = environment["APP_TOKEN"].orEmpty()
 
-    val labels: List<String> = commaSeparated(inputs(environment)["labels"])
     val appSlug: String = environment["APP_SLUG"].orEmpty()
     val base: String =
         Json
@@ -450,9 +449,6 @@ fun syncBranch(
     when {
         pullRequest == null -> {
             val created = github.createPullRequest(update.name, title, body)
-            if (publishing.labels.isNotEmpty()) {
-                github.addLabels(created, publishing.labels)
-            }
             update.autoMerge?.let { github.setAutoMerge(created, it) }
             println("Opened ${created.url}.")
         }
@@ -915,14 +911,6 @@ class GitHub(
                 put("body", body)
             }
         call("PATCH", "$repository/pulls/${pullRequest.number}", content)
-    }
-
-    fun addLabels(
-        pullRequest: PullRequest,
-        labels: List<String>,
-    ) {
-        val content = JsonObject(mapOf("labels" to JsonArray(labels.map(::JsonPrimitive))))
-        call("POST", "$repository/issues/${pullRequest.number}/labels", content)
     }
 
     fun comment(

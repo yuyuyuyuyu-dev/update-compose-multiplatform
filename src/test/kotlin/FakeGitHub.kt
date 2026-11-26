@@ -5,7 +5,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
-import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -23,13 +22,12 @@ data class FakePullRequest(
     var body: String,
     var state: String = "open",
     var autoMerge: String? = null,
-    val labels: MutableList<String> = mutableListOf(),
     val comments: MutableList<String> = mutableListOf(),
 )
 
 class FakeGitHub {
     private val pullRequestPath = Regex("/repos/$REPOSITORY/pulls/(\\d+)")
-    private val issuePath = Regex("/repos/$REPOSITORY/issues/(\\d+)/(labels|comments)")
+    private val commentPath = Regex("/repos/$REPOSITORY/issues/(\\d+)/comments")
 
     val calls = AtomicInteger()
     val requests: MutableList<String> = Collections.synchronizedList(mutableListOf())
@@ -76,7 +74,7 @@ class FakeGitHub {
             method == "GET" && path == "/repos/$REPOSITORY/pulls" -> listPullRequests(query)
             method == "POST" && path == "/repos/$REPOSITORY/pulls" -> createPullRequest(json)
             method == "PATCH" && pullRequestPath.matches(path) -> editPullRequest(path, json)
-            method == "POST" && issuePath.matches(path) -> addToIssue(path, json)
+            method == "POST" && commentPath.matches(path) -> comment(path, json)
             method == "POST" && path == "/graphql" -> setAutoMerge(json)
             else -> null
         }
@@ -130,17 +128,11 @@ class FakeGitHub {
         return json(pullRequest)
     }
 
-    private fun addToIssue(
+    private fun comment(
         path: String,
         json: JsonObject,
     ): JsonObject {
-        val (number, collection) = issuePath.matchEntire(path)!!.destructured
-        val pullRequest = numbered(number)
-        if (collection == "labels") {
-            pullRequest.labels += json.getValue("labels").jsonArray.map { it.jsonPrimitive.content }
-        } else {
-            pullRequest.comments += json.text("body")
-        }
+        numbered(commentPath.matchEntire(path)!!.groupValues[1]).comments += json.text("body")
         return JsonObject(emptyMap())
     }
 

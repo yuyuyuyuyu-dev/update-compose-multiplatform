@@ -683,27 +683,4 @@ class UpdateComposeMultiplatformTest {
             )
         }
     }
-
-    @Test
-    fun `should add the labels to the pull request`() {
-        TestWorld().use { world ->
-            // Arrange
-            world.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
-            world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-
-            // Act
-            val result = world.run("labels" to "dependencies, kotlin")
-
-            // Assert
-            result.assertSucceeded()
-            assertEquals(listOf("dependencies", "kotlin"), world.github.pullRequest(MANUAL_BRANCH).labels)
-            assertEquals(
-                Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf("POST /repos/$REPOSITORY/pulls", "POST /repos/$REPOSITORY/issues/1/labels"),
-                ),
-                world.outcome(),
-            )
-        }
-    }
 }
