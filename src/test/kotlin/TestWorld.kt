@@ -5,7 +5,6 @@ import kotlinx.serialization.json.JsonPrimitive
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.file.Files
-import java.util.concurrent.TimeUnit
 import kotlin.test.assertEquals
 
 const val MANUAL_BRANCH = "chore/update-dependencies"
@@ -41,10 +40,12 @@ class TestWorld : AutoCloseable {
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     private val url get() = "http://127.0.0.1:${server.address.port}"
     private lateinit var initialMain: String
+    private var inputs: Map<String, String> = emptyMap()
 
     val maven = FakeMaven()
     val github = FakeGitHub()
     var changelog: String = changelog("paired.md")
+    var gradlewAlsoWrites: String = ""
 
     init {
         server.createContext(
@@ -86,22 +87,22 @@ class TestWorld : AutoCloseable {
         initialMain = git(fixture, "rev-parse", "HEAD")
     }
 
-    fun run(
-        vararg inputs: Pair<String, String>,
-        between: () -> Unit = {},
-    ): RunResult {
-        val environment = environment(inputs.toMap())
+    fun inputs(vararg values: Pair<String, String>) {
+        inputs = values.toMap()
+    }
+
+    fun update(): RunResult {
         val callsBefore = github.calls.get()
-        val updated = stage("update", environment.filterKeys { it !in publishStageSecrets })
-        check(github.calls.get() == callsBefore) { "The update stage called GitHub.\n${updated.output}" }
-        if (updated.exitCode != 0) {
-            return updated
-        }
-        between()
+        val result = runJobIn("update", environment().filterKeys { it !in publishJobSecrets })
+        check(github.calls.get() == callsBefore) { "The update job called GitHub.\n${result.output}" }
+        return result
+    }
+
+    fun publish(): RunResult {
         val publishGradleLog = root.resolve("publish-gradlew.log")
-        val published = stage("publish", environment + ("FAKE_GRADLEW_LOG" to publishGradleLog.path))
-        check(!publishGradleLog.exists()) { "The publish stage ran gradlew.\n${published.output}" }
-        return RunResult(published.exitCode, updated.output + published.output)
+        val result = runJobIn("publish", environment() + ("FAKE_GRADLEW_LOG" to publishGradleLog.path))
+        check(!publishGradleLog.exists()) { "The publish job ran gradlew.\n${result.output}" }
+        return result
     }
 
     fun pushToMain(files: Map<String, String>) {
@@ -150,45 +151,33 @@ class TestWorld : AutoCloseable {
         root.deleteRecursively()
     }
 
-    private fun stage(
-        name: String,
+    private fun runJobIn(
+        job: String,
         environment: Map<String, String>,
     ): RunResult {
         val workspace = root.resolve("workspace-${System.nanoTime()}")
         git(root, "clone", "--quiet", "--depth=1", "--branch", "main", "file://${origin.path}", workspace.path)
-        val process =
-            ProcessBuilder("kotlin", File("scripts/update-compose-multiplatform.main.kts").absolutePath, name)
-                .directory(workspace)
-                .redirectErrorStream(true)
-                .apply {
-                    environment().keys.removeAll {
-                        it.startsWith("GITHUB_") || it.startsWith("RUNNER_") || it in environment(emptyMap())
-                    }
-                    environment().putAll(environment)
-                }.start()
-        val output = process.inputStream.bufferedReader().readText()
-        check(process.waitFor(5, TimeUnit.MINUTES)) { "The $name stage did not finish in five minutes.\n$output" }
-        return RunResult(process.exitValue(), output)
+        val output = StringBuilder()
+        val exitCode = runJob(listOf(job), environment + ("GITHUB_WORKSPACE" to workspace.path), output)
+        return RunResult(exitCode, output.toString())
     }
 
-    private fun environment(overrides: Map<String, String>): Map<String, String> {
-        val inputs = workflowInputs + overrides.filterKeys { it in workflowInputs }
-        return mapOf(
-            "INPUTS" to JsonObject(inputs.mapValues { JsonPrimitive(it.value) }).toString(),
-            "TOKEN" to "fake-app-token",
-            "APP_SLUG" to "fake-app",
-            "RUNNER_TEMP" to root.path,
-            "GITHUB_EVENT_PATH" to event.path,
-            "GITHUB_REPOSITORY" to "octo-org/octo-app",
-            "GITHUB_API_URL" to "$url/api",
-            "GITHUB_GRAPHQL_URL" to "$url/api/graphql",
-            "COMPOSE_MULTIPLATFORM_CHANGELOG" to "$url/changelog.md",
-            "MAVEN_REPOSITORIES" to listOf("central", "google", "plugins").joinToString("\n") { "$url/maven/$it" },
-            "FAKE_GRADLEW_LOG" to gradleLog.path,
-            "FAKE_GRADLEW_ALSO_WRITES" to "",
-            "KOTLIN_MAIN_KTS_COMPILED_SCRIPTS_CACHE_DIR" to scriptCache.path,
-        ) + overrides.filterKeys { it !in workflowInputs }
-    }
+    private fun environment(): Map<String, String> =
+        System.getenv().filterKeys { !it.startsWith("GITHUB_") && !it.startsWith("RUNNER_") } +
+            mapOf(
+                "INPUTS" to JsonObject((workflowInputs + inputs).mapValues { JsonPrimitive(it.value) }).toString(),
+                "TOKEN" to "fake-app-token",
+                "APP_SLUG" to "fake-app",
+                "RUNNER_TEMP" to root.path,
+                "GITHUB_EVENT_PATH" to event.path,
+                "GITHUB_REPOSITORY" to "octo-org/octo-app",
+                "GITHUB_API_URL" to "$url/api",
+                "GITHUB_GRAPHQL_URL" to "$url/api/graphql",
+                "COMPOSE_MULTIPLATFORM_CHANGELOG" to "$url/changelog.md",
+                "MAVEN_REPOSITORIES" to listOf("central", "google", "plugins").joinToString("\n") { "$url/maven/$it" },
+                "FAKE_GRADLEW_LOG" to gradleLog.path,
+                "FAKE_GRADLEW_ALSO_WRITES" to gradlewAlsoWrites,
+            )
 
     private fun respond(
         exchange: HttpExchange,
@@ -211,12 +200,7 @@ private val workflowInputs =
         "app-client-id" to "",
     )
 
-private val scriptCache: File =
-    Files.createTempDirectory("main-kts-cache").toFile().also { cache ->
-        Runtime.getRuntime().addShutdownHook(Thread { cache.deleteRecursively() })
-    }
-
-private val publishStageSecrets = setOf("TOKEN", "APP_SLUG")
+private val publishJobSecrets = setOf("TOKEN", "APP_SLUG")
 
 fun changelog(name: String): String =
     checkNotNull(TestWorld::class.java.getResource("/changelog/$name")) { "No CHANGELOG named $name." }.readText()

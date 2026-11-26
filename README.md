@@ -93,7 +93,7 @@ with:
 | `auto-merge-update-types`     |           | The update types to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`.                                      |
 | `project-directory-to-update` | `.`       | The directory of the Compose Multiplatform project to keep up to date, relative to the root of your repository. Set it when the project is not at the root.                   |
 | `jdk-distribution`            | `zulu`    | The JDK distribution to run Gradle on, as [actions/setup-java](https://github.com/actions/setup-java) names it. The default matches the Compose Multiplatform project wizard. |
-| `jdk-version`                 | `21`      | The JDK version to run Gradle on.                                                                                                                                             |
+| `jdk-version`                 | `21`      | The JDK version to run Gradle on. It must be 17 or later, because the workflow runs its own Gradle build on it too.                                                           |
 
 The update type of an update comes from the first three numbers of the version. Compose Multiplatform and the libraries paired with it move together, so they take the update type of Compose Multiplatform.
 

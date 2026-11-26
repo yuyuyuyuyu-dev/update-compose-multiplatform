@@ -36,13 +36,12 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
-      - name: Check out the script
+      - name: Check out the tool
         uses: actions/checkout@v7
         with:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
           path: .update-compose-multiplatform
-          sparse-checkout: scripts
           persist-credentials: false
       - name: Set up the JDK
         uses: actions/setup-java@v6
@@ -54,7 +53,8 @@ jobs:
       - name: Update the dependencies
         env:
           INPUTS: ${{ toJSON(inputs) }}
-        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts update
+        working-directory: .update-compose-multiplatform
+        run: ./gradlew --quiet run --args=update
       - name: Hand over the updates
         uses: actions/upload-artifact@v7
         with:
@@ -80,13 +80,12 @@ jobs:
         with:
           ref: ${{ github.event.repository.default_branch }}
           token: ${{ steps.app-token.outputs.token }}
-      - name: Check out the script
+      - name: Check out the tool
         uses: actions/checkout@v7
         with:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
           path: .update-compose-multiplatform
-          sparse-checkout: scripts
           persist-credentials: false
       - name: Receive the updates
         uses: actions/download-artifact@v8
@@ -98,4 +97,5 @@ jobs:
           INPUTS: ${{ toJSON(inputs) }}
           TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
-        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts publish
+        working-directory: .update-compose-multiplatform
+        run: ./gradlew --quiet run --args=publish

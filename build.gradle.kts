@@ -1,21 +1,26 @@
 plugins {
+    application
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
     alias(libs.plugins.versionCatalogUpdate)
 }
 
+application {
+    mainClass = "MainKt"
+}
+
 dependencies {
+    implementation(libs.kotlinx.serialization.json)
+    implementation(libs.tomlj)
     testImplementation(platform(libs.junit.bom))
     testImplementation(libs.junit.jupiter)
     testImplementation(libs.kotlin.test.junit5)
-    testImplementation(libs.kotlinx.serialization.json)
     testRuntimeOnly(libs.junit.platformLauncher)
 }
 
 tasks.withType<Test>().configureEach {
     useJUnitPlatform()
-    inputs.dir("scripts")
     maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
 }
 
@@ -40,7 +45,6 @@ tasks.check {
 
 detekt {
     buildUponDefaultConfig = true
-    source.from("scripts", "src")
 }
 
 tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
@@ -50,14 +54,6 @@ tasks.withType<io.gitlab.arturbosch.detekt.Detekt>().configureEach {
 
 ktlint {
     version = libs.versions.ktlintCli.get()
-}
-
-tasks.runKtlintCheckOverKotlinScripts {
-    source("scripts")
-}
-
-tasks.runKtlintFormatOverKotlinScripts {
-    source("scripts")
 }
 
 tasks.wrapper {

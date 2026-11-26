@@ -33,10 +33,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publishPlugin("com.android.application", "8.13.0", "8.13.1", repository = "google")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(
                 """
                 [versions]
@@ -73,10 +75,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             val pullRequest = world.github.pullRequest(MANUAL_BRANCH)
             assertEquals(
                 FakePullRequest(
@@ -111,12 +115,15 @@ class UpdateComposeMultiplatformSpec {
             // Arrange
             world.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
+            world.inputs("auto-merge" to "squash", "auto-merge-update-types" to "major,minor,patch")
 
             // Act
-            val result = world.run("auto-merge" to "squash", "auto-merge-update-types" to "major,minor,patch")
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals("squash", world.github.pullRequest(AUTO_MERGE_BRANCH).autoMerge)
             assertEquals(
                 Outcome(
@@ -134,12 +141,15 @@ class UpdateComposeMultiplatformSpec {
             // Arrange
             world.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
+            world.inputs("auto-merge" to "squash", "auto-merge-update-types" to "patch")
 
             // Act
-            val result = world.run("auto-merge" to "squash", "auto-merge-update-types" to "patch")
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(null, world.github.pullRequest(MANUAL_BRANCH).autoMerge)
             assertEquals(
                 Outcome(
@@ -158,12 +168,15 @@ class UpdateComposeMultiplatformSpec {
             world.commit(mapOf(CATALOG to catalog(ktor = "3.2.0", okio = "3.15.0")))
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "4.0.0")
             world.maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
+            world.inputs("auto-merge" to "squash", "auto-merge-update-types" to "minor,patch")
 
             // Act
-            val result = world.run("auto-merge" to "squash", "auto-merge-update-types" to "minor,patch")
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(catalog(ktor = "3.2.0", okio = "3.16.0"), world.file(AUTO_MERGE_BRANCH, CATALOG))
             assertEquals(catalog(ktor = "4.0.0", okio = "3.15.0"), world.file(MANUAL_BRANCH, CATALOG))
             assertEquals("squash", world.github.pullRequest(AUTO_MERGE_BRANCH).autoMerge)
@@ -190,10 +203,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0-alpha01", "3.3.0-beta01", "3.4.0-alpha01")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(catalog(ktor = "3.3.0-beta01"), world.file(MANUAL_BRANCH, CATALOG))
             assertEquals(
                 Outcome(
@@ -213,10 +228,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.2.1", "3.3.0-rc01")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(catalog(ktor = "3.2.1"), world.file(MANUAL_BRANCH, CATALOG))
             assertEquals(
                 Outcome(
@@ -236,10 +253,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.3.0-rc01", "3.3.0", "3.4.0-alpha01")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(catalog(ktor = "3.3.0"), world.file(MANUAL_BRANCH, CATALOG))
             assertEquals(
                 Outcome(
@@ -264,12 +283,15 @@ class UpdateComposeMultiplatformSpec {
                 projectDirectory = "example",
             )
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
+            world.inputs("project-directory-to-update" to "example")
 
             // Act
-            val result = world.run("project-directory-to-update" to "example")
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(catalog(ktor = "3.3.0"), world.file(MANUAL_BRANCH, "example/$CATALOG"))
             assertEquals(
                 resolvedLockFile("kotlinUpgradeYarnLock", catalog(ktor = "3.3.0")),
@@ -303,10 +325,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(
                 resolvedLockFile("kotlinUpgradeYarnLock", catalog(ktor = "3.3.0")),
                 world.file(MANUAL_BRANCH, "kotlin-js-store/yarn.lock"),
@@ -343,10 +367,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(
                 resolvedLockFile("kotlinUpgradePackageLock", catalog(ktor = "3.3.0")),
                 world.file(MANUAL_BRANCH, "kotlin-js-store/package-lock.json"),
@@ -390,10 +416,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("org.jetbrains.androidx.navigation:navigation-compose", "2.9.0", "2.9.2", "2.10.0")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(
                 everyLibraryGroup("1.10.1", "1.10.0-alpha06", "1.2.0", "2.10.0-alpha06", "2.9.2"),
                 world.file(MANUAL_BRANCH, CATALOG),
@@ -422,10 +450,12 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
 
             // Act
-            val result = world.run()
+            val updated = world.update()
+            val published = world.publish()
 
             // Assert
-            result.assertSucceeded()
+            updated.assertSucceeded()
+            published.assertSucceeded()
             assertEquals(
                 """
                 Updates the dependencies in `gradle/libs.versions.toml`. The Update Compose Multiplatform workflow updates this pull request on each run and closes it when it is no longer needed.
