@@ -6,42 +6,6 @@ class UpdateComposeMultiplatformTest {
     private val nothingChanged = Outcome(mapOf("main" to emptySet()))
 
     @Test
-    fun `should fail without changing anything when neither a token nor an app is passed`() {
-        TestWorld().use { world ->
-            // Arrange
-            world.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
-            world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-
-            // Act
-            val result = world.run("APP_TOKEN" to "", "APP_SLUG" to "")
-
-            // Assert
-            result.assertFailed(
-                "Pass either the token secret, or the app-client-id input together with the app-private-key secret.",
-            )
-            assertEquals(nothingChanged, world.outcome())
-        }
-    }
-
-    @Test
-    fun `should fail without changing anything when both a token and an app are passed`() {
-        TestWorld().use { world ->
-            // Arrange
-            world.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
-            world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-
-            // Act
-            val result = world.run("TOKEN" to "fake-token")
-
-            // Assert
-            result.assertFailed(
-                "Pass either the token secret, or the app-client-id input together with the app-private-key secret.",
-            )
-            assertEquals(nothingChanged, world.outcome())
-        }
-    }
-
-    @Test
     fun `should fail without changing anything when auto-merge is not a merge method`() {
         TestWorld().use { world ->
             // Arrange
@@ -649,35 +613,6 @@ class UpdateComposeMultiplatformTest {
                         "PATCH /repos/$REPOSITORY/pulls/1",
                         "POST /graphql disablePullRequestAutoMerge",
                     ),
-                ),
-                world.outcome(),
-            )
-        }
-    }
-
-    @Test
-    fun `should commit as the owner of the token when no app is passed`() {
-        TestWorld().use { world ->
-            // Arrange
-            world.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
-            world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-
-            // Act
-            val result = world.run("TOKEN" to "fake-token", "APP_TOKEN" to "", "APP_SLUG" to "")
-
-            // Assert
-            result.assertSucceeded()
-            assertEquals(
-                listOf(
-                    "octocat <583231+octocat@users.noreply.github.com> " +
-                        "build(deps): update io.ktor:ktor-client-core to 3.3.0",
-                ),
-                world.commits(MANUAL_BRANCH),
-            )
-            assertEquals(
-                Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
                 world.outcome(),
             )

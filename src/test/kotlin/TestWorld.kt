@@ -175,8 +175,7 @@ class TestWorld : AutoCloseable {
         val inputs = workflowInputs + overrides.filterKeys { it in workflowInputs }
         return mapOf(
             "INPUTS" to JsonObject(inputs.mapValues { JsonPrimitive(it.value) }).toString(),
-            "TOKEN" to "",
-            "APP_TOKEN" to "fake-app-token",
+            "TOKEN" to "fake-app-token",
             "APP_SLUG" to "fake-app",
             "RUNNER_TEMP" to root.path,
             "GITHUB_EVENT_PATH" to event.path,
@@ -187,6 +186,7 @@ class TestWorld : AutoCloseable {
             "MAVEN_REPOSITORIES" to listOf("central", "google", "plugins").joinToString("\n") { "$url/maven/$it" },
             "FAKE_GRADLEW_LOG" to gradleLog.path,
             "FAKE_GRADLEW_ALSO_WRITES" to "",
+            "KOTLIN_MAIN_KTS_COMPILED_SCRIPTS_CACHE_DIR" to scriptCache.path,
         ) + overrides.filterKeys { it !in workflowInputs }
     }
 
@@ -211,7 +211,12 @@ private val workflowInputs =
         "app-client-id" to "",
     )
 
-private val publishStageSecrets = setOf("TOKEN", "APP_TOKEN", "APP_SLUG")
+private val scriptCache: File =
+    Files.createTempDirectory("main-kts-cache").toFile().also { cache ->
+        Runtime.getRuntime().addShutdownHook(Thread { cache.deleteRecursively() })
+    }
+
+private val publishStageSecrets = setOf("TOKEN", "APP_SLUG")
 
 fun changelog(name: String): String =
     checkNotNull(TestWorld::class.java.getResource("/changelog/$name")) { "No CHANGELOG named $name." }.readText()

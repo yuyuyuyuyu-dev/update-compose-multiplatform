@@ -70,7 +70,7 @@ class FakeGitHub {
         json: JsonObject,
     ): JsonElement? =
         when {
-            method == "GET" && path.startsWith("/user") -> user(path)
+            method == "GET" && path.startsWith("/users/") -> user(path)
             method == "GET" && path == "/repos/$REPOSITORY/pulls" -> listPullRequests(query)
             method == "POST" && path == "/repos/$REPOSITORY/pulls" -> createPullRequest(json)
             method == "PATCH" && pullRequestPath.matches(path) -> editPullRequest(path, json)
@@ -81,13 +81,8 @@ class FakeGitHub {
 
     private fun user(path: String): JsonObject =
         buildJsonObject {
-            if (path == "/user") {
-                put("login", "octocat")
-                put("id", 583231)
-            } else {
-                put("login", decode(path.removePrefix("/users/")))
-                put("id", 41898282)
-            }
+            put("login", decode(path.removePrefix("/users/")))
+            put("id", 41898282)
         }
 
     private fun listPullRequests(query: String): JsonArray {

@@ -88,7 +88,7 @@ with:
 
 | Name                          | Default   | Description                                                                                                                                                                   |
 | ----------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `app-client-id`               |           | The client ID of the GitHub App that opens the pull requests. Pass it together with the `app-private-key` secret.                                                             |
+| `app-client-id`               |           | Required. The client ID of the GitHub App that opens the pull requests.                                                                                                       |
 | `auto-merge`                  | `disable` | The merge method to enable auto-merge with: `squash`, `merge` or `rebase`. `disable` leaves auto-merge off and puts every update in one pull request.                         |
 | `auto-merge-update-types`     |           | The update types to enable auto-merge for, separated by commas: `major`, `minor` and `patch`. Required unless `auto-merge` is `disable`.                                      |
 | `project-directory-to-update` | `.`       | The directory of the Compose Multiplatform project to keep up to date, relative to the root of your repository. Set it when the project is not at the root.                   |
@@ -99,9 +99,9 @@ The update type of an update comes from the first three numbers of the version. 
 
 ### Secrets
 
-| Name              | Description                                                                                                      |
-| ----------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `app-private-key` | The private key of the GitHub App that opens the pull requests. Pass it together with the `app-client-id` input. |
+| Name              | Description                                                               |
+| ----------------- | ------------------------------------------------------------------------- |
+| `app-private-key` | Required. The private key of the GitHub App that opens the pull requests. |
 
 ## License
 

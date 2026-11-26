@@ -16,11 +16,10 @@ on:
         type: string
       app-client-id:
         type: string
+        required: true
     secrets:
       app-private-key:
-        required: false
-      token:
-        required: false
+        required: true
 permissions: {}
 concurrency:
   group: chore/update-dependencies
@@ -70,7 +69,6 @@ jobs:
     steps:
       - name: Create a token for the app
         id: app-token
-        if: inputs.app-client-id != ''
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ inputs.app-client-id }}
@@ -81,7 +79,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           ref: ${{ github.event.repository.default_branch }}
-          token: ${{ steps.app-token.outputs.token || secrets.token }}
+          token: ${{ steps.app-token.outputs.token }}
       - name: Check out the script
         uses: actions/checkout@v7
         with:
@@ -98,7 +96,6 @@ jobs:
       - name: Publish the updates
         env:
           INPUTS: ${{ toJSON(inputs) }}
-          TOKEN: ${{ secrets.token }}
-          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts publish

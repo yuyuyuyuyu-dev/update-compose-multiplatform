@@ -142,10 +142,8 @@ class Settings(
 class Publishing(
     environment: Map<String, String>,
 ) {
-    private val token = environment["TOKEN"].orEmpty()
-    private val appToken = environment["APP_TOKEN"].orEmpty()
-
-    val appSlug: String = environment["APP_SLUG"].orEmpty()
+    val token: String = required(environment, "TOKEN")
+    val appSlug: String = required(environment, "APP_SLUG")
     val base: String =
         Json
             .parseToJsonElement(File(required(environment, "GITHUB_EVENT_PATH")).readText())
@@ -158,13 +156,6 @@ class Publishing(
     val repository: String = required(environment, "GITHUB_REPOSITORY")
     val apiUrl: String = required(environment, "GITHUB_API_URL").removeSuffix("/")
     val graphqlUrl: String = required(environment, "GITHUB_GRAPHQL_URL")
-    val apiToken: String = appToken.ifEmpty { token }
-
-    init {
-        check(token.isEmpty() != appToken.isEmpty()) {
-            "Pass either the token secret, or the app-client-id input together with the app-private-key secret."
-        }
-    }
 }
 
 fun inputs(environment: Map<String, String>): Map<String, String> =
@@ -872,10 +863,10 @@ class GitHub(
     private val repository = "/repos/${settings.repository}"
 
     fun user(appSlug: String): Pair<String, String> {
-        val user = if (appSlug.isEmpty()) call("GET", "/user") else call("GET", "/users/${encode("$appSlug[bot]")}")
+        val user = call("GET", "/users/${encode("$appSlug[bot]")}")
         val login = user.jsonObject["login"]?.jsonPrimitive?.contentOrNull
         val id = user.jsonObject["id"]?.jsonPrimitive?.contentOrNull
-        check(login != null && id != null) { "GitHub did not answer who ${appSlug.ifEmpty { "owns the token" }} is." }
+        check(login != null && id != null) { "GitHub did not answer who $appSlug[bot] is." }
         return login to id
     }
 
@@ -969,7 +960,7 @@ class GitHub(
                 .newBuilder(URI(url))
                 .timeout(Duration.ofMinutes(1))
                 .header("Accept", "application/vnd.github+json")
-                .header("Authorization", "Bearer ${settings.apiToken}")
+                .header("Authorization", "Bearer ${settings.token}")
                 .header("X-GitHub-Api-Version", "2022-11-28")
                 .header("User-Agent", "update-compose-multiplatform")
                 .method(method, publisher)
