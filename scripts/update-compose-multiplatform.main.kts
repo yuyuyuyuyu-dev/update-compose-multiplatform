@@ -68,20 +68,14 @@ val client: HttpClient =
         .followRedirects(HttpClient.Redirect.NORMAL)
         .build()
 
-fun main() {
+fun main(stage: String) {
     try {
         val settings = Settings(System.getenv())
-        val github = GitHub(settings)
-        val units = plan(settings)
-        val baseCommit = git("rev-parse", "HEAD")
-        configureCommitter(github, settings)
-        val autoMerged = units.filter { settings.autoMerges(it.type) }
-        val branches =
-            listOf(
-                BranchUpdate(autoMergeBranch, autoMerged, settings.autoMerge),
-                BranchUpdate(manualBranch, units - autoMerged.toSet(), null),
-            )
-        branches.forEach { syncBranch(settings, github, baseCommit, it) }
+        when (stage) {
+            "update" -> update(settings)
+            "publish" -> publish(settings, Publishing(System.getenv()))
+            else -> error("Run the script with update or publish.")
+        }
     } catch (failure: IllegalStateException) {
         failure.message
             .orEmpty()
@@ -94,35 +88,21 @@ fun main() {
 class Settings(
     environment: Map<String, String>,
 ) {
-    private val token = environment["TOKEN"].orEmpty()
-    private val appToken = environment["APP_TOKEN"].orEmpty()
     private val autoMergeUpdateTypes = commaSeparated(environment["AUTO_MERGE_UPDATE_TYPES"])
 
     val directory: String = environment["PROJECT_DIRECTORY"].orEmpty().ifEmpty { "." }
     val autoMerge: String = environment["AUTO_MERGE"].orEmpty().ifEmpty { "disable" }
-    val labels: List<String> = commaSeparated(environment["LABELS"])
-    val appSlug: String = environment["APP_SLUG"].orEmpty()
-    val base: String = required(environment, "BASE")
-    val repository: String = required(environment, "GITHUB_REPOSITORY")
-    val apiUrl: String = required(environment, "GITHUB_API_URL").removeSuffix("/")
-    val graphqlUrl: String = required(environment, "GITHUB_GRAPHQL_URL")
+    val updates: String = required(environment, "UPDATES")
     val changelogUrl: String = required(environment, "COMPOSE_MULTIPLATFORM_CHANGELOG")
     val mavenRepositories: List<String> =
         required(environment, "MAVEN_REPOSITORIES")
             .lines()
             .map { it.trim().removeSuffix("/") }
             .filter(String::isNotEmpty)
-    val apiToken: String = appToken.ifEmpty { token }
 
     init {
         val problems =
             buildList {
-                if (token.isEmpty() == appToken.isEmpty()) {
-                    add(
-                        "Pass either the token secret, " +
-                            "or the app-client-id input together with the app-private-key secret.",
-                    )
-                }
                 if (autoMerge !in autoMergeMethods) {
                     add("auto-merge must be disable, squash, merge or rebase.")
                 }
@@ -149,19 +129,40 @@ class Settings(
             .toPath()
             .normalize()
             .toString()
-
-    private fun commaSeparated(text: String?): List<String> =
-        text
-            .orEmpty()
-            .split(",")
-            .map(String::trim)
-            .filter(String::isNotEmpty)
-
-    private fun required(
-        environment: Map<String, String>,
-        name: String,
-    ): String = environment[name].orEmpty().ifEmpty { error("$name is not set.") }
 }
+
+class Publishing(
+    environment: Map<String, String>,
+) {
+    private val token = environment["TOKEN"].orEmpty()
+    private val appToken = environment["APP_TOKEN"].orEmpty()
+
+    val labels: List<String> = commaSeparated(environment["LABELS"])
+    val appSlug: String = environment["APP_SLUG"].orEmpty()
+    val base: String = required(environment, "BASE")
+    val repository: String = required(environment, "GITHUB_REPOSITORY")
+    val apiUrl: String = required(environment, "GITHUB_API_URL").removeSuffix("/")
+    val graphqlUrl: String = required(environment, "GITHUB_GRAPHQL_URL")
+    val apiToken: String = appToken.ifEmpty { token }
+
+    init {
+        check(token.isEmpty() != appToken.isEmpty()) {
+            "Pass either the token secret, or the app-client-id input together with the app-private-key secret."
+        }
+    }
+}
+
+fun commaSeparated(text: String?): List<String> =
+    text
+        .orEmpty()
+        .split(",")
+        .map(String::trim)
+        .filter(String::isNotEmpty)
+
+fun required(
+    environment: Map<String, String>,
+    name: String,
+): String = environment[name].orEmpty().ifEmpty { error("$name is not set.") }
 
 class UpdateUnit(
     val name: String,
@@ -182,6 +183,129 @@ class BranchUpdate(
     val units: List<UpdateUnit>,
     val autoMerge: String?,
 )
+
+fun update(settings: Settings) {
+    val baseCommit = git("rev-parse", "HEAD")
+    val branches = branchUpdates(settings, plan(settings)).filter { it.units.isNotEmpty() }
+    val handover =
+        buildJsonObject {
+            put("base", baseCommit)
+            put(
+                "branches",
+                buildJsonObject {
+                    branches.forEach { branch -> put(branch.name, updateBranch(settings, baseCommit, branch)) }
+                },
+            )
+        }
+    File(settings.updates).writeText(handover.toString())
+}
+
+fun updateBranch(
+    settings: Settings,
+    baseCommit: String,
+    update: BranchUpdate,
+): JsonObject {
+    git("checkout", "--quiet", "--force", "--detach", baseCommit)
+    File(settings.projectPath(catalogPath)).writeText(plannedCatalog(settings, update))
+    val lockFiles = projectLockFiles(settings)
+    if (lockFiles.isNotEmpty()) {
+        val tasks = lockFiles.values.toList()
+        val process =
+            ProcessBuilder(listOf(File(settings.directory, "gradlew").absolutePath) + tasks)
+                .directory(File(settings.directory))
+                .inheritIO()
+                .start()
+        check(process.waitFor() == 0) { "${lockFileCommand(lockFiles)} failed." }
+    }
+    val files = listOf(settings.projectPath(catalogPath)) + lockFiles.keys
+    return buildJsonObject { files.forEach { put(it, File(it).readText()) } }
+}
+
+fun publish(
+    settings: Settings,
+    publishing: Publishing,
+) {
+    val github = GitHub(publishing)
+    val handover = Json.parseToJsonElement(File(settings.updates).readText()).jsonObject
+    val baseCommit = git("rev-parse", "HEAD")
+    val branches = branchUpdates(settings, plan(settings))
+    val moved = handover.getValue("base").jsonPrimitive.content != baseCommit
+    val files = if (moved) null else handedOverFiles(settings, branches, handover)
+    when {
+        moved -> {
+            println(
+                "::warning::The default branch moved while the lock files were being updated, " +
+                    "so nothing is published. The next run updates it.",
+            )
+        }
+
+        files == null -> {
+            println(
+                "::warning::The updates changed while the lock files were being updated, " +
+                    "so nothing is published. The next run picks them up.",
+            )
+        }
+
+        else -> {
+            configureCommitter(github, publishing.appSlug)
+            val handedOver = Handover(baseCommit, files)
+            branches.forEach { syncBranch(settings, publishing, github, handedOver, it) }
+        }
+    }
+}
+
+class Handover(
+    val base: String,
+    val files: Map<String, Map<String, String>>,
+)
+
+fun handedOverFiles(
+    settings: Settings,
+    branches: List<BranchUpdate>,
+    handover: JsonObject,
+): Map<String, Map<String, String>>? {
+    val files =
+        handover.getValue("branches").jsonObject.mapValues { (_, branch) ->
+            branch.jsonObject.mapValues { it.value.jsonPrimitive.content }
+        }
+    val expectedPaths = setOf(settings.projectPath(catalogPath)) + projectLockFiles(settings).keys
+    val wrong = files.filterValues { it.keys != expectedPaths }.keys
+    check(wrong.isEmpty()) {
+        "The update job did not hand over just the version catalog and the lock files for ${listed(wrong.toList())}."
+    }
+    val planned = branches.filter { it.units.isNotEmpty() }
+    val matches =
+        files.keys == planned.map { it.name }.toSet() &&
+            planned.all { files.getValue(it.name)[settings.projectPath(catalogPath)] == plannedCatalog(settings, it) }
+    return files.takeIf { matches }
+}
+
+fun branchUpdates(
+    settings: Settings,
+    units: List<UpdateUnit>,
+): List<BranchUpdate> {
+    val autoMerged = units.filter { settings.autoMerges(it.type) }
+    return listOf(
+        BranchUpdate(autoMergeBranch, autoMerged, settings.autoMerge),
+        BranchUpdate(manualBranch, units - autoMerged.toSet(), null),
+    )
+}
+
+fun plannedCatalog(
+    settings: Settings,
+    update: BranchUpdate,
+): String {
+    val catalog = VersionCatalog(File(settings.projectPath(catalogPath)))
+    update.units.flatMap { it.changes }.forEach { catalog.set(it.slot, it.to) }
+    return catalog.text()
+}
+
+fun projectLockFiles(settings: Settings): Map<String, String> {
+    val tracked = git("ls-files", "-z", "--", settings.projectPath("kotlin-js-store")).split("\u0000").toSet()
+    return lockFileTasks.mapKeys { settings.projectPath(it.key) }.filterKeys { it in tracked }
+}
+
+fun lockFileCommand(lockFiles: Map<String, String>): String = (listOf("./gradlew") + lockFiles.values).joinToString(" ")
 
 fun plan(settings: Settings): List<UpdateUnit> {
     val catalog = VersionCatalog(File(settings.projectPath(catalogPath)))
@@ -276,30 +400,33 @@ fun matches(
 
 fun syncBranch(
     settings: Settings,
+    publishing: Publishing,
     github: GitHub,
-    baseCommit: String,
+    handover: Handover,
     update: BranchUpdate,
 ) {
     val pullRequest = github.openPullRequest(update.name)
     if (update.units.isEmpty()) {
-        closePullRequest(settings, github, update.name, pullRequest)
+        closePullRequest(publishing, github, update.name, pullRequest)
         return
     }
-    git("checkout", "--quiet", "--force", "--detach", baseCommit)
-    val catalog = VersionCatalog(File(settings.projectPath(catalogPath)))
-    update.units.flatMap { it.changes }.forEach { catalog.set(it.slot, it.to) }
-    catalog.save()
-    val lockFiles = updateLockFiles(settings)
+    git("checkout", "--quiet", "--force", "--detach", handover.base)
+    handover.files.getValue(update.name).forEach { (path, content) -> File(path).writeText(content) }
+    val lockFiles = projectLockFiles(settings)
+    val changed =
+        git(listOf("diff", "--name-only", "-z", "--") + lockFiles.keys)
+            .split("\u0000")
+            .filter(String::isNotEmpty)
     val title = title(update.units)
-    val body = body(settings, update.units, lockFiles)
-    git(listOf("add", "--", settings.projectPath(catalogPath)) + lockFiles.changed)
+    val body = body(settings, update.units, LockFiles(lockFiles.takeIf { it.isNotEmpty() }?.let(::lockFileCommand), changed))
+    git(listOf("add", "--", settings.projectPath(catalogPath)) + changed)
     git("commit", "--quiet", "--message", title)
     pushBranch(update.name)
     when {
         pullRequest == null -> {
             val created = github.createPullRequest(update.name, title, body)
-            if (settings.labels.isNotEmpty()) {
-                github.addLabels(created, settings.labels)
+            if (publishing.labels.isNotEmpty()) {
+                github.addLabels(created, publishing.labels)
             }
             update.autoMerge?.let { github.setAutoMerge(created, it) }
             println("Opened ${created.url}.")
@@ -320,13 +447,13 @@ fun syncBranch(
 }
 
 fun closePullRequest(
-    settings: Settings,
+    publishing: Publishing,
     github: GitHub,
     branch: String,
     pullRequest: PullRequest?,
 ) {
     if (pullRequest != null) {
-        github.comment(pullRequest, "Closing because ${settings.base} needs none of these updates any more.")
+        github.comment(pullRequest, "Closing because ${publishing.base} needs none of these updates any more.")
         github.closePullRequest(pullRequest)
         println("Closed ${pullRequest.url}.")
     }
@@ -339,24 +466,6 @@ class LockFiles(
     val command: String?,
     val changed: List<String>,
 )
-
-fun updateLockFiles(settings: Settings): LockFiles {
-    val tracked = git("ls-files", "-z", "--", settings.projectPath("kotlin-js-store")).split("\u0000").toSet()
-    val lockFiles = lockFileTasks.keys.filter { settings.projectPath(it) in tracked }
-    if (lockFiles.isEmpty()) {
-        return LockFiles(null, emptyList())
-    }
-    val tasks = lockFiles.map(lockFileTasks::getValue)
-    val command = (listOf("./gradlew") + tasks).joinToString(" ")
-    val process =
-        ProcessBuilder(listOf(File(settings.directory, "gradlew").absolutePath) + tasks)
-            .directory(File(settings.directory))
-            .inheritIO()
-            .start()
-    check(process.waitFor() == 0) { "$command failed." }
-    val diff = git(listOf("diff", "--name-only", "-z", "--") + lockFiles.map(settings::projectPath))
-    return LockFiles(command, diff.split("\u0000").filter(String::isNotEmpty))
-}
 
 fun title(units: List<UpdateUnit>): String {
     val first = units.first()
@@ -534,9 +643,7 @@ class VersionCatalog(
         document.set(slot.path, slot.render(version))
     }
 
-    fun save() {
-        file.writeText(document.toToml())
-    }
+    fun text(): String = document.toToml()
 
     private fun keySlots(): List<Slot> {
         val modulesByKey =
@@ -739,7 +846,7 @@ class PullRequest(
 )
 
 class GitHub(
-    private val settings: Settings,
+    private val settings: Publishing,
 ) {
     private val repository = "/repos/${settings.repository}"
 
@@ -881,9 +988,9 @@ fun encode(text: String): String = URLEncoder.encode(text, Charsets.UTF_8)
 
 fun configureCommitter(
     github: GitHub,
-    settings: Settings,
+    appSlug: String,
 ) {
-    val (login, id) = github.user(settings.appSlug)
+    val (login, id) = github.user(appSlug)
     git("config", "user.name", login)
     git("config", "user.email", "$id+$login@users.noreply.github.com")
 }
@@ -932,4 +1039,4 @@ fun git(arguments: List<String>): String {
 fun listed(items: List<String>): String =
     if (items.size < 2) items.joinToString() else "${items.dropLast(1).joinToString(", ")} and ${items.last()}"
 
-main()
+main(args.singleOrNull().orEmpty())

@@ -35,7 +35,7 @@ Versions written as ranges, such as `3.+`, rich versions, such as `{ strictly = 
 
 If you already have such an app, for example to enable auto-merge on Renovate pull requests, you can use it here too. To set these up, follow [Authenticating with a GitHub App](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/making-authenticated-api-requests-with-a-github-app-in-a-github-actions-workflow#authenticating-with-a-github-app) in the GitHub documentation.
 
-The workflow runs `./gradlew` of your project to update the lock files in the same job that holds the token of the app. Use it only on a project whose build you trust.
+The workflow runs `./gradlew` of your project to update the lock files in a job that can only read your repository. The job that holds the token of the app runs none of your build, and takes nothing from the first job but the version catalog and the lock files.
 
 Stop Dependabot or Renovate from updating the version catalog, so that they do not open pull requests that compete with this workflow.
 
@@ -52,7 +52,8 @@ on:
 permissions: {}
 jobs:
   update-compose-multiplatform:
-    permissions: {}
+    permissions:
+      contents: read
     uses: yuyuyuyuyu-dev/update-compose-multiplatform/.github/workflows/update-compose-multiplatform.yml@<version>
     with:
       app-client-id: ${{ vars.<PULL_REQUEST_APP_CLIENT_ID> }}
@@ -64,6 +65,8 @@ In the file, replace:
 
 - `<version>` with the version of this workflow to use, such as `v2`.
 - `<PULL_REQUEST_APP_CLIENT_ID>` and `<PULL_REQUEST_APP_PRIVATE_KEY>` with the names of your variable and your secret.
+
+The `contents: read` permission lets the job that updates the lock files check out your repository.
 
 The file runs the workflow every day at 7:31 UTC. To run it at another time, see how to write the schedule in [the GitHub Actions documentation](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 

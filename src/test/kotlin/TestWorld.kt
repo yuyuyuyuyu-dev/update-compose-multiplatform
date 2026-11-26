@@ -34,6 +34,7 @@ class TestWorld : AutoCloseable {
     private val root: File = Files.createTempDirectory("update-compose-multiplatform").toFile()
     private val origin = root.resolve("origin.git")
     private val gradleLog = root.resolve("gradlew.log")
+    private val handover = root.resolve("updates.json")
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     private val url get() = "http://127.0.0.1:${server.address.port}"
     private lateinit var initialMain: String
@@ -81,20 +82,44 @@ class TestWorld : AutoCloseable {
         initialMain = git(fixture, "rev-parse", "HEAD")
     }
 
-    fun run(vararg inputs: Pair<String, String>): RunResult {
-        val workspace = root.resolve("workspace-${System.nanoTime()}")
-        git(root, "clone", "--quiet", "--depth=1", "--branch", "main", "file://${origin.path}", workspace.path)
-        val process =
-            ProcessBuilder("kotlin", File("scripts/update-compose-multiplatform.main.kts").absolutePath)
-                .directory(workspace)
-                .redirectErrorStream(true)
-                .apply {
-                    environment().keys.removeAll { it.startsWith("GITHUB_") || it.startsWith("RUNNER_") }
-                    environment().putAll(environment(inputs.toMap()))
-                }.start()
-        val output = process.inputStream.bufferedReader().readText()
-        check(process.waitFor(5, TimeUnit.MINUTES)) { "The script did not finish in five minutes.\n$output" }
-        return RunResult(process.exitValue(), output)
+    fun run(
+        vararg inputs: Pair<String, String>,
+        between: () -> Unit = {},
+    ): RunResult {
+        val environment = environment(inputs.toMap())
+        val callsBefore = github.calls.get()
+        val updated = stage("update", environment.filterKeys { it in updateStageEnvironment })
+        check(github.calls.get() == callsBefore) { "The update stage called GitHub.\n${updated.output}" }
+        if (updated.exitCode != 0) {
+            return updated
+        }
+        between()
+        val publishGradleLog = root.resolve("publish-gradlew.log")
+        val published = stage("publish", environment + ("FAKE_GRADLEW_LOG" to publishGradleLog.path))
+        check(!publishGradleLog.exists()) { "The publish stage ran gradlew.\n${published.output}" }
+        return RunResult(published.exitCode, updated.output + published.output)
+    }
+
+    fun pushToMain(files: Map<String, String>) {
+        val fixture = root.resolve("fixture")
+        files.forEach { (path, content) -> fixture.resolve(path).apply { parentFile.mkdirs() }.writeText(content) }
+        git(fixture, "add", "--all")
+        git(
+            fixture,
+            "-c",
+            "user.name=Octocat",
+            "-c",
+            "user.email=octocat@example.com",
+            "commit",
+            "--quiet",
+            "--message",
+            "Change the project",
+        )
+        git(fixture, "push", "--quiet", origin.path, "main")
+    }
+
+    fun editHandover(edit: (String) -> String) {
+        handover.writeText(edit(handover.readText()))
     }
 
     fun outcome(): Outcome {
@@ -121,11 +146,33 @@ class TestWorld : AutoCloseable {
         root.deleteRecursively()
     }
 
+    private fun stage(
+        name: String,
+        environment: Map<String, String>,
+    ): RunResult {
+        val workspace = root.resolve("workspace-${System.nanoTime()}")
+        git(root, "clone", "--quiet", "--depth=1", "--branch", "main", "file://${origin.path}", workspace.path)
+        val process =
+            ProcessBuilder("kotlin", File("scripts/update-compose-multiplatform.main.kts").absolutePath, name)
+                .directory(workspace)
+                .redirectErrorStream(true)
+                .apply {
+                    environment().keys.removeAll {
+                        it.startsWith("GITHUB_") || it.startsWith("RUNNER_") || it in environment(emptyMap())
+                    }
+                    environment().putAll(environment)
+                }.start()
+        val output = process.inputStream.bufferedReader().readText()
+        check(process.waitFor(5, TimeUnit.MINUTES)) { "The $name stage did not finish in five minutes.\n$output" }
+        return RunResult(process.exitValue(), output)
+    }
+
     private fun environment(inputs: Map<String, String>): Map<String, String> =
         mapOf(
             "PROJECT_DIRECTORY" to ".",
             "AUTO_MERGE" to "disable",
             "AUTO_MERGE_UPDATE_TYPES" to "",
+            "UPDATES" to handover.path,
             "LABELS" to "",
             "TOKEN" to "",
             "APP_TOKEN" to "fake-app-token",
@@ -150,6 +197,18 @@ class TestWorld : AutoCloseable {
         exchange.close()
     }
 }
+
+private val updateStageEnvironment =
+    setOf(
+        "PROJECT_DIRECTORY",
+        "AUTO_MERGE",
+        "AUTO_MERGE_UPDATE_TYPES",
+        "UPDATES",
+        "COMPOSE_MULTIPLATFORM_CHANGELOG",
+        "MAVEN_REPOSITORIES",
+        "FAKE_GRADLEW_LOG",
+        "FAKE_GRADLEW_ALSO_WRITES",
+    )
 
 fun changelog(name: String): String =
     checkNotNull(TestWorld::class.java.getResource("/changelog/$name")) { "No CHANGELOG named $name." }.readText()

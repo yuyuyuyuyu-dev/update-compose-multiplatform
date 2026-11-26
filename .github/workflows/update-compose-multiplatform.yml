@@ -40,6 +40,51 @@ jobs:
   update-dependencies:
     name: Update the dependencies
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+      - name: Check out the script
+        uses: actions/checkout@v7
+        with:
+          repository: ${{ job.workflow_repository }}
+          ref: ${{ job.workflow_sha }}
+          path: .update-compose-multiplatform
+          sparse-checkout: scripts
+          persist-credentials: false
+      - name: Set up the JDK
+        uses: actions/setup-java@v6
+        with:
+          distribution: ${{ inputs.jdk-distribution }}
+          java-version: ${{ inputs.jdk-version }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Update the dependencies
+        env:
+          PROJECT_DIRECTORY: ${{ inputs.project-directory-to-update }}
+          AUTO_MERGE: ${{ inputs.auto-merge }}
+          AUTO_MERGE_UPDATE_TYPES: ${{ inputs.auto-merge-update-types }}
+          UPDATES: ${{ runner.temp }}/updates.json
+          COMPOSE_MULTIPLATFORM_CHANGELOG: https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md
+          MAVEN_REPOSITORIES: |
+            https://repo.maven.apache.org/maven2
+            https://dl.google.com/dl/android/maven2
+            https://plugins.gradle.org/m2
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts update
+      - name: Hand over the updates
+        uses: actions/upload-artifact@v7
+        with:
+          name: updates
+          path: ${{ runner.temp }}/updates.json
+          retention-days: 1
+  publish-updates:
+    name: Publish the updates
+    needs: update-dependencies
+    runs-on: ubuntu-latest
     permissions: {}
     steps:
       - name: Create a token for the app
@@ -64,18 +109,17 @@ jobs:
           path: .update-compose-multiplatform
           sparse-checkout: scripts
           persist-credentials: false
-      - name: Set up the JDK
-        uses: actions/setup-java@v6
+      - name: Receive the updates
+        uses: actions/download-artifact@v8
         with:
-          distribution: ${{ inputs.jdk-distribution }}
-          java-version: ${{ inputs.jdk-version }}
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-      - name: Update the dependencies
+          name: updates
+          path: ${{ runner.temp }}/updates
+      - name: Publish the updates
         env:
           PROJECT_DIRECTORY: ${{ inputs.project-directory-to-update }}
           AUTO_MERGE: ${{ inputs.auto-merge }}
           AUTO_MERGE_UPDATE_TYPES: ${{ inputs.auto-merge-update-types }}
+          UPDATES: ${{ runner.temp }}/updates/updates.json
           LABELS: ${{ inputs.labels }}
           TOKEN: ${{ secrets.token }}
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -86,4 +130,4 @@ jobs:
             https://repo.maven.apache.org/maven2
             https://dl.google.com/dl/android/maven2
             https://plugins.gradle.org/m2
-        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts
+        run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts publish
