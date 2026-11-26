@@ -1,5 +1,7 @@
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.file.Files
@@ -35,6 +37,7 @@ class TestWorld : AutoCloseable {
     private val origin = root.resolve("origin.git")
     private val gradleLog = root.resolve("gradlew.log")
     private val handover = root.resolve("updates.json")
+    private val event = root.resolve("event.json")
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     private val url get() = "http://127.0.0.1:${server.address.port}"
     private lateinit var initialMain: String
@@ -52,6 +55,7 @@ class TestWorld : AutoCloseable {
         server.start()
         git(root, "init", "--quiet", "--bare", "--initial-branch=main", origin.path)
         gradleLog.createNewFile()
+        event.writeText("""{"repository":{"default_branch":"main"}}""")
     }
 
     fun commit(
@@ -88,7 +92,7 @@ class TestWorld : AutoCloseable {
     ): RunResult {
         val environment = environment(inputs.toMap())
         val callsBefore = github.calls.get()
-        val updated = stage("update", environment.filterKeys { it in updateStageEnvironment })
+        val updated = stage("update", environment.filterKeys { it !in publishStageSecrets })
         check(github.calls.get() == callsBefore) { "The update stage called GitHub.\n${updated.output}" }
         if (updated.exitCode != 0) {
             return updated
@@ -167,17 +171,15 @@ class TestWorld : AutoCloseable {
         return RunResult(process.exitValue(), output)
     }
 
-    private fun environment(inputs: Map<String, String>): Map<String, String> =
-        mapOf(
-            "PROJECT_DIRECTORY" to ".",
-            "AUTO_MERGE" to "disable",
-            "AUTO_MERGE_UPDATE_TYPES" to "",
-            "UPDATES" to handover.path,
-            "LABELS" to "",
+    private fun environment(overrides: Map<String, String>): Map<String, String> {
+        val inputs = workflowInputs + overrides.filterKeys { it in workflowInputs }
+        return mapOf(
+            "INPUTS" to JsonObject(inputs.mapValues { JsonPrimitive(it.value) }).toString(),
             "TOKEN" to "",
             "APP_TOKEN" to "fake-app-token",
             "APP_SLUG" to "fake-app",
-            "BASE" to "main",
+            "RUNNER_TEMP" to root.path,
+            "GITHUB_EVENT_PATH" to event.path,
             "GITHUB_REPOSITORY" to "octo-org/octo-app",
             "GITHUB_API_URL" to "$url/api",
             "GITHUB_GRAPHQL_URL" to "$url/api/graphql",
@@ -185,7 +187,8 @@ class TestWorld : AutoCloseable {
             "MAVEN_REPOSITORIES" to listOf("central", "google", "plugins").joinToString("\n") { "$url/maven/$it" },
             "FAKE_GRADLEW_LOG" to gradleLog.path,
             "FAKE_GRADLEW_ALSO_WRITES" to "",
-        ) + inputs
+        ) + overrides.filterKeys { it !in workflowInputs }
+    }
 
     private fun respond(
         exchange: HttpExchange,
@@ -198,17 +201,18 @@ class TestWorld : AutoCloseable {
     }
 }
 
-private val updateStageEnvironment =
-    setOf(
-        "PROJECT_DIRECTORY",
-        "AUTO_MERGE",
-        "AUTO_MERGE_UPDATE_TYPES",
-        "UPDATES",
-        "COMPOSE_MULTIPLATFORM_CHANGELOG",
-        "MAVEN_REPOSITORIES",
-        "FAKE_GRADLEW_LOG",
-        "FAKE_GRADLEW_ALSO_WRITES",
+private val workflowInputs =
+    mapOf(
+        "project-directory-to-update" to "",
+        "jdk-distribution" to "zulu",
+        "jdk-version" to "21",
+        "app-client-id" to "",
+        "auto-merge" to "",
+        "auto-merge-update-types" to "",
+        "labels" to "",
     )
+
+private val publishStageSecrets = setOf("TOKEN", "APP_TOKEN", "APP_SLUG")
 
 fun changelog(name: String): String =
     checkNotNull(TestWorld::class.java.getResource("/changelog/$name")) { "No CHANGELOG named $name." }.readText()

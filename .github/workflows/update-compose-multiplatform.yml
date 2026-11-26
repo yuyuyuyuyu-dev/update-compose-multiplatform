@@ -4,29 +4,20 @@ on:
     inputs:
       project-directory-to-update:
         type: string
-        required: false
-        default: .
       jdk-distribution:
         type: string
-        required: false
         default: zulu
       jdk-version:
         type: string
-        required: false
         default: "21"
       app-client-id:
         type: string
-        required: false
       auto-merge:
         type: string
-        required: false
-        default: disable
       auto-merge-update-types:
         type: string
-        required: false
       labels:
         type: string
-        required: false
     secrets:
       token:
         required: false
@@ -65,15 +56,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
       - name: Update the dependencies
         env:
-          PROJECT_DIRECTORY: ${{ inputs.project-directory-to-update }}
-          AUTO_MERGE: ${{ inputs.auto-merge }}
-          AUTO_MERGE_UPDATE_TYPES: ${{ inputs.auto-merge-update-types }}
-          UPDATES: ${{ runner.temp }}/updates.json
-          COMPOSE_MULTIPLATFORM_CHANGELOG: https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md
-          MAVEN_REPOSITORIES: |
-            https://repo.maven.apache.org/maven2
-            https://dl.google.com/dl/android/maven2
-            https://plugins.gradle.org/m2
+          INPUTS: ${{ toJSON(inputs) }}
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts update
       - name: Hand over the updates
         uses: actions/upload-artifact@v7
@@ -113,21 +96,11 @@ jobs:
         uses: actions/download-artifact@v8
         with:
           name: updates
-          path: ${{ runner.temp }}/updates
+          path: ${{ runner.temp }}
       - name: Publish the updates
         env:
-          PROJECT_DIRECTORY: ${{ inputs.project-directory-to-update }}
-          AUTO_MERGE: ${{ inputs.auto-merge }}
-          AUTO_MERGE_UPDATE_TYPES: ${{ inputs.auto-merge-update-types }}
-          UPDATES: ${{ runner.temp }}/updates/updates.json
-          LABELS: ${{ inputs.labels }}
+          INPUTS: ${{ toJSON(inputs) }}
           TOKEN: ${{ secrets.token }}
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
-          BASE: ${{ github.event.repository.default_branch }}
-          COMPOSE_MULTIPLATFORM_CHANGELOG: https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md
-          MAVEN_REPOSITORIES: |
-            https://repo.maven.apache.org/maven2
-            https://dl.google.com/dl/android/maven2
-            https://plugins.gradle.org/m2
         run: kotlin .update-compose-multiplatform/scripts/update-compose-multiplatform.main.kts publish

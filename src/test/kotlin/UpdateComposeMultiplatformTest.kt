@@ -49,7 +49,7 @@ class UpdateComposeMultiplatformTest {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run("AUTO_MERGE" to "fast-forward", "AUTO_MERGE_UPDATE_TYPES" to "minor")
+            val result = world.run("auto-merge" to "fast-forward", "auto-merge-update-types" to "minor")
 
             // Assert
             result.assertFailed("auto-merge must be disable, squash, merge or rebase.")
@@ -65,7 +65,7 @@ class UpdateComposeMultiplatformTest {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run("AUTO_MERGE" to "squash", "AUTO_MERGE_UPDATE_TYPES" to "minor,prerelease")
+            val result = world.run("auto-merge" to "squash", "auto-merge-update-types" to "minor,prerelease")
 
             // Assert
             result.assertFailed(
@@ -84,7 +84,7 @@ class UpdateComposeMultiplatformTest {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run("PROJECT_DIRECTORY" to "example")
+            val result = world.run("project-directory-to-update" to "example")
 
             // Assert
             result.assertFailed(
@@ -692,7 +692,7 @@ class UpdateComposeMultiplatformTest {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run("LABELS" to "dependencies, kotlin")
+            val result = world.run("labels" to "dependencies, kotlin")
 
             // Assert
             result.assertSucceeded()

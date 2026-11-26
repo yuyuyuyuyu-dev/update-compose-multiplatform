@@ -113,7 +113,7 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run("AUTO_MERGE" to "squash", "AUTO_MERGE_UPDATE_TYPES" to "major,minor,patch")
+            val result = world.run("auto-merge" to "squash", "auto-merge-update-types" to "major,minor,patch")
 
             // Assert
             result.assertSucceeded()
@@ -136,7 +136,7 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run("AUTO_MERGE" to "squash", "AUTO_MERGE_UPDATE_TYPES" to "patch")
+            val result = world.run("auto-merge" to "squash", "auto-merge-update-types" to "patch")
 
             // Assert
             result.assertSucceeded()
@@ -160,7 +160,7 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
 
             // Act
-            val result = world.run("AUTO_MERGE" to "squash", "AUTO_MERGE_UPDATE_TYPES" to "minor,patch")
+            val result = world.run("auto-merge" to "squash", "auto-merge-update-types" to "minor,patch")
 
             // Assert
             result.assertSucceeded()
@@ -266,7 +266,7 @@ class UpdateComposeMultiplatformSpec {
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
 
             // Act
-            val result = world.run("PROJECT_DIRECTORY" to "example")
+            val result = world.run("project-directory-to-update" to "example")
 
             // Assert
             result.assertSucceeded()

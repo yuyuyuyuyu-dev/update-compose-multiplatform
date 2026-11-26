@@ -38,6 +38,13 @@ val pinnedLibraries =
         "org.jetbrains.compose.material:material-icons-core",
         "org.jetbrains.compose.material:material-icons-extended",
     )
+val composeChangelogUrl = "https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md"
+val mavenRepositoryUrls =
+    listOf(
+        "https://repo.maven.apache.org/maven2",
+        "https://dl.google.com/dl/android/maven2",
+        "https://plugins.gradle.org/m2",
+    )
 val catalogPath = "gradle/libs.versions.toml"
 val lockFileTasks =
     mapOf(
@@ -88,14 +95,15 @@ fun main(stage: String) {
 class Settings(
     environment: Map<String, String>,
 ) {
-    private val autoMergeUpdateTypes = commaSeparated(environment["AUTO_MERGE_UPDATE_TYPES"])
+    private val inputs = inputs(environment)
+    private val autoMergeUpdateTypes = commaSeparated(inputs["auto-merge-update-types"])
 
-    val directory: String = environment["PROJECT_DIRECTORY"].orEmpty().ifEmpty { "." }
-    val autoMerge: String = environment["AUTO_MERGE"].orEmpty().ifEmpty { "disable" }
-    val updates: String = required(environment, "UPDATES")
-    val changelogUrl: String = required(environment, "COMPOSE_MULTIPLATFORM_CHANGELOG")
+    val directory: String = inputs["project-directory-to-update"].orEmpty().ifEmpty { "." }
+    val autoMerge: String = inputs["auto-merge"].orEmpty().ifEmpty { "disable" }
+    val updates = File(required(environment, "RUNNER_TEMP"), "updates.json")
+    val changelogUrl: String = environment["COMPOSE_MULTIPLATFORM_CHANGELOG"] ?: composeChangelogUrl
     val mavenRepositories: List<String> =
-        required(environment, "MAVEN_REPOSITORIES")
+        (environment["MAVEN_REPOSITORIES"] ?: mavenRepositoryUrls.joinToString("\n"))
             .lines()
             .map { it.trim().removeSuffix("/") }
             .filter(String::isNotEmpty)
@@ -137,9 +145,17 @@ class Publishing(
     private val token = environment["TOKEN"].orEmpty()
     private val appToken = environment["APP_TOKEN"].orEmpty()
 
-    val labels: List<String> = commaSeparated(environment["LABELS"])
+    val labels: List<String> = commaSeparated(inputs(environment)["labels"])
     val appSlug: String = environment["APP_SLUG"].orEmpty()
-    val base: String = required(environment, "BASE")
+    val base: String =
+        Json
+            .parseToJsonElement(File(required(environment, "GITHUB_EVENT_PATH")).readText())
+            .jsonObject["repository"]
+            ?.jsonObject
+            ?.get("default_branch")
+            ?.jsonPrimitive
+            ?.contentOrNull
+            ?: error("The event of this run does not name the default branch of the repository.")
     val repository: String = required(environment, "GITHUB_REPOSITORY")
     val apiUrl: String = required(environment, "GITHUB_API_URL").removeSuffix("/")
     val graphqlUrl: String = required(environment, "GITHUB_GRAPHQL_URL")
@@ -151,6 +167,15 @@ class Publishing(
         }
     }
 }
+
+fun inputs(environment: Map<String, String>): Map<String, String> =
+    Json
+        .parseToJsonElement(required(environment, "INPUTS"))
+        .jsonObject
+        .mapValues {
+            it.value.jsonPrimitive.contentOrNull
+                .orEmpty()
+        }
 
 fun commaSeparated(text: String?): List<String> =
     text
@@ -197,7 +222,7 @@ fun update(settings: Settings) {
                 },
             )
         }
-    File(settings.updates).writeText(handover.toString())
+    settings.updates.writeText(handover.toString())
 }
 
 fun updateBranch(
@@ -226,7 +251,7 @@ fun publish(
     publishing: Publishing,
 ) {
     val github = GitHub(publishing)
-    val handover = Json.parseToJsonElement(File(settings.updates).readText()).jsonObject
+    val handover = Json.parseToJsonElement(settings.updates.readText()).jsonObject
     val baseCommit = git("rev-parse", "HEAD")
     val branches = branchUpdates(settings, plan(settings))
     val moved = handover.getValue("base").jsonPrimitive.content != baseCommit
