@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform.support
+
 import com.sun.net.httpserver.HttpExchange
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray

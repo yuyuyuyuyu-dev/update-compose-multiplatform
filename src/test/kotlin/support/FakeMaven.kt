@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform.support
+
 import java.util.concurrent.ConcurrentHashMap
 
 class FakeMaven {

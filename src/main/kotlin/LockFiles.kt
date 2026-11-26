@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform
+
 private val lockFileTasks =
     mapOf(
         "kotlin-js-store/yarn.lock" to "kotlinUpgradeYarnLock",

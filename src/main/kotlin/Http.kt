@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform
+
 import java.net.HttpURLConnection
 import java.net.URI
 import java.net.http.HttpClient

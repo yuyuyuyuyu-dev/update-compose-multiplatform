@@ -7,7 +7,7 @@ plugins {
 }
 
 application {
-    mainClass = "MainKt"
+    mainClass = "dev.yuyuyuyuyu.updatecomposemultiplatform.MainKt"
 }
 
 dependencies {
@@ -19,28 +19,9 @@ dependencies {
     testRuntimeOnly(libs.junit.platformLauncher)
 }
 
-tasks.withType<Test>().configureEach {
+tasks.test {
     useJUnitPlatform()
     maxParallelForks = (Runtime.getRuntime().availableProcessors() / 2).coerceAtLeast(1)
-}
-
-tasks.test {
-    filter.excludeTestsMatching("*Spec")
-}
-
-val spec =
-    tasks.register<Test>("spec") {
-        group = LifecycleBasePlugin.VERIFICATION_GROUP
-        testClassesDirs =
-            sourceSets.test
-                .get()
-                .output.classesDirs
-        classpath = sourceSets.test.get().runtimeClasspath
-        filter.includeTestsMatching("*Spec")
-    }
-
-tasks.check {
-    dependsOn(spec)
 }
 
 detekt {

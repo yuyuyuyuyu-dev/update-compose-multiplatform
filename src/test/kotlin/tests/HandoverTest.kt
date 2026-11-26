@@ -1,3 +1,10 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
+
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.CATALOG
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_BRANCH
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.Outcome
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.TestWorld
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.catalog
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

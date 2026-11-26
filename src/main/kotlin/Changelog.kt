@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform
+
 private val gradlePluginRow = Regex("""`org\.jetbrains\.compose` version `([^`]+)`""")
 private val libraryRow = Regex("""\|\s*([^|`]*?)\s*\|\s*`([^`:\s]+:[^`:\s]+):([^`\s]+)`\s*\|.*""")
 private val componentsHeading = Regex("""##\s+Components\s*""")

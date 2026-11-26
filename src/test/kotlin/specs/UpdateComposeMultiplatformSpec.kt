@@ -1,3 +1,15 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform.specs
+
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.AUTO_MERGE_BRANCH
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.CATALOG
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakePullRequest
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_BRANCH
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.Outcome
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.REPOSITORY
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.TestWorld
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.catalog
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.everyLibraryGroup
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.resolvedLockFile
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

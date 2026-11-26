@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform
+
 fun title(units: List<UpdateUnit>): String {
     val first = units.first()
     return when (val others = units.size - 1) {

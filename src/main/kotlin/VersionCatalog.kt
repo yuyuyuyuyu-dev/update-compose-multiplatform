@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform
+
 import org.tomlj.Toml
 import org.tomlj.TomlParseResult
 import org.tomlj.TomlTable

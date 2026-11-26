@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform
+
 import java.math.BigInteger
 
 val updateTypes = listOf("major", "minor", "patch")

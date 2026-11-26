@@ -36,22 +36,6 @@ jobs:
           echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
       - name: Run actionlint
         run: actionlint
-  specs:
-    name: Specs
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Check out the repository
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-      - name: Set up the JDK and Gradle
-        uses: yuyuyuyuyu-dev/repo-config/.github/actions/setup-jdk-and-gradle@main
-        with:
-          compose-multiplatform: true
-      - name: Run the specs
-        run: ./gradlew spec
   tests:
     name: Tests
     runs-on: ubuntu-latest

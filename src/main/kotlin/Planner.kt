@@ -1,3 +1,5 @@
+package dev.yuyuyuyuyu.updatecomposemultiplatform
+
 const val COMPOSE_NAME = "Compose Multiplatform"
 private const val COMPOSE_PLUGIN_ID = "org.jetbrains.compose"
 private const val MANUAL_BRANCH = "chore/update-dependencies"

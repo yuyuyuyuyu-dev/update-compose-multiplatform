@@ -1,3 +1,6 @@
 style:
   MaxLineLength:
     active: false
+naming:
+  InvalidPackageDeclaration:
+    rootPackage: dev.yuyuyuyuyu.updatecomposemultiplatform
