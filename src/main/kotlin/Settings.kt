@@ -1,6 +1,9 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform
 
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -68,18 +71,20 @@ class Publishing(
 ) {
     val token: String = required(environment, "TOKEN")
     val appSlug: String = required(environment, "APP_SLUG")
-    val base: String =
-        Json
-            .parseToJsonElement(File(required(environment, "GITHUB_EVENT_PATH")).readText())
-            .jsonObject["repository"]
-            ?.jsonObject
-            ?.get("default_branch")
-            ?.jsonPrimitive
-            ?.contentOrNull
-            ?: error("The event of this run does not name the default branch of the repository.")
+    val base: String = eventField(environment, "repository", "default_branch")
     val repository: String = required(environment, "GITHUB_REPOSITORY")
     val apiUrl: String = required(environment, "GITHUB_API_URL").removeSuffix("/")
     val graphqlUrl: String = required(environment, "GITHUB_GRAPHQL_URL")
+}
+
+fun eventField(
+    environment: Map<String, String>,
+    vararg path: String,
+): String {
+    val event: JsonElement = Json.parseToJsonElement(File(required(environment, "GITHUB_EVENT_PATH")).readText())
+    val value = path.fold<String, JsonElement?>(event) { element, name -> (element as? JsonObject)?.get(name) }
+    return (value as? JsonPrimitive)?.contentOrNull
+        ?: error("The event of this run has no ${path.joinToString(".")}.")
 }
 
 private fun inputs(environment: Map<String, String>): Map<String, String> =

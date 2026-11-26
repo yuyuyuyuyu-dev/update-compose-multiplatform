@@ -14,11 +14,11 @@ fun runJob(
 ): Int =
     try {
         val workspace = Workspace(File(required(environment, "GITHUB_WORKSPACE")), environment)
-        val settings = Settings(environment, workspace)
         when (arguments.singleOrNull()) {
-            "update" -> UpdateJob(settings, workspace, output).run()
-            "publish" -> PublishJob(settings, Publishing(environment), workspace, output).run()
-            else -> error("Pass update or publish.")
+            "update" -> UpdateJob(Settings(environment, workspace), workspace, output).run()
+            "publish" -> PublishJob(Settings(environment, workspace), Publishing(environment), workspace, output).run()
+            "move-major-tag" -> MoveMajorTagJob(eventField(environment, "release", "tag_name"), workspace).run()
+            else -> error("Pass update, publish or move-major-tag.")
         }
         0
     } catch (failure: IllegalStateException) {
