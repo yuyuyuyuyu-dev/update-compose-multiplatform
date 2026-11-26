@@ -491,8 +491,7 @@ class Module(
             "${group.replace('.', '/')}/$name/maven-metadata.xml"
         }
 
-    override fun equals(other: Any?): Boolean =
-        other is Module && other.coordinates == coordinates && other.isPlugin == isPlugin
+    override fun equals(other: Any?): Boolean = other is Module && other.coordinates == coordinates && other.isPlugin == isPlugin
 
     override fun hashCode(): Int = coordinates.hashCode()
 }

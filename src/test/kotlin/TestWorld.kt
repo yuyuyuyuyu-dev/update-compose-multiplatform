@@ -114,8 +114,7 @@ class TestWorld : AutoCloseable {
         path: String,
     ): String = git(origin, "show", "$branch:$path", trim = false)
 
-    fun commits(branch: String): List<String> =
-        git(origin, "log", "--format=%an <%ae> %s", "$initialMain..$branch").lines()
+    fun commits(branch: String): List<String> = git(origin, "log", "--format=%an <%ae> %s", "$initialMain..$branch").lines()
 
     override fun close() {
         server.stop(0)

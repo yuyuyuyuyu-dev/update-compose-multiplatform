@@ -39,6 +39,7 @@ tasks.check {
 }
 
 detekt {
+    buildUponDefaultConfig = true
     source.from("scripts", "src")
 }
 
