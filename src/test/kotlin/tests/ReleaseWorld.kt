@@ -1,6 +1,8 @@
-package dev.yuyuyuyuyu.updatecomposemultiplatform.support
+package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
 
 import dev.yuyuyuyuyu.updatecomposemultiplatform.runJob
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.RunResult
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.git
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import java.io.File

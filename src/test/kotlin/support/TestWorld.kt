@@ -27,18 +27,13 @@ class RunResult(
     fun assertSucceeded() {
         assertEquals(0, exitCode, output)
     }
-
-    fun assertFailed(vararg errors: String) {
-        assertEquals(1, exitCode, output)
-        assertEquals(errors.map { "::error::$it" }, output.lines().filter { it.startsWith("::error::") }, output)
-    }
 }
 
 class TestWorld : AutoCloseable {
     private val root: File = Files.createTempDirectory("update-compose-multiplatform").toFile()
-    private val origin = root.resolve("origin.git")
+    val origin: File = root.resolve("origin.git")
     private val gradleLog = root.resolve("gradlew.log")
-    private val handover = root.resolve("updates.json")
+    val handover: File = root.resolve("updates.json")
     private val event = root.resolve("event.json")
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     private val url get() = "http://127.0.0.1:${server.address.port}"
@@ -47,8 +42,7 @@ class TestWorld : AutoCloseable {
 
     val maven = FakeMaven()
     val github = FakeGitHub()
-    var changelog: String = changelog("paired.md")
-    var gradlewAlsoWrites: String = ""
+    var changelog: String = checkNotNull(TestWorld::class.java.getResource("/support/changelog/paired.md")).readText()
 
     init {
         server.createContext(
@@ -65,12 +59,13 @@ class TestWorld : AutoCloseable {
     fun commit(
         files: Map<String, String>,
         projectDirectory: String = ".",
+        gradlew: String = FAKE_GRADLEW,
     ) {
         val fixture = root.resolve("fixture")
         files.forEach { (path, content) -> fixture.resolve(path).apply { parentFile.mkdirs() }.writeText(content) }
         fixture.resolve(projectDirectory).resolve("gradlew").apply {
             parentFile.mkdirs()
-            writeText(FAKE_GRADLEW)
+            writeText(gradlew)
             setExecutable(true)
         }
         git(fixture, "init", "--quiet", "--initial-branch=main")
@@ -106,28 +101,6 @@ class TestWorld : AutoCloseable {
         val result = runJobIn("publish", environment() + ("FAKE_GRADLEW_LOG" to publishGradleLog.path))
         check(!publishGradleLog.exists()) { "The publish job ran gradlew.\n${result.output}" }
         return result
-    }
-
-    fun pushToMain(files: Map<String, String>) {
-        val fixture = root.resolve("fixture")
-        files.forEach { (path, content) -> fixture.resolve(path).apply { parentFile.mkdirs() }.writeText(content) }
-        git(fixture, "add", "--all")
-        git(
-            fixture,
-            "-c",
-            "user.name=Octocat",
-            "-c",
-            "user.email=octocat@example.com",
-            "commit",
-            "--quiet",
-            "--message",
-            "Change the project",
-        )
-        git(fixture, "push", "--quiet", origin.path, "main")
-    }
-
-    fun editHandover(edit: (String) -> String) {
-        handover.writeText(edit(handover.readText()))
     }
 
     fun outcome(): Outcome {
@@ -179,7 +152,6 @@ class TestWorld : AutoCloseable {
                 "COMPOSE_MULTIPLATFORM_CHANGELOG" to "$url/changelog.md",
                 "MAVEN_REPOSITORIES" to listOf("central", "google", "plugins").joinToString("\n") { "$url/maven/$it" },
                 "FAKE_GRADLEW_LOG" to gradleLog.path,
-                "FAKE_GRADLEW_ALSO_WRITES" to gradlewAlsoWrites,
             )
 
     private fun respond(
@@ -205,9 +177,6 @@ private val workflowInputs =
 
 private val publishJobSecrets = setOf("TOKEN", "APP_SLUG")
 
-fun changelog(name: String): String =
-    checkNotNull(TestWorld::class.java.getResource("/changelog/$name")) { "No CHANGELOG named $name." }.readText()
-
 fun resolvedLockFile(
     task: String,
     catalog: String,
@@ -228,7 +197,7 @@ fun git(
     return if (trim) output.trim() else output
 }
 
-private val FAKE_GRADLEW =
+val FAKE_GRADLEW =
     """
     #!/bin/sh
     set -eu
@@ -243,7 +212,4 @@ private val FAKE_GRADLEW =
       esac
       { echo "Resolved by ${'$'}task for:"; cat gradle/libs.versions.toml; } > "${'$'}lock"
     done
-    if [ -n "${'$'}FAKE_GRADLEW_ALSO_WRITES" ]; then
-      echo "Written by gradlew" > "${'$'}FAKE_GRADLEW_ALSO_WRITES"
-    fi
     """.trimIndent() + "\n"

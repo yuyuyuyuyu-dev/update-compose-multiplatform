@@ -1,6 +1,5 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
 
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.ReleaseWorld
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

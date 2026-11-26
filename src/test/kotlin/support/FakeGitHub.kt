@@ -35,12 +35,6 @@ class FakeGitHub {
     val requests: MutableList<String> = Collections.synchronizedList(mutableListOf())
     val pullRequests: MutableList<FakePullRequest> = Collections.synchronizedList(mutableListOf())
 
-    fun openPullRequest(
-        head: String,
-        title: String,
-        body: String,
-    ): FakePullRequest = FakePullRequest(pullRequests.size + 1, head, "main", title, body).also(pullRequests::add)
-
     fun pullRequest(head: String): FakePullRequest = pullRequests.single { it.head == head }
 
     fun handle(exchange: HttpExchange) {

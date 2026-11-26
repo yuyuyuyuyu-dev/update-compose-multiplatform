@@ -6,7 +6,6 @@ import dev.yuyuyuyuyu.updatecomposemultiplatform.support.Outcome
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.REPOSITORY
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.TestWorld
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.catalog
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.changelog
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.everyLibraryGroup
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -468,9 +467,9 @@ class UpdateComposeMultiplatformTest {
                     "README.md" to "An app\n",
                     "kotlin-js-store/yarn.lock" to "Resolved before\n",
                 ),
+                gradlew = GRADLEW_THAT_ALSO_WRITES_README,
             )
             world.maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-            world.gradlewAlsoWrites = "README.md"
 
             // Act
             val updated = world.update()
