@@ -37,6 +37,7 @@ class BranchUpdate(
 
 class Planner(
     private val settings: Settings,
+    private val sources: Sources,
     private val workspace: Workspace,
     private val output: Appendable,
 ) {
@@ -59,7 +60,7 @@ class Planner(
 
     private fun plan(): List<UpdateUnit> {
         val catalog = versionCatalog()
-        val changelog = Changelog(fetch(settings.changelogUrl))
+        val changelog = Changelog(fetch(sources.changelogUrl))
         val groups = changelog.libraryGroups()
         val composeSlots = catalog.slots.filter { slot -> slot.modules.any { composeKind(it, groups) != null } }
         val composeUnit = composeUnit(composeSlots, changelog, groups)
@@ -107,7 +108,7 @@ class Planner(
     }
 
     private fun otherUnits(slots: List<Slot>): List<UpdateUnit> {
-        val versions = MavenRepositories(settings.mavenRepositories).versions(slots.flatMap { it.modules }.distinct())
+        val versions = MavenRepositories(sources.mavenRepositoryUrls).versions(slots.flatMap { it.modules }.distinct())
         return slots.mapNotNull { slot ->
             val missing = slot.modules.filter { versions.getValue(it).isEmpty() }
             if (missing.isNotEmpty()) {

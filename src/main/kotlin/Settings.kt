@@ -5,43 +5,30 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
 private val autoMergeMethods = listOf("disable", "squash", "merge", "rebase")
-private const val COMPOSE_CHANGELOG_URL = "https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md"
-private val mavenRepositoryUrls =
-    listOf(
-        "https://repo.maven.apache.org/maven2",
-        "https://dl.google.com/dl/android/maven2",
-        "https://plugins.gradle.org/m2",
-    )
 
 class Settings(
-    environment: Map<String, String>,
+    projectDirectoryToUpdate: String?,
+    autoMerge: String?,
+    autoMergeUpdateTypes: String?,
     workspace: Workspace,
 ) {
-    private val inputs = inputs(environment)
-    private val autoMergeUpdateTypes = commaSeparated(inputs["auto-merge-update-types"])
+    private val autoMergeUpdateTypes = commaSeparated(autoMergeUpdateTypes)
 
-    val directory: String = inputs["project-directory-to-update"].orEmpty().ifEmpty { "." }
-    val autoMerge: String = inputs["auto-merge"].orEmpty().ifEmpty { "disable" }
-    val updates = File(required(environment, "RUNNER_TEMP"), "updates.json")
-    val changelogUrl: String = environment["COMPOSE_MULTIPLATFORM_CHANGELOG"] ?: COMPOSE_CHANGELOG_URL
-    val mavenRepositories: List<String> =
-        (environment["MAVEN_REPOSITORIES"] ?: mavenRepositoryUrls.joinToString("\n"))
-            .lines()
-            .map { it.trim().removeSuffix("/") }
-            .filter(String::isNotEmpty)
+    val directory: String = projectDirectoryToUpdate.orEmpty().ifEmpty { "." }
+    val autoMerge: String = autoMerge.orEmpty().ifEmpty { "disable" }
 
     init {
         val problems =
             buildList {
-                if (autoMerge !in autoMergeMethods) {
+                if (this@Settings.autoMerge !in autoMergeMethods) {
                     add("auto-merge must be disable, squash, merge or rebase.")
                 }
-                if (autoMerge != "disable" && !updateTypes.containsAll(autoMergeUpdateTypes.ifEmpty { listOf("") })) {
+                if (this@Settings.autoMerge != "disable" &&
+                    !updateTypes.containsAll(this@Settings.autoMergeUpdateTypes.ifEmpty { listOf("") })
+                ) {
                     add(
                         "auto-merge-update-types must list the update types to merge automatically, " +
                             "such as minor,patch, unless auto-merge is disable.",
@@ -66,35 +53,15 @@ class Settings(
             .toString()
 }
 
-class Publishing(
-    environment: Map<String, String>,
-) {
-    val token: String = required(environment, "TOKEN")
-    val appSlug: String = required(environment, "APP_SLUG")
-    val base: String = eventField(environment, "repository", "default_branch")
-    val repository: String = required(environment, "GITHUB_REPOSITORY")
-    val apiUrl: String = required(environment, "GITHUB_API_URL").removeSuffix("/")
-    val graphqlUrl: String = required(environment, "GITHUB_GRAPHQL_URL")
-}
-
 fun eventField(
-    environment: Map<String, String>,
+    event: File,
     vararg path: String,
 ): String {
-    val event: JsonElement = Json.parseToJsonElement(File(required(environment, "GITHUB_EVENT_PATH")).readText())
-    val value = path.fold<String, JsonElement?>(event) { element, name -> (element as? JsonObject)?.get(name) }
+    val root: JsonElement = Json.parseToJsonElement(event.readText())
+    val value = path.fold<String, JsonElement?>(root) { element, name -> (element as? JsonObject)?.get(name) }
     return (value as? JsonPrimitive)?.contentOrNull
         ?: error("The event of this run has no ${path.joinToString(".")}.")
 }
-
-private fun inputs(environment: Map<String, String>): Map<String, String> =
-    Json
-        .parseToJsonElement(required(environment, "INPUTS"))
-        .jsonObject
-        .mapValues {
-            it.value.jsonPrimitive.contentOrNull
-                .orEmpty()
-        }
 
 private fun commaSeparated(text: String?): List<String> =
     text
@@ -102,8 +69,3 @@ private fun commaSeparated(text: String?): List<String> =
         .split(",")
         .map(String::trim)
         .filter(String::isNotEmpty)
-
-fun required(
-    environment: Map<String, String>,
-    name: String,
-): String = environment[name].orEmpty().ifEmpty { error("$name is not set.") }

@@ -1,14 +1,14 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
 
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FAKE_GRADLEW
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeGitHub
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakePullRequest
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.RunResult
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.TestWorld
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.fakeGradlew
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.git
 import kotlin.test.assertEquals
 
-val GRADLEW_THAT_ALSO_WRITES_README = FAKE_GRADLEW + "echo \"Written by gradlew\" > README.md\n"
+fun TestWorld.gradlewThatAlsoWritesReadme(): String = fakeGradlew(gradleLog) + "echo \"Written by gradlew\" > README.md\n"
 
 fun changelog(name: String): String =
     checkNotNull(TestWorld::class.java.getResource("/tests/changelog/$name")) { "No CHANGELOG named $name." }.readText()

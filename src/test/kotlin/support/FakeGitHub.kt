@@ -12,7 +12,6 @@ import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import java.net.URLDecoder
 import java.util.Collections
-import java.util.concurrent.atomic.AtomicInteger
 
 const val REPOSITORY = "octo-org/octo-app"
 
@@ -31,14 +30,12 @@ class FakeGitHub {
     private val pullRequestPath = Regex("/repos/$REPOSITORY/pulls/(\\d+)")
     private val commentPath = Regex("/repos/$REPOSITORY/issues/(\\d+)/comments")
 
-    val calls = AtomicInteger()
     val requests: MutableList<String> = Collections.synchronizedList(mutableListOf())
     val pullRequests: MutableList<FakePullRequest> = Collections.synchronizedList(mutableListOf())
 
     fun pullRequest(head: String): FakePullRequest = pullRequests.single { it.head == head }
 
     fun handle(exchange: HttpExchange) {
-        calls.incrementAndGet()
         val method = exchange.requestMethod
         val path = exchange.requestURI.rawPath.removePrefix("/api")
         val body = exchange.requestBody.bufferedReader().readText()

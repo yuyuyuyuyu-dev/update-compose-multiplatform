@@ -27,9 +27,12 @@ class PullRequest(
 )
 
 class GitHub(
-    private val publishing: Publishing,
+    private val apiUrl: String,
+    private val graphqlUrl: String,
+    private val repository: String,
+    private val token: String,
 ) {
-    private val repository = "/repos/${publishing.repository}"
+    private val repositoryPath = "/repos/$repository"
 
     fun user(appSlug: String): Pair<String, String> {
         val user = call("GET", "/users/${encode("$appSlug[bot]")}")
@@ -39,14 +42,18 @@ class GitHub(
         return login to id
     }
 
-    fun openPullRequest(branch: String): PullRequest? {
-        val owner = publishing.repository.substringBefore("/")
-        val query = "state=open&head=${encode("$owner:$branch")}&base=${encode(publishing.base)}"
-        return call("GET", "$repository/pulls?$query").jsonArray.firstOrNull()?.let(::pullRequest)
+    fun openPullRequest(
+        branch: String,
+        base: String,
+    ): PullRequest? {
+        val owner = repository.substringBefore("/")
+        val query = "state=open&head=${encode("$owner:$branch")}&base=${encode(base)}"
+        return call("GET", "$repositoryPath/pulls?$query").jsonArray.firstOrNull()?.let(::pullRequest)
     }
 
     fun createPullRequest(
         branch: String,
+        base: String,
         title: String,
         body: String,
     ): PullRequest {
@@ -54,10 +61,10 @@ class GitHub(
             buildJsonObject {
                 put("title", title)
                 put("head", branch)
-                put("base", publishing.base)
+                put("base", base)
                 put("body", body)
             }
-        return pullRequest(call("POST", "$repository/pulls", content))
+        return pullRequest(call("POST", "$repositoryPath/pulls", content))
     }
 
     fun editPullRequest(
@@ -70,18 +77,18 @@ class GitHub(
                 put("title", title)
                 put("body", body)
             }
-        call("PATCH", "$repository/pulls/${pullRequest.number}", content)
+        call("PATCH", "$repositoryPath/pulls/${pullRequest.number}", content)
     }
 
     fun comment(
         pullRequest: PullRequest,
         body: String,
     ) {
-        call("POST", "$repository/issues/${pullRequest.number}/comments", buildJsonObject { put("body", body) })
+        call("POST", "$repositoryPath/issues/${pullRequest.number}/comments", buildJsonObject { put("body", body) })
     }
 
     fun closePullRequest(pullRequest: PullRequest) {
-        call("PATCH", "$repository/pulls/${pullRequest.number}", buildJsonObject { put("state", "closed") })
+        call("PATCH", "$repositoryPath/pulls/${pullRequest.number}", buildJsonObject { put("state", "closed") })
     }
 
     fun setAutoMerge(
@@ -99,7 +106,7 @@ class GitHub(
                 put("query", "mutation(\$id: ID!) { $mutation { clientMutationId } }")
                 put("variables", buildJsonObject { put("id", pullRequest.nodeId) })
             }
-        val errors = (send("POST", publishing.graphqlUrl, content).jsonObject["errors"] as? JsonArray).orEmpty()
+        val errors = (send("POST", graphqlUrl, content).jsonObject["errors"] as? JsonArray).orEmpty()
         check(errors.isEmpty()) {
             "GitHub refused to ${if (method == null) "disable" else "enable"} auto-merge on ${pullRequest.url}: " +
                 errors.joinToString("; ") {
@@ -115,7 +122,7 @@ class GitHub(
         method: String,
         path: String,
         body: JsonObject? = null,
-    ): JsonElement = send(method, publishing.apiUrl + path, body)
+    ): JsonElement = send(method, apiUrl.removeSuffix("/") + path, body)
 
     private fun send(
         method: String,
@@ -129,7 +136,7 @@ class GitHub(
                 .newBuilder(URI(url))
                 .timeout(Duration.ofMinutes(1))
                 .header("Accept", "application/vnd.github+json")
-                .header("Authorization", "Bearer ${publishing.token}")
+                .header("Authorization", "Bearer $token")
                 .header("X-GitHub-Api-Version", "2022-11-28")
                 .header("User-Agent", "update-compose-multiplatform")
                 .method(method, publisher)

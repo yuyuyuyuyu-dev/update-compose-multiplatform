@@ -2,9 +2,11 @@ package dev.yuyuyuyuyu.updatecomposemultiplatform.support
 
 import com.sun.net.httpserver.HttpExchange
 import com.sun.net.httpserver.HttpServer
-import dev.yuyuyuyuyu.updatecomposemultiplatform.runJob
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
+import dev.yuyuyuyuyu.updatecomposemultiplatform.GitHub
+import dev.yuyuyuyuyu.updatecomposemultiplatform.PublishJob
+import dev.yuyuyuyuyu.updatecomposemultiplatform.RunContext
+import dev.yuyuyuyuyu.updatecomposemultiplatform.Sources
+import dev.yuyuyuyuyu.updatecomposemultiplatform.UpdateJob
 import java.io.File
 import java.net.InetSocketAddress
 import java.nio.file.Files
@@ -32,11 +34,12 @@ class RunResult(
 class TestWorld : AutoCloseable {
     private val root: File = Files.createTempDirectory("update-compose-multiplatform").toFile()
     val origin: File = root.resolve("origin.git")
-    private val gradleLog = root.resolve("gradlew.log")
+    val gradleLog: File = root.resolve("gradlew.log")
     val handover: File = root.resolve("updates.json")
     private val event = root.resolve("event.json")
     private val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)
     private val url get() = "http://127.0.0.1:${server.address.port}"
+    private val sources get() = Sources("$url/changelog.md", listOf("central", "google", "plugins").map { "$url/maven/$it" })
     private lateinit var initialMain: String
     private var inputs: Map<String, String> = emptyMap()
 
@@ -59,7 +62,7 @@ class TestWorld : AutoCloseable {
     fun commit(
         files: Map<String, String>,
         projectDirectory: String = ".",
-        gradlew: String = FAKE_GRADLEW,
+        gradlew: String = fakeGradlew(gradleLog),
     ) {
         val fixture = root.resolve("fixture")
         files.forEach { (path, content) -> fixture.resolve(path).apply { parentFile.mkdirs() }.writeText(content) }
@@ -89,17 +92,27 @@ class TestWorld : AutoCloseable {
         inputs = values.toMap()
     }
 
-    fun update(): RunResult {
-        val callsBefore = github.calls.get()
-        val result = runJobIn("update", environment().filterKeys { it !in publishJobSecrets })
-        check(github.calls.get() == callsBefore) { "The update job called GitHub.\n${result.output}" }
-        return result
-    }
+    fun update(): RunResult =
+        runJob { context, output ->
+            UpdateJob(context, sources, output).run(
+                inputs["project-directory-to-update"],
+                inputs["auto-merge"],
+                inputs["auto-merge-update-types"],
+            )
+        }
 
     fun publish(): RunResult {
-        val publishGradleLog = root.resolve("publish-gradlew.log")
-        val result = runJobIn("publish", environment() + ("FAKE_GRADLEW_LOG" to publishGradleLog.path))
-        check(!publishGradleLog.exists()) { "The publish job ran gradlew.\n${result.output}" }
+        val gradleCalls = gradleLog.readLines()
+        val github = GitHub("$url/api", "$url/api/graphql", REPOSITORY, "fake-app-token")
+        val result =
+            runJob { context, output ->
+                PublishJob(context, sources, github, "fake-app", output).run(
+                    inputs["project-directory-to-update"],
+                    inputs["auto-merge"],
+                    inputs["auto-merge-update-types"],
+                )
+            }
+        check(gradleLog.readLines() == gradleCalls) { "The publish job ran gradlew.\n${result.output}" }
         return result
     }
 
@@ -127,32 +140,13 @@ class TestWorld : AutoCloseable {
         root.deleteRecursively()
     }
 
-    private fun runJobIn(
-        job: String,
-        environment: Map<String, String>,
-    ): RunResult {
+    private fun runJob(job: (RunContext, Appendable) -> Int): RunResult {
         val workspace = root.resolve("workspace-${System.nanoTime()}")
         git(root, "clone", "--quiet", "--depth=1", "--branch", "main", "file://${origin.path}", workspace.path)
         val output = StringBuilder()
-        val exitCode = runJob(listOf(job), environment + ("GITHUB_WORKSPACE" to workspace.path), output)
+        val exitCode = job(RunContext(workspace, root, event), output)
         return RunResult(exitCode, output.toString())
     }
-
-    private fun environment(): Map<String, String> =
-        System.getenv().filterKeys { !it.startsWith("GITHUB_") && !it.startsWith("RUNNER_") } +
-            mapOf(
-                "INPUTS" to JsonObject((workflowInputs + inputs).mapValues { JsonPrimitive(it.value) }).toString(),
-                "TOKEN" to "fake-app-token",
-                "APP_SLUG" to "fake-app",
-                "RUNNER_TEMP" to root.path,
-                "GITHUB_EVENT_PATH" to event.path,
-                "GITHUB_REPOSITORY" to "octo-org/octo-app",
-                "GITHUB_API_URL" to "$url/api",
-                "GITHUB_GRAPHQL_URL" to "$url/api/graphql",
-                "COMPOSE_MULTIPLATFORM_CHANGELOG" to "$url/changelog.md",
-                "MAVEN_REPOSITORIES" to listOf("central", "google", "plugins").joinToString("\n") { "$url/maven/$it" },
-                "FAKE_GRADLEW_LOG" to gradleLog.path,
-            )
 
     private fun respond(
         exchange: HttpExchange,
@@ -164,18 +158,6 @@ class TestWorld : AutoCloseable {
         exchange.close()
     }
 }
-
-private val workflowInputs =
-    mapOf(
-        "jdk-distribution" to "zulu",
-        "jdk-version" to "21",
-        "project-directory-to-update" to "",
-        "auto-merge" to "",
-        "auto-merge-update-types" to "",
-        "app-client-id" to "",
-    )
-
-private val publishJobSecrets = setOf("TOKEN", "APP_SLUG")
 
 fun resolvedLockFile(
     task: String,
@@ -197,11 +179,11 @@ fun git(
     return if (trim) output.trim() else output
 }
 
-val FAKE_GRADLEW =
+fun fakeGradlew(log: File): String =
     """
     #!/bin/sh
     set -eu
-    echo "${'$'}*" >> "${'$'}FAKE_GRADLEW_LOG"
+    echo "${'$'}*" >> '${log.path}'
     for task in "${'$'}@"; do
       case "${'$'}task" in
         kotlinUpgradeYarnLock) lock=kotlin-js-store/yarn.lock ;;

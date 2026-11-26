@@ -3,31 +3,43 @@ package dev.yuyuyuyuyu.updatecomposemultiplatform
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import java.io.File
 
 class UpdateJob(
-    private val settings: Settings,
-    private val workspace: Workspace,
-    output: Appendable,
+    private val context: RunContext,
+    private val sources: Sources,
+    private val output: Appendable,
 ) {
-    private val planner = Planner(settings, workspace, output)
+    private val workspace = Workspace(context.workspace)
 
-    fun run() {
-        val baseCommit = workspace.git("rev-parse", "HEAD")
-        val branches = planner.branchUpdates().filter { it.units.isNotEmpty() }
-        val handover =
-            buildJsonObject {
-                put("base", baseCommit)
-                put(
-                    "branches",
-                    buildJsonObject {
-                        branches.forEach { branch -> put(branch.name, updateBranch(baseCommit, branch)) }
-                    },
-                )
-            }
-        settings.updates.writeText(handover.toString())
-    }
+    fun run(
+        projectDirectoryToUpdate: String?,
+        autoMerge: String?,
+        autoMergeUpdateTypes: String?,
+    ): Int =
+        reportingFailures(output) {
+            val settings = Settings(projectDirectoryToUpdate, autoMerge, autoMergeUpdateTypes, workspace)
+            val planner = Planner(settings, sources, workspace, output)
+            val baseCommit = workspace.git("rev-parse", "HEAD")
+            val branches = planner.branchUpdates().filter { it.units.isNotEmpty() }
+            val handover =
+                buildJsonObject {
+                    put("base", baseCommit)
+                    put(
+                        "branches",
+                        buildJsonObject {
+                            branches.forEach { branch ->
+                                put(branch.name, updateBranch(settings, planner, baseCommit, branch))
+                            }
+                        },
+                    )
+                }
+            File(context.temp, HANDOVER_FILE).writeText(handover.toString())
+        }
 
     private fun updateBranch(
+        settings: Settings,
+        planner: Planner,
         baseCommit: String,
         update: BranchUpdate,
     ): JsonObject {

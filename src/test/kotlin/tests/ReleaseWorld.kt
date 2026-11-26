@@ -1,6 +1,7 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
 
-import dev.yuyuyuyuyu.updatecomposemultiplatform.runJob
+import dev.yuyuyuyuyu.updatecomposemultiplatform.MoveMajorTagJob
+import dev.yuyuyuyuyu.updatecomposemultiplatform.RunContext
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.RunResult
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.git
 import kotlinx.serialization.json.JsonObject
@@ -37,11 +38,8 @@ class ReleaseWorld(
         git(workspace, "remote", "add", "origin", origin.path)
         git(workspace, "fetch", "--quiet", "--depth=1", "origin", "+refs/tags/$releaseTag:refs/tags/$releaseTag")
         git(workspace, "checkout", "--quiet", "--force", "refs/tags/$releaseTag")
-        val environment =
-            System.getenv().filterKeys { !it.startsWith("GITHUB_") && !it.startsWith("RUNNER_") } +
-                mapOf("GITHUB_WORKSPACE" to workspace.path, "GITHUB_EVENT_PATH" to event.path)
         val output = StringBuilder()
-        val exitCode = runJob(listOf("move-major-tag"), environment, output)
+        val exitCode = MoveMajorTagJob(RunContext(workspace, root, event), output).run()
         return RunResult(exitCode, output.toString())
     }
 

@@ -4,7 +4,6 @@ import java.io.File
 
 class Workspace(
     private val root: File,
-    private val environment: Map<String, String>,
 ) {
     fun file(path: String): File = root.resolve(path)
 
@@ -35,9 +34,5 @@ class Workspace(
     private fun process(
         command: List<String>,
         directory: File,
-    ): ProcessBuilder =
-        ProcessBuilder(command).directory(directory).apply {
-            environment().clear()
-            environment().putAll(this@Workspace.environment)
-        }
+    ): ProcessBuilder = ProcessBuilder(command).directory(directory)
 }
