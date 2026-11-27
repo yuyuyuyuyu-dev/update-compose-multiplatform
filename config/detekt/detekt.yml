@@ -4,3 +4,7 @@ style:
 naming:
   InvalidPackageDeclaration:
     rootPackage: dev.yuyuyuyuyu.updatecomposemultiplatform
+complexity:
+  LongMethod:
+    excludes:
+      - "**/src/test/**"

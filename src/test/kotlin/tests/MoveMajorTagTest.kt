@@ -24,15 +24,16 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(0, moved, runner.output.toString())
+        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
         assertEquals(
-            listOf(
-                "v1 New release",
-                "v1.9.0 Earlier release",
-                "v1.9.1-rc.1 Prerelease",
-                "v1.9.2 New release",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "v1 New release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1-rc.1 Prerelease",
+                    "v1.9.2 New release",
+                ),
+            actual = repository.tags(),
         )
     }
 
@@ -47,15 +48,16 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(0, moved, runner.output.toString())
+        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
         assertEquals(
-            listOf(
-                "v1 New release",
-                "v1.9.0 Earlier release",
-                "v1.9.1 New release",
-                "v1.9.1-rc.1 Prerelease",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "v1 New release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1 New release",
+                    "v1.9.1-rc.1 Prerelease",
+                ),
+            actual = repository.tags(),
         )
     }
 
@@ -70,15 +72,16 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(0, moved, runner.output.toString())
+        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
         assertEquals(
-            listOf(
-                "v1 New release",
-                "v1.10.0 New release",
-                "v1.9.0 Earlier release",
-                "v1.9.1-rc.1 Prerelease",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "v1 New release",
+                    "v1.10.0 New release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1-rc.1 Prerelease",
+                ),
+            actual = repository.tags(),
         )
     }
 
@@ -93,16 +96,17 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(0, moved, runner.output.toString())
+        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
         assertEquals(
-            listOf(
-                "v1 Earlier release",
-                "v1.9.0 Earlier release",
-                "v1.9.1-rc.1 Prerelease",
-                "v2 New release",
-                "v2.0.0 New release",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "v1 Earlier release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1-rc.1 Prerelease",
+                    "v2 New release",
+                    "v2.0.0 New release",
+                ),
+            actual = repository.tags(),
         )
     }
 
@@ -117,16 +121,17 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(0, moved, runner.output.toString())
+        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
         assertEquals(
-            listOf(
-                "v0 New release",
-                "v0.9.1 New release",
-                "v1 Earlier release",
-                "v1.9.0 Earlier release",
-                "v1.9.1-rc.1 Prerelease",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "v0 New release",
+                    "v0.9.1 New release",
+                    "v1 Earlier release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1-rc.1 Prerelease",
+                ),
+            actual = repository.tags(),
         )
     }
 
@@ -141,16 +146,17 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(1, moved)
-        assertEquals(listOf("v1.8.0 is older than v1.9.0, so v1 is not moved."), runner.errors())
+        assertEquals(expected = 1, actual = moved)
+        assertEquals(expected = listOf("v1.8.0 is older than v1.9.0, so v1 is not moved."), actual = runner.errors())
         assertEquals(
-            listOf(
-                "v1 Earlier release",
-                "v1.8.0 New release",
-                "v1.9.0 Earlier release",
-                "v1.9.1-rc.1 Prerelease",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "v1 Earlier release",
+                    "v1.8.0 New release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1-rc.1 Prerelease",
+                ),
+            actual = repository.tags(),
         )
     }
 
@@ -165,16 +171,17 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(1, moved)
-        assertEquals(listOf("v1.10.0-rc.1 is not a version such as v1.2.3, so no major tag is moved."), runner.errors())
+        assertEquals(expected = 1, actual = moved)
+        assertEquals(expected = listOf("v1.10.0-rc.1 is not a version such as v1.2.3, so no major tag is moved."), actual = runner.errors())
         assertEquals(
-            listOf(
-                "v1 Earlier release",
-                "v1.10.0-rc.1 New release",
-                "v1.9.0 Earlier release",
-                "v1.9.1-rc.1 Prerelease",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "v1 Earlier release",
+                    "v1.10.0-rc.1 New release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1-rc.1 Prerelease",
+                ),
+            actual = repository.tags(),
         )
     }
 
@@ -189,16 +196,17 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(1, moved)
-        assertEquals(listOf("1.9.2 is not a version such as v1.2.3, so no major tag is moved."), runner.errors())
+        assertEquals(expected = 1, actual = moved)
+        assertEquals(expected = listOf("1.9.2 is not a version such as v1.2.3, so no major tag is moved."), actual = runner.errors())
         assertEquals(
-            listOf(
-                "1.9.2 New release",
-                "v1 Earlier release",
-                "v1.9.0 Earlier release",
-                "v1.9.1-rc.1 Prerelease",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "1.9.2 New release",
+                    "v1 Earlier release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1-rc.1 Prerelease",
+                ),
+            actual = repository.tags(),
         )
     }
 
@@ -213,16 +221,17 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(1, moved)
-        assertEquals(listOf("v1.10 is not a version such as v1.2.3, so no major tag is moved."), runner.errors())
+        assertEquals(expected = 1, actual = moved)
+        assertEquals(expected = listOf("v1.10 is not a version such as v1.2.3, so no major tag is moved."), actual = runner.errors())
         assertEquals(
-            listOf(
-                "v1 Earlier release",
-                "v1.10 New release",
-                "v1.9.0 Earlier release",
-                "v1.9.1-rc.1 Prerelease",
-            ),
-            repository.tags(),
+            expected =
+                listOf(
+                    "v1 Earlier release",
+                    "v1.10 New release",
+                    "v1.9.0 Earlier release",
+                    "v1.9.1-rc.1 Prerelease",
+                ),
+            actual = repository.tags(),
         )
     }
 }

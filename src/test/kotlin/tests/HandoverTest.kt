@@ -49,8 +49,8 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(0, updated, runner.output.toString())
-        assertEquals(0, published, runner.output.toString())
+        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
+        assertEquals(expected = 0, actual = published, message = runner.output.toString())
         assertTrue(
             runner.output.lines().contains(
                 "::warning::The default branch moved while the lock files were being updated, " +
@@ -58,8 +58,8 @@ class HandoverTest {
             ),
         )
         assertEquals(
-            Outcome(mapOf("main" to setOf("README.md")), gradle = listOf("kotlinUpgradeYarnLock")),
-            outcome(),
+            expected = Outcome(mapOf("main" to setOf("README.md")), gradle = listOf("kotlinUpgradeYarnLock")),
+            actual = outcome(),
         )
     }
 
@@ -77,15 +77,15 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(0, updated, runner.output.toString())
-        assertEquals(0, published, runner.output.toString())
+        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
+        assertEquals(expected = 0, actual = published, message = runner.output.toString())
         assertTrue(
             runner.output.lines().contains(
                 "::warning::The updates changed while the lock files were being updated, " +
                     "so nothing is published. The next run picks them up.",
             ),
         )
-        assertEquals(Outcome(mapOf("main" to emptySet()), gradle = listOf("kotlinUpgradeYarnLock")), outcome())
+        assertEquals(expected = Outcome(mapOf("main" to emptySet()), gradle = listOf("kotlinUpgradeYarnLock")), actual = outcome())
     }
 
     @Test
@@ -104,15 +104,16 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(0, updated, runner.output.toString())
-        assertEquals(1, published)
+        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
+        assertEquals(expected = 1, actual = published)
         assertEquals(
-            listOf(
-                "The update job did not hand over just the version catalog and the lock files for $MANUAL_BRANCH.",
-            ),
-            runner.errors(),
+            expected =
+                listOf(
+                    "The update job did not hand over just the version catalog and the lock files for $MANUAL_BRANCH.",
+                ),
+            actual = runner.errors(),
         )
-        assertEquals(Outcome(mapOf("main" to emptySet()), gradle = listOf("kotlinUpgradeYarnLock")), outcome())
+        assertEquals(expected = Outcome(mapOf("main" to emptySet()), gradle = listOf("kotlinUpgradeYarnLock")), actual = outcome())
     }
 
     private fun outcome(): Outcome = Outcome(repository.changedFiles(), github.requests.toList(), repository.gradleCalls())
