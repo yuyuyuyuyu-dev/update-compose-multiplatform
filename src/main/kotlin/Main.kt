@@ -9,21 +9,22 @@ import kotlin.system.exitProcess
 
 private val sources =
     Sources(
-        "https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md",
-        listOf(
-            "https://repo.maven.apache.org/maven2",
-            "https://dl.google.com/dl/android/maven2",
-            "https://plugins.gradle.org/m2",
-        ),
+        changelogUrl = "https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md",
+        mavenRepositoryUrls =
+            listOf(
+                "https://repo.maven.apache.org/maven2",
+                "https://dl.google.com/dl/android/maven2",
+                "https://plugins.gradle.org/m2",
+            ),
     )
 
 fun main(arguments: Array<String>) {
     val environment = System.getenv()
     val context =
         RunContext(
-            File(environment.getValue("GITHUB_WORKSPACE")),
-            File(environment.getValue("RUNNER_TEMP")),
-            File(environment.getValue("GITHUB_EVENT_PATH")),
+            workspace = File(environment.getValue("GITHUB_WORKSPACE")),
+            temp = File(environment.getValue("RUNNER_TEMP")),
+            event = File(environment.getValue("GITHUB_EVENT_PATH")),
         )
     val inputs = environment["INPUTS"]?.let { Json.parseToJsonElement(it).jsonObject }.orEmpty()
 
@@ -31,28 +32,31 @@ fun main(arguments: Array<String>) {
     val result =
         when (arguments.single()) {
             "update" -> {
-                UpdateJob(context, sources, System.out)
-                    .run(input("project-directory-to-update"), input("auto-merge"), input("auto-merge-update-types"))
+                UpdateJob(context = context, sources = sources, output = System.out).run(
+                    projectDirectoryToUpdate = input("project-directory-to-update"),
+                    autoMerge = input("auto-merge"),
+                    autoMergeUpdateTypes = input("auto-merge-update-types"),
+                )
             }
 
             "publish" -> {
                 val endpoint =
                     GitHubEndpoint(
-                        environment.getValue("GITHUB_API_URL"),
-                        environment.getValue("GITHUB_GRAPHQL_URL"),
-                        environment.getValue("GITHUB_REPOSITORY"),
+                        apiUrl = environment.getValue("GITHUB_API_URL"),
+                        graphqlUrl = environment.getValue("GITHUB_GRAPHQL_URL"),
+                        repository = environment.getValue("GITHUB_REPOSITORY"),
                     )
-                PublishJob(context, sources, endpoint, System.out).run(
-                    environment["TOKEN"],
-                    environment["APP_SLUG"],
-                    input("project-directory-to-update"),
-                    input("auto-merge"),
-                    input("auto-merge-update-types"),
+                PublishJob(context = context, sources = sources, endpoint = endpoint, output = System.out).run(
+                    token = environment["TOKEN"],
+                    appSlug = environment["APP_SLUG"],
+                    projectDirectoryToUpdate = input("project-directory-to-update"),
+                    autoMerge = input("auto-merge"),
+                    autoMergeUpdateTypes = input("auto-merge-update-types"),
                 )
             }
 
             "move-major-tag" -> {
-                MoveMajorTagJob(context).run()
+                MoveMajorTagJob(context = context).run()
             }
 
             else -> {
