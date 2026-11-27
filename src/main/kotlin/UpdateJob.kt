@@ -13,9 +13,9 @@ class UpdateJob(
     private val workspace = Workspace(context.workspace)
 
     fun run(
-        projectDirectoryToUpdate: String?,
-        autoMerge: String?,
-        autoMergeUpdateTypes: String?,
+        projectDirectoryToUpdate: String? = null,
+        autoMerge: String? = null,
+        autoMergeUpdateTypes: String? = null,
     ): Int =
         reportingFailures(output) {
             val settings = Settings(projectDirectoryToUpdate, autoMerge, autoMergeUpdateTypes, workspace)

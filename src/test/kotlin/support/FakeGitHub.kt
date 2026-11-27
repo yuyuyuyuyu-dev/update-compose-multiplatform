@@ -1,6 +1,7 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform.support
 
 import com.sun.net.httpserver.HttpExchange
+import dev.yuyuyuyuyu.updatecomposemultiplatform.GitHub
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -26,16 +27,25 @@ data class FakePullRequest(
     val comments: MutableList<String> = mutableListOf(),
 )
 
-class FakeGitHub {
+class FakeGitHub : AutoCloseable {
+    private val server = fakeServer(::handle)
     private val pullRequestPath = Regex("/repos/$REPOSITORY/pulls/(\\d+)")
     private val commentPath = Regex("/repos/$REPOSITORY/issues/(\\d+)/comments")
 
     val requests: MutableList<String> = Collections.synchronizedList(mutableListOf())
     val pullRequests: MutableList<FakePullRequest> = Collections.synchronizedList(mutableListOf())
 
+    val appSlug = "fake-app"
+
+    fun client(): GitHub = GitHub("${server.url}/api", "${server.url}/api/graphql", REPOSITORY, "fake-app-token")
+
     fun pullRequest(head: String): FakePullRequest = pullRequests.single { it.head == head }
 
-    fun handle(exchange: HttpExchange) {
+    override fun close() {
+        server.stop(0)
+    }
+
+    private fun handle(exchange: HttpExchange) {
         val method = exchange.requestMethod
         val path = exchange.requestURI.rawPath.removePrefix("/api")
         val body = exchange.requestBody.bufferedReader().readText()
@@ -50,10 +60,7 @@ class FakeGitHub {
                 .removePrefix("Bearer ")
                 .isNotBlank()
         val response = if (authorized) route(method, path, exchange.requestURI.rawQuery.orEmpty(), json) else null
-        val bytes = response?.toString()?.toByteArray()
-        exchange.sendResponseHeaders(if (bytes == null) 404 else 200, bytes?.size?.toLong() ?: -1)
-        bytes?.let { exchange.responseBody.write(it) }
-        exchange.close()
+        exchange.respond(response?.toString())
     }
 
     private fun route(

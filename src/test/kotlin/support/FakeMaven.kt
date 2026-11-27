@@ -2,8 +2,11 @@ package dev.yuyuyuyuyu.updatecomposemultiplatform.support
 
 import java.util.concurrent.ConcurrentHashMap
 
-class FakeMaven {
+class FakeMaven : AutoCloseable {
     private val metadata = ConcurrentHashMap<String, String>()
+    private val server = fakeServer { it.respond(metadata[it.requestURI.path.removePrefix("/")]) }
+
+    val urls: List<String> = listOf("central", "google", "plugins").map { "${server.url}/$it" }
 
     fun publish(
         coordinates: String,
@@ -22,7 +25,9 @@ class FakeMaven {
         put(repository, id, "$id.gradle.plugin", versions.toList())
     }
 
-    fun metadata(path: String): String? = metadata[path]
+    override fun close() {
+        server.stop(0)
+    }
 
     private fun put(
         repository: String,

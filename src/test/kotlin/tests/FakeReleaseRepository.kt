@@ -1,22 +1,16 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
 
-import dev.yuyuyuyuyu.updatecomposemultiplatform.MoveMajorTagJob
-import dev.yuyuyuyuyu.updatecomposemultiplatform.RunContext
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.RunResult
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.git
-import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.JsonPrimitive
 import java.io.File
 import java.nio.file.Files
 
-class ReleaseWorld(
-    private val releaseTag: String,
-) : AutoCloseable {
-    private val root: File = Files.createTempDirectory("move-major-tag").toFile()
+class FakeReleaseRepository : AutoCloseable {
+    private val root: File = Files.createTempDirectory("release-repository").toFile()
     private val origin = root.resolve("origin.git")
-    private val event = root.resolve("event.json")
+    private lateinit var releaseTag: String
 
-    init {
+    fun release(tag: String) {
+        releaseTag = tag
         git(root, "init", "--quiet", "--bare", "--initial-branch=main", origin.path)
         val fixture = root.resolve("fixture")
         git(root, "init", "--quiet", "--initial-branch=main", fixture.path)
@@ -26,21 +20,17 @@ class ReleaseWorld(
         commit(fixture, "Prerelease")
         git(fixture, "tag", "v1.9.1-rc.1")
         commit(fixture, "New release")
-        git(fixture, "tag", releaseTag)
+        git(fixture, "tag", tag)
         git(fixture, "push", "--quiet", origin.path, "main", "--tags")
-        val release = JsonObject(mapOf("tag_name" to JsonPrimitive(releaseTag)))
-        event.writeText(JsonObject(mapOf("release" to release)).toString())
     }
 
-    fun moveMajorTag(): RunResult {
+    fun checkout(): File {
         val workspace = root.resolve("workspace")
         git(root, "init", "--quiet", "--initial-branch=main", workspace.path)
         git(workspace, "remote", "add", "origin", origin.path)
         git(workspace, "fetch", "--quiet", "--depth=1", "origin", "+refs/tags/$releaseTag:refs/tags/$releaseTag")
         git(workspace, "checkout", "--quiet", "--force", "refs/tags/$releaseTag")
-        val output = StringBuilder()
-        val exitCode = MoveMajorTagJob(RunContext(workspace, root, event), output).run()
-        return RunResult(exitCode, output.toString())
+        return workspace
     }
 
     fun tags(): List<String> = git(origin, "for-each-ref", "--format=%(refname:short) %(subject)", "refs/tags").lines()
