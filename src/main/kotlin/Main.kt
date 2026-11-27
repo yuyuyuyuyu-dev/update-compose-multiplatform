@@ -28,7 +28,7 @@ fun main(arguments: Array<String>) {
     val inputs = environment["INPUTS"]?.let { Json.parseToJsonElement(it).jsonObject }.orEmpty()
 
     fun input(name: String): String? = inputs[name]?.jsonPrimitive?.contentOrNull
-    val exitCode =
+    val result =
         when (arguments.single()) {
             "update" -> {
                 UpdateJob(context, sources, System.out)
@@ -52,12 +52,13 @@ fun main(arguments: Array<String>) {
             }
 
             "move-major-tag" -> {
-                MoveMajorTagJob(context, System.out).run()
+                MoveMajorTagJob(context).run()
             }
 
             else -> {
                 error("Pass update, publish or move-major-tag.")
             }
         }
-    exitProcess(exitCode)
+    result.onFailure { println(it.message) }
+    exitProcess(if (result.isSuccess) 0 else 1)
 }

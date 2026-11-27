@@ -18,13 +18,13 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.9.2")
         runner.release("v1.9.2")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = moved)
         assertEquals(
             expected =
                 listOf(
@@ -42,13 +42,13 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.9.1")
         runner.release("v1.9.1")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = moved)
         assertEquals(
             expected =
                 listOf(
@@ -66,13 +66,13 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.10.0")
         runner.release("v1.10.0")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = moved)
         assertEquals(
             expected =
                 listOf(
@@ -90,13 +90,13 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v2.0.0")
         runner.release("v2.0.0")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = moved)
         assertEquals(
             expected =
                 listOf(
@@ -115,13 +115,13 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v0.9.1")
         runner.release("v0.9.1")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 0, actual = moved, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = moved)
         assertEquals(
             expected =
                 listOf(
@@ -140,14 +140,16 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.8.0")
         runner.release("v1.8.0")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 1, actual = moved)
-        assertEquals(expected = listOf("v1.8.0 is older than v1.9.0, so v1 is not moved."), actual = runner.errors())
+        assertEquals(
+            expected = "::error::v1.8.0 is older than v1.9.0, so v1 is not moved.",
+            actual = moved.exceptionOrNull()?.message,
+        )
         assertEquals(
             expected =
                 listOf(
@@ -165,14 +167,16 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.10.0-rc.1")
         runner.release("v1.10.0-rc.1")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 1, actual = moved)
-        assertEquals(expected = listOf("v1.10.0-rc.1 is not a version such as v1.2.3, so no major tag is moved."), actual = runner.errors())
+        assertEquals(
+            expected = "::error::v1.10.0-rc.1 is not a version such as v1.2.3, so no major tag is moved.",
+            actual = moved.exceptionOrNull()?.message,
+        )
         assertEquals(
             expected =
                 listOf(
@@ -190,14 +194,16 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("1.9.2")
         runner.release("1.9.2")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 1, actual = moved)
-        assertEquals(expected = listOf("1.9.2 is not a version such as v1.2.3, so no major tag is moved."), actual = runner.errors())
+        assertEquals(
+            expected = "::error::1.9.2 is not a version such as v1.2.3, so no major tag is moved.",
+            actual = moved.exceptionOrNull()?.message,
+        )
         assertEquals(
             expected =
                 listOf(
@@ -215,14 +221,16 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.10")
         runner.release("v1.10")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()), runner.output)
+        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = 1, actual = moved)
-        assertEquals(expected = listOf("v1.10 is not a version such as v1.2.3, so no major tag is moved."), actual = runner.errors())
+        assertEquals(
+            expected = "::error::v1.10 is not a version such as v1.2.3, so no major tag is moved.",
+            actual = moved.exceptionOrNull()?.message,
+        )
         assertEquals(
             expected =
                 listOf(

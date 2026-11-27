@@ -49,8 +49,8 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertTrue(
             runner.output.lines().contains(
                 "::warning::The default branch moved while the lock files were being updated, " +
@@ -77,8 +77,8 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertTrue(
             runner.output.lines().contains(
                 "::warning::The updates changed while the lock files were being updated, " +
@@ -104,14 +104,10 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 1, actual = published)
+        assertEquals(expected = Result.success(Unit), actual = updated)
         assertEquals(
-            expected =
-                listOf(
-                    "The update job did not hand over just the version catalog and the lock files for $MANUAL_BRANCH.",
-                ),
-            actual = runner.errors(),
+            expected = "::error::The update job did not hand over just the version catalog and the lock files for $MANUAL_BRANCH.",
+            actual = published.exceptionOrNull()?.message,
         )
         assertEquals(expected = Outcome(mapOf("main" to emptySet()), gradle = listOf("kotlinUpgradeYarnLock")), actual = outcome())
     }

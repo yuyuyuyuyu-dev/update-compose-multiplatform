@@ -4,11 +4,10 @@ private val releaseVersion = Regex("""v\d+\.\d+\.\d+""")
 
 class MoveMajorTagJob(
     private val context: RunContext,
-    private val output: Appendable,
 ) {
     private val workspace = Workspace(context.workspace)
 
-    fun run(): Int = reportingFailures(output) { move(eventField(context.event, "release", "tag_name")) }
+    fun run(): Result<Unit> = runningJob { move(eventField(context.event, "release", "tag_name")) }
 
     private fun move(releaseTag: String) {
         check(releaseVersion.matches(releaseTag)) { "$releaseTag is not a version such as v1.2.3, so no major tag is moved." }

@@ -52,15 +52,12 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "", appSlug = "")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 1, actual = published)
+        assertEquals(expected = Result.success(Unit), actual = updated)
         assertEquals(
             expected =
-                listOf(
-                    "Pass the app-client-id input and the app-private-key secret, " +
-                        "so that the workflow can create a token for the GitHub App.",
-                ),
-            actual = runner.errors(),
+                "::error::Pass the app-client-id input and the app-private-key secret, " +
+                    "so that the workflow can create a token for the GitHub App.",
+            actual = published.exceptionOrNull()?.message,
         )
         assertEquals(expected = nothingChanged, actual = outcome())
     }
@@ -76,8 +73,10 @@ class UpdateComposeMultiplatformTest {
         val updated = update.run(autoMerge = "fast-forward", autoMergeUpdateTypes = "minor")
 
         // Assert
-        assertEquals(expected = 1, actual = updated)
-        assertEquals(expected = listOf("auto-merge must be disable, squash, merge or rebase."), actual = runner.errors())
+        assertEquals(
+            expected = "::error::auto-merge must be disable, squash, merge or rebase.",
+            actual = updated.exceptionOrNull()?.message,
+        )
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -92,14 +91,11 @@ class UpdateComposeMultiplatformTest {
         val updated = update.run(autoMerge = "squash", autoMergeUpdateTypes = "minor,prerelease")
 
         // Assert
-        assertEquals(expected = 1, actual = updated)
         assertEquals(
             expected =
-                listOf(
-                    "auto-merge-update-types must list the update types to merge automatically, " +
-                        "such as minor,patch, unless auto-merge is disable.",
-                ),
-            actual = runner.errors(),
+                "::error::auto-merge-update-types must list the update types to merge automatically, " +
+                    "such as minor,patch, unless auto-merge is disable.",
+            actual = updated.exceptionOrNull()?.message,
         )
         assertEquals(expected = nothingChanged, actual = outcome())
     }
@@ -115,14 +111,11 @@ class UpdateComposeMultiplatformTest {
         val updated = update.run(projectDirectoryToUpdate = "example")
 
         // Assert
-        assertEquals(expected = 1, actual = updated)
         assertEquals(
             expected =
-                listOf(
-                    "example/gradle/libs.versions.toml does not exist. " +
-                        "Pass the directory of the Compose Multiplatform project as project-directory-to-update.",
-                ),
-            actual = runner.errors(),
+                "::error::example/gradle/libs.versions.toml does not exist. " +
+                    "Pass the directory of the Compose Multiplatform project as project-directory-to-update.",
+            actual = updated.exceptionOrNull()?.message,
         )
         assertEquals(expected = nothingChanged, actual = outcome())
     }
@@ -146,15 +139,12 @@ class UpdateComposeMultiplatformTest {
         val updated = update.run()
 
         // Assert
-        assertEquals(expected = 1, actual = updated)
         assertEquals(
             expected =
-                listOf(
-                    "gradle/libs.versions.toml has no org.jetbrains.compose plugin " +
-                        "or compose-gradle-plugin library with a version. " +
-                        "This workflow is only for projects that take Compose Multiplatform from the version catalog.",
-                ),
-            actual = runner.errors(),
+                "::error::gradle/libs.versions.toml has no org.jetbrains.compose plugin " +
+                    "or compose-gradle-plugin library with a version. " +
+                    "This workflow is only for projects that take Compose Multiplatform from the version catalog.",
+            actual = updated.exceptionOrNull()?.message,
         )
         assertEquals(expected = nothingChanged, actual = outcome())
     }
@@ -171,8 +161,10 @@ class UpdateComposeMultiplatformTest {
         val updated = update.run()
 
         // Assert
-        assertEquals(expected = 1, actual = updated)
-        assertEquals(expected = listOf("The Compose Multiplatform CHANGELOG lists no stable release."), actual = runner.errors())
+        assertEquals(
+            expected = "::error::The Compose Multiplatform CHANGELOG lists no stable release.",
+            actual = updated.exceptionOrNull()?.message,
+        )
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -189,13 +181,9 @@ class UpdateComposeMultiplatformTest {
         val updated = update.run()
 
         // Assert
-        assertEquals(expected = 1, actual = updated)
         assertEquals(
-            expected =
-                listOf(
-                    "The Compose Multiplatform CHANGELOG section for 1.10.1 has no Material3 version that can be read.",
-                ),
-            actual = runner.errors(),
+            expected = "::error::The Compose Multiplatform CHANGELOG section for 1.10.1 has no Material3 version that can be read.",
+            actual = updated.exceptionOrNull()?.message,
         )
         assertEquals(expected = nothingChanged, actual = outcome())
     }
@@ -224,14 +212,11 @@ class UpdateComposeMultiplatformTest {
         val updated = update.run()
 
         // Assert
-        assertEquals(expected = 1, actual = updated)
         assertEquals(
             expected =
-                listOf(
-                    "Material3 and Compose Multiplatform share versions.composeMultiplatform, " +
-                        "but the Compose Multiplatform CHANGELOG gives them different versions: 1.10.0-alpha06 and 1.10.1.",
-                ),
-            actual = runner.errors(),
+                "::error::Material3 and Compose Multiplatform share versions.composeMultiplatform, " +
+                    "but the Compose Multiplatform CHANGELOG gives them different versions: 1.10.0-alpha06 and 1.10.1.",
+            actual = updated.exceptionOrNull()?.message,
         )
         assertEquals(expected = nothingChanged, actual = outcome())
     }
@@ -249,8 +234,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -278,8 +263,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(
             expected = everyLibraryGroup("1.11.0-beta02", "1.11.0-beta02", "1.3.0-beta02", "2.11.0-beta02", "2.10.0-beta02"),
             actual = repository.file(MANUAL_BRANCH, CATALOG),
@@ -311,8 +296,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -346,8 +331,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertTrue(repository.file(MANUAL_BRANCH, CATALOG).contains("ktor = \"3.3.0\""))
         assertEquals(expected = "build(deps): update ktor to 3.3.0", actual = github.pullRequest(MANUAL_BRANCH).title)
         assertEquals(
@@ -373,8 +358,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertTrue(
             runner.output.lines().contains(
                 "::warning::versions.ktor is not updated, because no repository has io.ktor:ktor-client-core.",
@@ -423,8 +408,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -462,8 +447,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(
             expected = "build(deps): update com.google.guava:guava to 33.1.0-jre",
             actual = github.pullRequest(MANUAL_BRANCH).title,
@@ -509,8 +494,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(
             expected =
                 """
@@ -550,8 +535,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(
             expected =
                 Outcome(
@@ -581,8 +566,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(
             expected =
                 Outcome(
@@ -607,8 +592,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -630,8 +615,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(
             expected = "build(deps): update io.ktor:ktor-client-core to 3.3.0",
             actual = github.pullRequest(MANUAL_BRANCH).title,
@@ -667,8 +652,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(expected = commits, actual = repository.commits(MANUAL_BRANCH))
         assertEquals(
             expected =
@@ -701,8 +686,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         val pullRequest = github.pullRequest(MANUAL_BRANCH)
         assertEquals(expected = "closed", actual = pullRequest.state)
         assertEquals(expected = listOf("Closing because main needs none of these updates any more."), actual = pullRequest.comments)
@@ -742,8 +727,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = 0, actual = updated, message = runner.output.toString())
-        assertEquals(expected = 0, actual = published, message = runner.output.toString())
+        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertEquals(expected = Result.success(Unit), actual = published)
         assertEquals(expected = null, actual = github.pullRequest(MANUAL_BRANCH).autoMerge)
         assertEquals(
             expected =

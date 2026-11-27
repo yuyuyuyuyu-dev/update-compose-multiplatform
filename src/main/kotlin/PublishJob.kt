@@ -20,8 +20,8 @@ class PublishJob(
         projectDirectoryToUpdate: String? = null,
         autoMerge: String? = null,
         autoMergeUpdateTypes: String? = null,
-    ): Int =
-        reportingFailures(output) {
+    ): Result<Unit> =
+        runningJob {
             check(!token.isNullOrEmpty() && !appSlug.isNullOrEmpty()) {
                 "Pass the app-client-id input and the app-private-key secret, " +
                     "so that the workflow can create a token for the GitHub App."

@@ -16,8 +16,8 @@ class UpdateJob(
         projectDirectoryToUpdate: String? = null,
         autoMerge: String? = null,
         autoMergeUpdateTypes: String? = null,
-    ): Int =
-        reportingFailures(output) {
+    ): Result<Unit> =
+        runningJob {
             val settings = Settings(projectDirectoryToUpdate, autoMerge, autoMergeUpdateTypes, workspace)
             val planner = Planner(settings, sources, workspace, output)
             val baseCommit = workspace.git("rev-parse", "HEAD")

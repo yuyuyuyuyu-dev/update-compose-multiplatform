@@ -15,17 +15,18 @@ class Sources(
     val mavenRepositoryUrls: List<String>,
 )
 
-fun reportingFailures(
-    output: Appendable,
-    job: () -> Unit,
-): Int =
+class JobFailure(
+    message: String,
+) : Exception(message)
+
+fun runningJob(job: () -> Unit): Result<Unit> =
     try {
-        job()
-        0
+        Result.success(job())
     } catch (failure: IllegalStateException) {
-        failure.message
-            .orEmpty()
-            .lines()
-            .forEach { output.appendLine("::error::$it") }
-        1
+        val errors =
+            failure.message
+                .orEmpty()
+                .lines()
+                .joinToString("\n") { "::error::$it" }
+        Result.failure(JobFailure(errors))
     }

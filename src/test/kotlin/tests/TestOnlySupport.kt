@@ -14,8 +14,6 @@ import java.io.File
 fun changelogNamed(name: String): String =
     checkNotNull(FakeRunner::class.java.getResource("/tests/changelog/$name")) { "No CHANGELOG named $name." }.readText()
 
-fun FakeRunner.errors(): List<String> = output.lines().filter { it.startsWith("::error::") }.map { it.removePrefix("::error::") }
-
 fun FakeRunner.release(tag: String) {
     event.writeText(JsonObject(mapOf("release" to JsonObject(mapOf("tag_name" to JsonPrimitive(tag))))).toString())
 }
