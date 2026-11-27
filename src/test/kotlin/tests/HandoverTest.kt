@@ -49,8 +49,8 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertTrue(
             runner.output.lines().contains(
                 "::warning::The default branch moved while the lock files were being updated, " +
@@ -77,8 +77,8 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertTrue(
             runner.output.lines().contains(
                 "::warning::The updates changed while the lock files were being updated, " +
@@ -104,7 +104,7 @@ class HandoverTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertEquals(
             expected = "::error::The update job did not hand over just the version catalog and the lock files for $MANUAL_BRANCH.",
             actual = published.exceptionOrNull()?.message,

@@ -52,7 +52,7 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "", appSlug = "")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 "::error::Pass the app-client-id input and the app-private-key secret, " +
@@ -234,8 +234,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -263,8 +263,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = everyLibraryGroup("1.11.0-beta02", "1.11.0-beta02", "1.3.0-beta02", "2.11.0-beta02", "2.10.0-beta02"),
             actual = repository.file(MANUAL_BRANCH, CATALOG),
@@ -296,8 +296,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -331,8 +331,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertTrue(repository.file(MANUAL_BRANCH, CATALOG).contains("ktor = \"3.3.0\""))
         assertEquals(expected = "build(deps): update ktor to 3.3.0", actual = github.pullRequest(MANUAL_BRANCH).title)
         assertEquals(
@@ -358,8 +358,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertTrue(
             runner.output.lines().contains(
                 "::warning::versions.ktor is not updated, because no repository has io.ktor:ktor-client-core.",
@@ -408,8 +408,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -447,8 +447,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = "build(deps): update com.google.guava:guava to 33.1.0-jre",
             actual = github.pullRequest(MANUAL_BRANCH).title,
@@ -494,8 +494,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 """
@@ -535,8 +535,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 Outcome(
@@ -566,8 +566,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 Outcome(
@@ -592,8 +592,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(expected = nothingChanged, actual = outcome())
     }
 
@@ -615,8 +615,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = "build(deps): update io.ktor:ktor-client-core to 3.3.0",
             actual = github.pullRequest(MANUAL_BRANCH).title,
@@ -652,8 +652,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(expected = commits, actual = repository.commits(MANUAL_BRANCH))
         assertEquals(
             expected =
@@ -686,8 +686,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         val pullRequest = github.pullRequest(MANUAL_BRANCH)
         assertEquals(expected = "closed", actual = pullRequest.state)
         assertEquals(expected = listOf("Closing because main needs none of these updates any more."), actual = pullRequest.comments)
@@ -727,8 +727,8 @@ class UpdateComposeMultiplatformTest {
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = updated)
-        assertEquals(expected = Result.success(Unit), actual = published)
+        assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
+        assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(expected = null, actual = github.pullRequest(MANUAL_BRANCH).autoMerge)
         assertEquals(
             expected =

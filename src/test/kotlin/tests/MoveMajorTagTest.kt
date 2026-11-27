@@ -5,6 +5,7 @@ import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRunner
 import org.junit.jupiter.api.AutoClose
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class MoveMajorTagTest {
     @AutoClose
@@ -24,7 +25,7 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = moved)
+        assertTrue(actual = moved.isSuccess, message = moved.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 listOf(
@@ -48,7 +49,7 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = moved)
+        assertTrue(actual = moved.isSuccess, message = moved.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 listOf(
@@ -72,7 +73,7 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = moved)
+        assertTrue(actual = moved.isSuccess, message = moved.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 listOf(
@@ -96,7 +97,7 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = moved)
+        assertTrue(actual = moved.isSuccess, message = moved.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 listOf(
@@ -121,7 +122,7 @@ class MoveMajorTagTest {
         val moved = moveMajorTag.run()
 
         // Assert
-        assertEquals(expected = Result.success(Unit), actual = moved)
+        assertTrue(actual = moved.isSuccess, message = moved.exceptionOrNull()?.message)
         assertEquals(
             expected =
                 listOf(
