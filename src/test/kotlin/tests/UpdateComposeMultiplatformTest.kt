@@ -37,7 +37,7 @@ class UpdateComposeMultiplatformTest {
 
     private val sources = Sources(changelog.url, maven.urls)
 
-    private val nothingChanged = Outcome(mapOf("main" to emptySet()))
+    private val nothingChanged = Outcome(changedFiles = mapOf("main" to emptySet()))
 
     @Test
     fun `should fail without changing anything when no token of the GitHub App is passed`() {
@@ -276,8 +276,8 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf("POST /repos/$REPOSITORY/pulls"),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
         )
@@ -338,8 +338,8 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf("POST /repos/$REPOSITORY/pulls"),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
         )
@@ -369,8 +369,8 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf("POST /repos/$REPOSITORY/pulls"),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
         )
@@ -456,8 +456,8 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf("POST /repos/$REPOSITORY/pulls"),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
         )
@@ -540,9 +540,9 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG, "kotlin-js-store/yarn.lock")),
-                    listOf("POST /repos/$REPOSITORY/pulls"),
-                    listOf("kotlinUpgradeYarnLock"),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG, "kotlin-js-store/yarn.lock")),
+                    gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
+                    gradleCalls = listOf("kotlinUpgradeYarnLock"),
                 ),
             actual = outcome(),
         )
@@ -571,9 +571,9 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG, "kotlin-js-store/wasm/yarn.lock")),
-                    listOf("POST /repos/$REPOSITORY/pulls"),
-                    listOf("kotlinWasmUpgradeYarnLock"),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG, "kotlin-js-store/wasm/yarn.lock")),
+                    gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
+                    gradleCalls = listOf("kotlinWasmUpgradeYarnLock"),
                 ),
             actual = outcome(),
         )
@@ -624,8 +624,8 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf("PATCH /repos/$REPOSITORY/pulls/1"),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    gitHubWrites = listOf("PATCH /repos/$REPOSITORY/pulls/1"),
                 ),
             actual = outcome(),
         )
@@ -658,8 +658,8 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf("POST /repos/$REPOSITORY/pulls"),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
         )
@@ -694,12 +694,13 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet()),
-                    listOf(
-                        "POST /repos/$REPOSITORY/pulls",
-                        "POST /repos/$REPOSITORY/issues/1/comments",
-                        "PATCH /repos/$REPOSITORY/pulls/1",
-                    ),
+                    changedFiles = mapOf("main" to emptySet()),
+                    gitHubWrites =
+                        listOf(
+                            "POST /repos/$REPOSITORY/pulls",
+                            "POST /repos/$REPOSITORY/issues/1/comments",
+                            "PATCH /repos/$REPOSITORY/pulls/1",
+                        ),
                 ),
             actual = outcome(),
         )
@@ -733,16 +734,18 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
-                    listOf(
-                        "POST /repos/$REPOSITORY/pulls",
-                        "PATCH /repos/$REPOSITORY/pulls/1",
-                        "POST /graphql disablePullRequestAutoMerge",
-                    ),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    gitHubWrites =
+                        listOf(
+                            "POST /repos/$REPOSITORY/pulls",
+                            "PATCH /repos/$REPOSITORY/pulls/1",
+                            "POST /graphql disablePullRequestAutoMerge",
+                        ),
                 ),
             actual = outcome(),
         )
     }
 
-    private fun outcome(): Outcome = Outcome(repository.changedFiles(), github.requests.toList(), repository.gradleCalls())
+    private fun outcome(): Outcome =
+        Outcome(changedFiles = repository.changedFiles(), gitHubWrites = github.writes.toList(), gradleCalls = repository.gradleCalls())
 }

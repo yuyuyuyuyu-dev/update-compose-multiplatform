@@ -58,7 +58,7 @@ class HandoverTest {
             ),
         )
         assertEquals(
-            expected = Outcome(mapOf("main" to setOf("README.md")), gradle = listOf("kotlinUpgradeYarnLock")),
+            expected = Outcome(changedFiles = mapOf("main" to setOf("README.md")), gradleCalls = listOf("kotlinUpgradeYarnLock")),
             actual = outcome(),
         )
     }
@@ -85,7 +85,10 @@ class HandoverTest {
                     "so nothing is published. The next run picks them up.",
             ),
         )
-        assertEquals(expected = Outcome(mapOf("main" to emptySet()), gradle = listOf("kotlinUpgradeYarnLock")), actual = outcome())
+        assertEquals(
+            expected = Outcome(changedFiles = mapOf("main" to emptySet()), gradleCalls = listOf("kotlinUpgradeYarnLock")),
+            actual = outcome(),
+        )
     }
 
     @Test
@@ -109,8 +112,12 @@ class HandoverTest {
             expected = "::error::The update job did not hand over just the version catalog and the lock files for $MANUAL_BRANCH.",
             actual = published.exceptionOrNull()?.message,
         )
-        assertEquals(expected = Outcome(mapOf("main" to emptySet()), gradle = listOf("kotlinUpgradeYarnLock")), actual = outcome())
+        assertEquals(
+            expected = Outcome(changedFiles = mapOf("main" to emptySet()), gradleCalls = listOf("kotlinUpgradeYarnLock")),
+            actual = outcome(),
+        )
     }
 
-    private fun outcome(): Outcome = Outcome(repository.changedFiles(), github.requests.toList(), repository.gradleCalls())
+    private fun outcome(): Outcome =
+        Outcome(changedFiles = repository.changedFiles(), gitHubWrites = github.writes.toList(), gradleCalls = repository.gradleCalls())
 }

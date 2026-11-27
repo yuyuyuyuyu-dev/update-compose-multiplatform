@@ -32,7 +32,7 @@ class FakeGitHub : AutoCloseable {
     private val pullRequestPath = Regex("/repos/$REPOSITORY/pulls/(\\d+)")
     private val commentPath = Regex("/repos/$REPOSITORY/issues/(\\d+)/comments")
 
-    val requests: MutableList<String> = Collections.synchronizedList(mutableListOf())
+    val writes: MutableList<String> = Collections.synchronizedList(mutableListOf())
     val pullRequests: MutableList<FakePullRequest> = Collections.synchronizedList(mutableListOf())
 
     val endpoint = GitHubEndpoint("${server.url}/api", "${server.url}/api/graphql", REPOSITORY)
@@ -49,7 +49,7 @@ class FakeGitHub : AutoCloseable {
         val body = exchange.requestBody.bufferedReader().readText()
         val json = if (body.isBlank()) JsonObject(emptyMap()) else Json.parseToJsonElement(body).jsonObject
         if (method != "GET") {
-            requests += if (path == "/graphql") "$method $path ${mutationName(json)}" else "$method $path"
+            writes += if (path == "/graphql") "$method $path ${mutationName(json)}" else "$method $path"
         }
         val authorized =
             exchange.requestHeaders
