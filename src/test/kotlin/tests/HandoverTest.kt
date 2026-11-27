@@ -45,8 +45,8 @@ class HandoverTest {
         // Act
         val updated = update.run()
         repository.pushToMain(mapOf("README.md" to "An app\n"))
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
-        val published = publish.run()
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -69,12 +69,12 @@ class HandoverTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0", "3.4.0")
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -94,14 +94,14 @@ class HandoverTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
         runner.editHandover {
             it.replace("{\"$CATALOG\":", "{\".github/workflows/ci.yml\":\"Planted\",\"$CATALOG\":")
         }
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())

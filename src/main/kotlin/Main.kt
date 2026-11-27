@@ -36,15 +36,19 @@ fun main(arguments: Array<String>) {
             }
 
             "publish" -> {
-                val github =
-                    GitHub(
+                val endpoint =
+                    GitHubEndpoint(
                         environment.getValue("GITHUB_API_URL"),
                         environment.getValue("GITHUB_GRAPHQL_URL"),
                         environment.getValue("GITHUB_REPOSITORY"),
-                        environment.getValue("TOKEN"),
                     )
-                PublishJob(context, sources, github, environment.getValue("APP_SLUG"), System.out)
-                    .run(input("project-directory-to-update"), input("auto-merge"), input("auto-merge-update-types"))
+                PublishJob(context, sources, endpoint, System.out).run(
+                    environment["TOKEN"],
+                    environment["APP_SLUG"],
+                    input("project-directory-to-update"),
+                    input("auto-merge"),
+                    input("auto-merge-update-types"),
+                )
             }
 
             "move-major-tag" -> {

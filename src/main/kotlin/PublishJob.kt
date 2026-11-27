@@ -9,26 +9,38 @@ import java.io.File
 class PublishJob(
     private val context: RunContext,
     private val sources: Sources,
-    private val github: GitHub,
-    private val appSlug: String,
+    private val endpoint: GitHubEndpoint,
     private val output: Appendable,
 ) {
     private val workspace = Workspace(context.workspace)
 
     fun run(
+        token: String?,
+        appSlug: String?,
         projectDirectoryToUpdate: String? = null,
         autoMerge: String? = null,
         autoMergeUpdateTypes: String? = null,
     ): Int =
         reportingFailures(output) {
+            check(!token.isNullOrEmpty() && !appSlug.isNullOrEmpty()) {
+                "Pass the app-client-id input and the app-private-key secret, " +
+                    "so that the workflow can create a token for the GitHub App."
+            }
             val settings = Settings(projectDirectoryToUpdate, autoMerge, autoMergeUpdateTypes, workspace)
-            Publication(settings, Planner(settings, sources, workspace, output), eventField(context.event, "repository", "default_branch"))
-                .publish()
+            Publication(
+                settings,
+                Planner(settings, sources, workspace, output),
+                GitHub(endpoint, token),
+                appSlug,
+                eventField(context.event, "repository", "default_branch"),
+            ).publish()
         }
 
     private inner class Publication(
         private val settings: Settings,
         private val planner: Planner,
+        private val github: GitHub,
+        private val appSlug: String,
         private val base: String,
     ) {
         private val catalogPath = settings.projectPath(CATALOG_PATH)

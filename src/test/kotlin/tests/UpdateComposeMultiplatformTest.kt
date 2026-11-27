@@ -40,6 +40,31 @@ class UpdateComposeMultiplatformTest {
     private val nothingChanged = Outcome(mapOf("main" to emptySet()))
 
     @Test
+    fun `should fail without changing anything when no token of the GitHub App is passed`() {
+        // Arrange
+        repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
+        maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
+        val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
+
+        // Act
+        val updated = update.run()
+        val published = publish.run(token = "", appSlug = "")
+
+        // Assert
+        assertEquals(0, updated, runner.output.toString())
+        assertEquals(1, published)
+        assertEquals(
+            listOf(
+                "Pass the app-client-id input and the app-private-key secret, " +
+                    "so that the workflow can create a token for the GitHub App.",
+            ),
+            runner.errors(),
+        )
+        assertEquals(nothingChanged, outcome())
+    }
+
+    @Test
     fun `should fail without changing anything when auto-merge is not a merge method`() {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
@@ -211,11 +236,11 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to everyLibraryGroup("1.10.1", "1.10.0-alpha06", "1.2.0", "2.9.6", "2.9.2")))
         maven.publish("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", "2.9.6", "2.10.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -240,11 +265,11 @@ class UpdateComposeMultiplatformTest {
         )
         changelog.text = changelogNamed("second-beta.md")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -272,11 +297,11 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.5.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -307,11 +332,11 @@ class UpdateComposeMultiplatformTest {
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0", "3.4.0")
         maven.publish("io.ktor:ktor-client-cio", "3.2.0", "3.3.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -333,11 +358,11 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0", okio = "3.15.0")))
         maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -382,11 +407,11 @@ class UpdateComposeMultiplatformTest {
         maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
         maven.publish("com.squareup.okio:okio-fakefilesystem", "3.15.0", "3.16.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -421,11 +446,11 @@ class UpdateComposeMultiplatformTest {
             "33.2.0-android",
         )
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -467,11 +492,11 @@ class UpdateComposeMultiplatformTest {
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -507,11 +532,11 @@ class UpdateComposeMultiplatformTest {
         )
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -537,11 +562,11 @@ class UpdateComposeMultiplatformTest {
         )
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -562,11 +587,11 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.3.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -585,11 +610,11 @@ class UpdateComposeMultiplatformTest {
             "Old body",
         )
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -613,14 +638,19 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         UpdateJob(runner.context(repository.checkout()), sources, runner.output).run()
-        PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output).run()
+        PublishJob(
+            runner.context(repository.checkout()),
+            sources,
+            github.endpoint,
+            runner.output,
+        ).run(token = "fake-app-token", appSlug = "fake-app")
         val commits = repository.commits(MANUAL_BRANCH)
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -641,14 +671,19 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         UpdateJob(runner.context(repository.checkout()), sources, runner.output).run()
-        PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output).run()
+        PublishJob(
+            runner.context(repository.checkout()),
+            sources,
+            github.endpoint,
+            runner.output,
+        ).run(token = "fake-app-token", appSlug = "fake-app")
         maven.publish("io.ktor:ktor-client-core", "3.2.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())
@@ -675,15 +710,20 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         UpdateJob(runner.context(repository.checkout()), sources, runner.output).run()
-        PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output).run()
+        PublishJob(
+            runner.context(repository.checkout()),
+            sources,
+            github.endpoint,
+            runner.output,
+        ).run(token = "fake-app-token", appSlug = "fake-app")
         github.pullRequest(MANUAL_BRANCH).autoMerge = "squash"
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0", "3.4.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.client(), github.appSlug, runner.output)
+        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
         // Act
         val updated = update.run()
-        val published = publish.run()
+        val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertEquals(0, updated, runner.output.toString())

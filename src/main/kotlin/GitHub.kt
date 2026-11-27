@@ -26,12 +26,19 @@ class PullRequest(
     val autoMerge: String?,
 )
 
+class GitHubEndpoint(
+    val apiUrl: String,
+    val graphqlUrl: String,
+    val repository: String,
+)
+
 class GitHub(
-    private val apiUrl: String,
-    private val graphqlUrl: String,
-    private val repository: String,
+    endpoint: GitHubEndpoint,
     private val token: String,
 ) {
+    private val apiUrl = endpoint.apiUrl
+    private val graphqlUrl = endpoint.graphqlUrl
+    private val repository = endpoint.repository
     private val repositoryPath = "/repos/$repository"
 
     fun user(appSlug: String): Pair<String, String> {

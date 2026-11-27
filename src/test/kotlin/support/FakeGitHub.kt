@@ -1,7 +1,7 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform.support
 
 import com.sun.net.httpserver.HttpExchange
-import dev.yuyuyuyuyu.updatecomposemultiplatform.GitHub
+import dev.yuyuyuyuyu.updatecomposemultiplatform.GitHubEndpoint
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -35,9 +35,7 @@ class FakeGitHub : AutoCloseable {
     val requests: MutableList<String> = Collections.synchronizedList(mutableListOf())
     val pullRequests: MutableList<FakePullRequest> = Collections.synchronizedList(mutableListOf())
 
-    val appSlug = "fake-app"
-
-    fun client(): GitHub = GitHub("${server.url}/api", "${server.url}/api/graphql", REPOSITORY, "fake-app-token")
+    val endpoint = GitHubEndpoint("${server.url}/api", "${server.url}/api/graphql", REPOSITORY)
 
     fun pullRequest(head: String): FakePullRequest = pullRequests.single { it.head == head }
 
