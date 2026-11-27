@@ -9,7 +9,7 @@ import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeGitHub
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeMaven
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRepository
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRunner
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_BRANCH
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_MERGE_BRANCH
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.Outcome
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.REPOSITORY
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.catalog
@@ -267,16 +267,16 @@ class UpdateComposeMultiplatformTest {
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = everyLibraryGroup("1.11.0-beta02", "1.11.0-beta02", "1.3.0-beta02", "2.11.0-beta02", "2.10.0-beta02"),
-            actual = repository.file(MANUAL_BRANCH, CATALOG),
+            actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG),
         )
         assertEquals(
             expected = "build(deps): update Compose Multiplatform to 1.11.0-beta02",
-            actual = github.pullRequest(MANUAL_BRANCH).title,
+            actual = github.pullRequest(MANUAL_MERGE_BRANCH).title,
         )
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -333,12 +333,12 @@ class UpdateComposeMultiplatformTest {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        assertTrue(repository.file(MANUAL_BRANCH, CATALOG).contains("ktor = \"3.3.0\""))
-        assertEquals(expected = "build(deps): update ktor to 3.3.0", actual = github.pullRequest(MANUAL_BRANCH).title)
+        assertTrue(repository.file(MANUAL_MERGE_BRANCH, CATALOG).contains("ktor = \"3.3.0\""))
+        assertEquals(expected = "build(deps): update ktor to 3.3.0", actual = github.pullRequest(MANUAL_MERGE_BRANCH).title)
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -365,11 +365,11 @@ class UpdateComposeMultiplatformTest {
                 "::warning::versions.ktor is not updated, because no repository has io.ktor:ktor-client-core.",
             ),
         )
-        assertEquals(expected = catalog(ktor = "3.2.0", okio = "3.16.0"), actual = repository.file(MANUAL_BRANCH, CATALOG))
+        assertEquals(expected = catalog(ktor = "3.2.0", okio = "3.16.0"), actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG))
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -451,12 +451,12 @@ class UpdateComposeMultiplatformTest {
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = "build(deps): update com.google.guava:guava to 33.1.0-jre",
-            actual = github.pullRequest(MANUAL_BRANCH).title,
+            actual = github.pullRequest(MANUAL_MERGE_BRANCH).title,
         )
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -511,7 +511,7 @@ class UpdateComposeMultiplatformTest {
                 [plugins]
                 composeMultiplatform = { id = "org.jetbrains.compose", version.ref = "composeMultiplatform" }
                 """.trimIndent() + "\n",
-            actual = repository.file(MANUAL_BRANCH, CATALOG),
+            actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG),
         )
     }
 
@@ -540,7 +540,7 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG, "kotlin-js-store/yarn.lock")),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG, "kotlin-js-store/yarn.lock")),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                     gradleCalls = listOf("kotlinUpgradeYarnLock"),
                 ),
@@ -571,7 +571,7 @@ class UpdateComposeMultiplatformTest {
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG, "kotlin-js-store/wasm/yarn.lock")),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG, "kotlin-js-store/wasm/yarn.lock")),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                     gradleCalls = listOf("kotlinWasmUpgradeYarnLock"),
                 ),
@@ -603,7 +603,7 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         github.openPullRequest(
-            MANUAL_BRANCH,
+            MANUAL_MERGE_BRANCH,
             "build(deps): update io.ktor:ktor-client-core to 3.2.1",
             "Old body",
         )
@@ -619,12 +619,12 @@ class UpdateComposeMultiplatformTest {
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = "build(deps): update io.ktor:ktor-client-core to 3.3.0",
-            actual = github.pullRequest(MANUAL_BRANCH).title,
+            actual = github.pullRequest(MANUAL_MERGE_BRANCH).title,
         )
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("PATCH /repos/$REPOSITORY/pulls/1"),
                 ),
             actual = outcome(),
@@ -643,7 +643,7 @@ class UpdateComposeMultiplatformTest {
             github.endpoint,
             runner.output,
         ).run(token = "fake-app-token", appSlug = "fake-app")
-        val commits = repository.commits(MANUAL_BRANCH)
+        val commits = repository.commits(MANUAL_MERGE_BRANCH)
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
         val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
 
@@ -654,11 +654,11 @@ class UpdateComposeMultiplatformTest {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        assertEquals(expected = commits, actual = repository.commits(MANUAL_BRANCH))
+        assertEquals(expected = commits, actual = repository.commits(MANUAL_MERGE_BRANCH))
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -688,7 +688,7 @@ class UpdateComposeMultiplatformTest {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        val pullRequest = github.pullRequest(MANUAL_BRANCH)
+        val pullRequest = github.pullRequest(MANUAL_MERGE_BRANCH)
         assertEquals(expected = "closed", actual = pullRequest.state)
         assertEquals(expected = listOf("Closing because main needs none of these updates any more."), actual = pullRequest.comments)
         assertEquals(
@@ -718,7 +718,7 @@ class UpdateComposeMultiplatformTest {
             github.endpoint,
             runner.output,
         ).run(token = "fake-app-token", appSlug = "fake-app")
-        github.pullRequest(MANUAL_BRANCH).autoMerge = "squash"
+        github.pullRequest(MANUAL_MERGE_BRANCH).autoMerge = "squash"
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0", "3.4.0")
         val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
         val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
@@ -730,11 +730,11 @@ class UpdateComposeMultiplatformTest {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        assertEquals(expected = null, actual = github.pullRequest(MANUAL_BRANCH).autoMerge)
+        assertEquals(expected = null, actual = github.pullRequest(MANUAL_MERGE_BRANCH).autoMerge)
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites =
                         listOf(
                             "POST /repos/$REPOSITORY/pulls",

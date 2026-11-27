@@ -3,7 +3,7 @@ package dev.yuyuyuyuyu.updatecomposemultiplatform.support
 import java.io.File
 import java.nio.file.Files
 
-const val MANUAL_BRANCH = "chore/update-dependencies"
+const val MANUAL_MERGE_BRANCH = "chore/update-dependencies"
 const val AUTO_MERGE_BRANCH = "chore/update-dependencies-auto-merge"
 const val CATALOG = "gradle/libs.versions.toml"
 

@@ -11,7 +11,7 @@ import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeMaven
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakePullRequest
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRepository
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRunner
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_BRANCH
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_MERGE_BRANCH
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.Outcome
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.REPOSITORY
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.catalog
@@ -95,12 +95,12 @@ class UpdateComposeMultiplatformSpec {
                 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
                 androidApplication = "com.android.application:8.13.1"
                 """.trimIndent() + "\n",
-            actual = repository.file(MANUAL_BRANCH, CATALOG),
+            actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG),
         )
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -122,12 +122,12 @@ class UpdateComposeMultiplatformSpec {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        val pullRequest = github.pullRequest(MANUAL_BRANCH)
+        val pullRequest = github.pullRequest(MANUAL_MERGE_BRANCH)
         assertEquals(
             expected =
                 FakePullRequest(
                     1,
-                    MANUAL_BRANCH,
+                    MANUAL_MERGE_BRANCH,
                     "main",
                     "build(deps): update io.ktor:ktor-client-core to 3.3.0",
                     pullRequest.body,
@@ -140,12 +140,12 @@ class UpdateComposeMultiplatformSpec {
                     "fake-app[bot] <41898282+fake-app[bot]@users.noreply.github.com> " +
                         "build(deps): update io.ktor:ktor-client-core to 3.3.0",
                 ),
-            actual = repository.commits(MANUAL_BRANCH),
+            actual = repository.commits(MANUAL_MERGE_BRANCH),
         )
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -199,11 +199,11 @@ class UpdateComposeMultiplatformSpec {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        assertEquals(expected = null, actual = github.pullRequest(MANUAL_BRANCH).autoMerge)
+        assertEquals(expected = null, actual = github.pullRequest(MANUAL_MERGE_BRANCH).autoMerge)
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -233,13 +233,13 @@ class UpdateComposeMultiplatformSpec {
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(expected = catalog(ktor = "3.2.0", okio = "3.16.0"), actual = repository.file(AUTO_MERGE_BRANCH, CATALOG))
-        assertEquals(expected = catalog(ktor = "4.0.0", okio = "3.15.0"), actual = repository.file(MANUAL_BRANCH, CATALOG))
+        assertEquals(expected = catalog(ktor = "4.0.0", okio = "3.15.0"), actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG))
         assertEquals(expected = "squash", actual = github.pullRequest(AUTO_MERGE_BRANCH).autoMerge)
-        assertEquals(expected = null, actual = github.pullRequest(MANUAL_BRANCH).autoMerge)
+        assertEquals(expected = null, actual = github.pullRequest(MANUAL_MERGE_BRANCH).autoMerge)
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), AUTO_MERGE_BRANCH to setOf(CATALOG), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), AUTO_MERGE_BRANCH to setOf(CATALOG), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites =
                         listOf(
                             "POST /repos/$REPOSITORY/pulls",
@@ -266,11 +266,11 @@ class UpdateComposeMultiplatformSpec {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        assertEquals(expected = catalog(ktor = "3.3.0-beta01"), actual = repository.file(MANUAL_BRANCH, CATALOG))
+        assertEquals(expected = catalog(ktor = "3.3.0-beta01"), actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG))
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -292,11 +292,11 @@ class UpdateComposeMultiplatformSpec {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        assertEquals(expected = catalog(ktor = "3.2.1"), actual = repository.file(MANUAL_BRANCH, CATALOG))
+        assertEquals(expected = catalog(ktor = "3.2.1"), actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG))
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -318,11 +318,11 @@ class UpdateComposeMultiplatformSpec {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        assertEquals(expected = catalog(ktor = "3.3.0"), actual = repository.file(MANUAL_BRANCH, CATALOG))
+        assertEquals(expected = catalog(ktor = "3.3.0"), actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG))
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -351,10 +351,10 @@ class UpdateComposeMultiplatformSpec {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
-        assertEquals(expected = catalog(ktor = "3.3.0"), actual = repository.file(MANUAL_BRANCH, "example/$CATALOG"))
+        assertEquals(expected = catalog(ktor = "3.3.0"), actual = repository.file(MANUAL_MERGE_BRANCH, "example/$CATALOG"))
         assertEquals(
             expected = resolvedLockFile("kotlinUpgradeYarnLock", catalog(ktor = "3.3.0")),
-            actual = repository.file(MANUAL_BRANCH, "example/kotlin-js-store/yarn.lock"),
+            actual = repository.file(MANUAL_MERGE_BRANCH, "example/kotlin-js-store/yarn.lock"),
         )
         assertEquals(
             expected =
@@ -362,7 +362,7 @@ class UpdateComposeMultiplatformSpec {
                     changedFiles =
                         mapOf(
                             "main" to emptySet(),
-                            MANUAL_BRANCH to setOf("example/$CATALOG", "example/kotlin-js-store/yarn.lock"),
+                            MANUAL_MERGE_BRANCH to setOf("example/$CATALOG", "example/kotlin-js-store/yarn.lock"),
                         ),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                     gradleCalls = listOf("kotlinUpgradeYarnLock"),
@@ -394,11 +394,11 @@ class UpdateComposeMultiplatformSpec {
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = resolvedLockFile("kotlinUpgradeYarnLock", catalog(ktor = "3.3.0")),
-            actual = repository.file(MANUAL_BRANCH, "kotlin-js-store/yarn.lock"),
+            actual = repository.file(MANUAL_MERGE_BRANCH, "kotlin-js-store/yarn.lock"),
         )
         assertEquals(
             expected = resolvedLockFile("kotlinWasmUpgradeYarnLock", catalog(ktor = "3.3.0")),
-            actual = repository.file(MANUAL_BRANCH, "kotlin-js-store/wasm/yarn.lock"),
+            actual = repository.file(MANUAL_MERGE_BRANCH, "kotlin-js-store/wasm/yarn.lock"),
         )
         assertEquals(
             expected =
@@ -406,7 +406,7 @@ class UpdateComposeMultiplatformSpec {
                     changedFiles =
                         mapOf(
                             "main" to emptySet(),
-                            MANUAL_BRANCH to setOf(CATALOG, "kotlin-js-store/yarn.lock", "kotlin-js-store/wasm/yarn.lock"),
+                            MANUAL_MERGE_BRANCH to setOf(CATALOG, "kotlin-js-store/yarn.lock", "kotlin-js-store/wasm/yarn.lock"),
                         ),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                     gradleCalls = listOf("kotlinUpgradeYarnLock kotlinWasmUpgradeYarnLock"),
@@ -438,11 +438,11 @@ class UpdateComposeMultiplatformSpec {
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = resolvedLockFile("kotlinUpgradePackageLock", catalog(ktor = "3.3.0")),
-            actual = repository.file(MANUAL_BRANCH, "kotlin-js-store/package-lock.json"),
+            actual = repository.file(MANUAL_MERGE_BRANCH, "kotlin-js-store/package-lock.json"),
         )
         assertEquals(
             expected = resolvedLockFile("kotlinWasmUpgradePackageLock", catalog(ktor = "3.3.0")),
-            actual = repository.file(MANUAL_BRANCH, "kotlin-js-store/wasm/package-lock.json"),
+            actual = repository.file(MANUAL_MERGE_BRANCH, "kotlin-js-store/wasm/package-lock.json"),
         )
         assertEquals(
             expected =
@@ -450,7 +450,7 @@ class UpdateComposeMultiplatformSpec {
                     changedFiles =
                         mapOf(
                             "main" to emptySet(),
-                            MANUAL_BRANCH to
+                            MANUAL_MERGE_BRANCH to
                                 setOf(
                                     CATALOG,
                                     "kotlin-js-store/package-lock.json",
@@ -489,12 +489,12 @@ class UpdateComposeMultiplatformSpec {
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertEquals(
             expected = everyLibraryGroup("1.10.1", "1.10.0-alpha06", "1.2.0", "2.10.0-alpha06", "2.9.2"),
-            actual = repository.file(MANUAL_BRANCH, CATALOG),
+            actual = repository.file(MANUAL_MERGE_BRANCH, CATALOG),
         )
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG)),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                 ),
             actual = outcome(),
@@ -538,12 +538,12 @@ class UpdateComposeMultiplatformSpec {
                 - A stable version moves only to stable versions. A prerelease moves to a later prerelease of the same version, or to a stable version.
                 - The lock file `kotlin-js-store/yarn.lock` was updated with `./gradlew kotlinUpgradeYarnLock`.
                 """.trimIndent() + "\n",
-            actual = github.pullRequest(MANUAL_BRANCH).body,
+            actual = github.pullRequest(MANUAL_MERGE_BRANCH).body,
         )
         assertEquals(
             expected =
                 Outcome(
-                    changedFiles = mapOf("main" to emptySet(), MANUAL_BRANCH to setOf(CATALOG, "kotlin-js-store/yarn.lock")),
+                    changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG, "kotlin-js-store/yarn.lock")),
                     gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls"),
                     gradleCalls = listOf("kotlinUpgradeYarnLock"),
                 ),

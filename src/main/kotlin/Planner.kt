@@ -2,7 +2,7 @@ package dev.yuyuyuyuyu.updatecomposemultiplatform
 
 const val COMPOSE_NAME = "Compose Multiplatform"
 private const val COMPOSE_PLUGIN_ID = "org.jetbrains.compose"
-private const val MANUAL_BRANCH = "chore/update-dependencies"
+private const val MANUAL_MERGE_BRANCH = "chore/update-dependencies"
 private const val AUTO_MERGE_BRANCH = "chore/update-dependencies-auto-merge"
 private val composeModules =
     listOf(
@@ -46,7 +46,7 @@ class Planner(
         val autoMerged = units.filter { settings.autoMerges(it.type) }
         return listOf(
             BranchUpdate(AUTO_MERGE_BRANCH, autoMerged, settings.autoMerge),
-            BranchUpdate(MANUAL_BRANCH, units - autoMerged.toSet(), null),
+            BranchUpdate(MANUAL_MERGE_BRANCH, units - autoMerged.toSet(), null),
         )
     }
 

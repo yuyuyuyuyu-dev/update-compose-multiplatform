@@ -9,7 +9,7 @@ import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeGitHub
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeMaven
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRepository
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRunner
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_BRANCH
+import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_MERGE_BRANCH
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.Outcome
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.catalog
 import org.junit.jupiter.api.AutoClose
@@ -109,7 +109,7 @@ class HandoverTest {
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertEquals(
-            expected = "::error::The update job did not hand over just the version catalog and the lock files for $MANUAL_BRANCH.",
+            expected = "::error::The update job did not hand over just the version catalog and the lock files for $MANUAL_MERGE_BRANCH.",
             actual = published.exceptionOrNull()?.message,
         )
         assertEquals(
