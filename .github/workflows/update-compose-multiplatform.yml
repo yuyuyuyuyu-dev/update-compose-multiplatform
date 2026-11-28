@@ -2,127 +2,75 @@ name: Update Compose Multiplatform
 on:
   workflow_call:
     inputs:
-      update-js-yarn-lock:
-        type: boolean
-        required: false
-        default: false
-      update-wasm-yarn-lock:
-        type: boolean
-        required: false
-        default: false
-      jdk-distribution-to-update-yarn-lock:
+      jdk-distribution:
         type: string
-        required: false
-      jdk-version-to-update-yarn-lock:
+        default: zulu
+      jdk-version:
         type: string
-        required: false
-      app-client-id:
-        type: string
-        required: false
-      auto-merge:
-        type: string
-        required: false
-        default: disable
-      auto-merge-update-types:
-        type: string
-        required: false
-      labels:
-        type: string
-        required: false
+        default: "21"
       project-directory-to-update:
         type: string
-        required: false
-        default: .
+      auto-merge:
+        type: string
+      auto-merge-update-types:
+        type: string
+      app-client-id:
+        type: string
+        required: true
     secrets:
-      token:
-        required: false
       app-private-key:
-        required: false
+        required: true
 permissions: {}
 concurrency:
-  group: chore/update-compose-multiplatform
+  group: chore/update-dependencies
   cancel-in-progress: false
-env:
-  BASE: ${{ github.event.repository.default_branch }}
 jobs:
-  check-inputs:
-    name: Check the inputs
-    runs-on: ubuntu-latest
-    permissions: {}
-    steps:
-      - name: Check out the actions
-        uses: actions/checkout@v7
-        with:
-          repository: ${{ job.workflow_repository }}
-          ref: ${{ job.workflow_sha }}
-          path: .update-compose-multiplatform
-          sparse-checkout: |
-            .github/actions
-            scripts
-          persist-credentials: false
-      - name: Check the inputs
-        uses: ./.update-compose-multiplatform/.github/actions/check-inputs
-        with:
-          update-js-yarn-lock: ${{ inputs.update-js-yarn-lock }}
-          update-wasm-yarn-lock: ${{ inputs.update-wasm-yarn-lock }}
-          jdk-distribution-to-update-yarn-lock: ${{ inputs.jdk-distribution-to-update-yarn-lock }}
-          jdk-version-to-update-yarn-lock: ${{ inputs.jdk-version-to-update-yarn-lock }}
-          app-client-id: ${{ inputs.app-client-id }}
-          auto-merge: ${{ inputs.auto-merge }}
-          auto-merge-update-types: ${{ inputs.auto-merge-update-types }}
-          token: ${{ secrets.token }}
-          app-private-key: ${{ secrets.app-private-key }}
-  prepare:
-    name: Update the version catalog and yarn.lock
-    needs: check-inputs
+  update-dependencies:
+    name: Update the dependencies
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    outputs:
-      commit: ${{ steps.checkout.outputs.commit }}
     steps:
       - name: Check out the repository
-        id: checkout
         uses: actions/checkout@v7
         with:
-          ref: ${{ env.BASE }}
+          ref: ${{ github.event.repository.default_branch }}
           persist-credentials: false
-      - name: Check out the actions
+      - name: Check out the tool
         uses: actions/checkout@v7
         with:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
           path: .update-compose-multiplatform
-          sparse-checkout: |
-            .github/actions
-            scripts
           persist-credentials: false
-      - name: Update the version catalog and yarn.lock
-        uses: ./.update-compose-multiplatform/.github/actions/prepare
+      - name: Set up the JDK
+        uses: actions/setup-java@v6
         with:
-          update-js-yarn-lock: ${{ inputs.update-js-yarn-lock }}
-          update-wasm-yarn-lock: ${{ inputs.update-wasm-yarn-lock }}
-          jdk-distribution-to-update-yarn-lock: ${{ inputs.jdk-distribution-to-update-yarn-lock }}
-          jdk-version-to-update-yarn-lock: ${{ inputs.jdk-version-to-update-yarn-lock }}
-          changelog: https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md
-          update-directory: ${{ runner.temp }}/update-compose-multiplatform
-          project-directory-to-update: ${{ inputs.project-directory-to-update }}
-      - name: Upload the update
+          distribution: ${{ inputs.jdk-distribution }}
+          java-version: ${{ inputs.jdk-version }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+      - name: Update the dependencies
+        env:
+          PROJECT_DIRECTORY_TO_UPDATE: ${{ inputs.project-directory-to-update }}
+          AUTO_MERGE: ${{ inputs.auto-merge }}
+          AUTO_MERGE_UPDATE_TYPES: ${{ inputs.auto-merge-update-types }}
+        working-directory: .update-compose-multiplatform
+        run: ./gradlew --quiet run --args=update
+      - name: Hand over the updates
         uses: actions/upload-artifact@v7
         with:
-          name: update-compose-multiplatform
-          path: ${{ runner.temp }}/update-compose-multiplatform
-          if-no-files-found: error
+          name: updates
+          path: ${{ runner.temp }}/updates.json
           retention-days: 1
-  sync-pull-request:
-    name: Open, update or close the pull request
-    needs: prepare
+  publish-updates:
+    name: Publish the updates
+    needs: update-dependencies
     runs-on: ubuntu-latest
     permissions: {}
     steps:
       - name: Create a token for the app
         id: app-token
-        if: inputs.app-client-id != ''
         uses: actions/create-github-app-token@v3
         with:
           client-id: ${{ inputs.app-client-id }}
@@ -132,31 +80,26 @@ jobs:
       - name: Check out the repository
         uses: actions/checkout@v7
         with:
-          ref: ${{ needs.prepare.outputs.commit }}
-          token: ${{ steps.app-token.outputs.token || secrets.token }}
-      - name: Check out the actions
+          ref: ${{ github.event.repository.default_branch }}
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Check out the tool
         uses: actions/checkout@v7
         with:
           repository: ${{ job.workflow_repository }}
           ref: ${{ job.workflow_sha }}
           path: .update-compose-multiplatform
-          sparse-checkout: |
-            .github/actions
-            scripts
           persist-credentials: false
-      - name: Download the update
+      - name: Receive the updates
         uses: actions/download-artifact@v8
         with:
-          name: update-compose-multiplatform
-          path: ${{ runner.temp }}/update-compose-multiplatform
-      - name: Open, update or close the pull request
-        uses: ./.update-compose-multiplatform/.github/actions/sync-pull-request
-        with:
-          repository: ${{ github.repository }}
-          base: ${{ env.BASE }}
-          update-directory: ${{ runner.temp }}/update-compose-multiplatform
-          token: ${{ steps.app-token.outputs.token || secrets.token }}
-          app-slug: ${{ steps.app-token.outputs.app-slug }}
-          auto-merge: ${{ inputs.auto-merge }}
-          auto-merge-update-types: ${{ inputs.auto-merge-update-types }}
-          labels: ${{ inputs.labels }}
+          name: updates
+          path: ${{ runner.temp }}
+      - name: Publish the updates
+        env:
+          PROJECT_DIRECTORY_TO_UPDATE: ${{ inputs.project-directory-to-update }}
+          AUTO_MERGE: ${{ inputs.auto-merge }}
+          AUTO_MERGE_UPDATE_TYPES: ${{ inputs.auto-merge-update-types }}
+          TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        working-directory: .update-compose-multiplatform
+        run: ./gradlew --quiet run --args=publish
