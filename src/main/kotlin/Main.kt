@@ -1,9 +1,5 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform
 
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.json.contentOrNull
-import kotlinx.serialization.json.jsonObject
-import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import kotlin.system.exitProcess
 
@@ -26,16 +22,13 @@ fun main(arguments: Array<String>) {
             temp = File(environment.getValue("RUNNER_TEMP")),
             event = File(environment.getValue("GITHUB_EVENT_PATH")),
         )
-    val inputs = environment["INPUTS"]?.let { Json.parseToJsonElement(it).jsonObject }.orEmpty()
-
-    fun input(name: String): String? = inputs[name]?.jsonPrimitive?.contentOrNull
     val result =
         when (arguments.single()) {
             "update" -> {
                 UpdateJob(runnerPaths = runnerPaths, versionSources = versionSources, logDestination = System.out).run(
-                    projectDirectoryToUpdate = input("project-directory-to-update"),
-                    autoMerge = input("auto-merge"),
-                    autoMergeUpdateTypes = input("auto-merge-update-types"),
+                    projectDirectoryToUpdate = environment["PROJECT_DIRECTORY_TO_UPDATE"],
+                    autoMerge = environment["AUTO_MERGE"],
+                    autoMergeUpdateTypes = environment["AUTO_MERGE_UPDATE_TYPES"],
                 )
             }
 
@@ -54,9 +47,9 @@ fun main(arguments: Array<String>) {
                 ).run(
                     token = environment["TOKEN"],
                     appSlug = environment["APP_SLUG"],
-                    projectDirectoryToUpdate = input("project-directory-to-update"),
-                    autoMerge = input("auto-merge"),
-                    autoMergeUpdateTypes = input("auto-merge-update-types"),
+                    projectDirectoryToUpdate = environment["PROJECT_DIRECTORY_TO_UPDATE"],
+                    autoMerge = environment["AUTO_MERGE"],
+                    autoMergeUpdateTypes = environment["AUTO_MERGE_UPDATE_TYPES"],
                 )
             }
 
