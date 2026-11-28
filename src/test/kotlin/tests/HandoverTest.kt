@@ -33,19 +33,26 @@ class HandoverTest {
     @AutoClose
     private val runner = FakeRunner()
 
-    private val versionSources = VersionSources(changelog.url, maven.urls)
+    private val versionSources = VersionSources(changelogUrl = changelog.url, mavenRepositoryUrls = maven.urls)
 
     @Test
     fun `should publish nothing when the default branch moves while the lock files are updated`() {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
 
         // Act
         val updated = update.run()
         repository.pushToMain(mapOf("README.md" to "An app\n"))
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
@@ -68,8 +75,15 @@ class HandoverTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -96,8 +110,15 @@ class HandoverTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()

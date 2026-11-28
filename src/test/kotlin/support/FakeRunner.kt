@@ -9,7 +9,7 @@ class FakeRunner : AutoCloseable {
     val event: File = temp.resolve("event.json").apply { writeText("""{"repository":{"default_branch":"main"}}""") }
     val log = StringBuilder()
 
-    fun paths(workspace: File): RunnerPaths = RunnerPaths(workspace, temp, event)
+    fun paths(workspace: File): RunnerPaths = RunnerPaths(workspace = workspace, temp = temp, event = event)
 
     override fun close() {
         temp.deleteRecursively()

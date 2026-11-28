@@ -35,7 +35,7 @@ class UpdateComposeMultiplatformTest {
     @AutoClose
     private val runner = FakeRunner()
 
-    private val versionSources = VersionSources(changelog.url, maven.urls)
+    private val versionSources = VersionSources(changelogUrl = changelog.url, mavenRepositoryUrls = maven.urls)
 
     private val nothingChanged = Outcome(changedFiles = mapOf("main" to emptySet()))
 
@@ -44,8 +44,15 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -67,7 +74,8 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
 
         // Act
         val updated = update.run(autoMerge = "fast-forward", autoMergeUpdateTypes = "minor")
@@ -85,7 +93,8 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
 
         // Act
         val updated = update.run(autoMerge = "squash", autoMergeUpdateTypes = "minor,prerelease")
@@ -105,7 +114,8 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
 
         // Act
         val updated = update.run(projectDirectoryToUpdate = "example")
@@ -133,7 +143,8 @@ class UpdateComposeMultiplatformTest {
             ),
         )
         maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
 
         // Act
         val updated = update.run()
@@ -155,7 +166,8 @@ class UpdateComposeMultiplatformTest {
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         changelog.text = changelogNamed("no-stable-release.md")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
 
         // Act
         val updated = update.run()
@@ -175,7 +187,8 @@ class UpdateComposeMultiplatformTest {
             mapOf(CATALOG to everyLibraryGroup("1.9.0", "1.9.0-beta06", "1.2.0-alpha06", "2.9.6", "2.9.0")),
         )
         changelog.text = changelogNamed("no-material3.md")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
 
         // Act
         val updated = update.run()
@@ -206,7 +219,8 @@ class UpdateComposeMultiplatformTest {
                     """.trimIndent() + "\n",
             ),
         )
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
 
         // Act
         val updated = update.run()
@@ -226,8 +240,15 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to everyLibraryGroup("1.10.1", "1.10.0-alpha06", "1.2.0", "2.9.6", "2.9.2")))
         maven.publish("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose", "2.9.6", "2.10.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -255,8 +276,15 @@ class UpdateComposeMultiplatformTest {
             ),
         )
         changelog.text = changelogNamed("second-beta.md")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -288,8 +316,15 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.5.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -323,8 +358,15 @@ class UpdateComposeMultiplatformTest {
         )
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0", "3.4.0")
         maven.publish("io.ktor:ktor-client-cio", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -350,8 +392,15 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0", okio = "3.15.0")))
         maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -400,8 +449,15 @@ class UpdateComposeMultiplatformTest {
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
         maven.publish("com.squareup.okio:okio-fakefilesystem", "3.15.0", "3.16.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -439,8 +495,15 @@ class UpdateComposeMultiplatformTest {
             "33.1.0-android",
             "33.2.0-android",
         )
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -486,8 +549,15 @@ class UpdateComposeMultiplatformTest {
         )
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
         maven.publish("com.squareup.okio:okio", "3.15.0", "3.16.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -527,8 +597,15 @@ class UpdateComposeMultiplatformTest {
             gradlew = repository.gradlewThatAlsoWritesReadme(),
         )
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -558,8 +635,15 @@ class UpdateComposeMultiplatformTest {
             ),
         )
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -584,8 +668,15 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.3.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -607,8 +698,15 @@ class UpdateComposeMultiplatformTest {
             "build(deps): update io.ktor:ktor-client-core to 3.2.1",
             "Old body",
         )
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -636,16 +734,23 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log).run()
+        UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log).run()
         PublishJob(
-            runner.paths(repository.checkout()),
-            versionSources,
-            github.endpoint,
-            runner.log,
+            runnerPaths = runner.paths(repository.checkout()),
+            versionSources = versionSources,
+            endpoint = github.endpoint,
+            logDestination = runner.log,
         ).run(token = "fake-app-token", appSlug = "fake-app")
         val commits = repository.commits(MANUAL_MERGE_BRANCH)
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -670,16 +775,23 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log).run()
+        UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log).run()
         PublishJob(
-            runner.paths(repository.checkout()),
-            versionSources,
-            github.endpoint,
-            runner.log,
+            runnerPaths = runner.paths(repository.checkout()),
+            versionSources = versionSources,
+            endpoint = github.endpoint,
+            logDestination = runner.log,
         ).run(token = "fake-app-token", appSlug = "fake-app")
         maven.publish("io.ktor:ktor-client-core", "3.2.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()
@@ -711,17 +823,24 @@ class UpdateComposeMultiplatformTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0")))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log).run()
+        UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log).run()
         PublishJob(
-            runner.paths(repository.checkout()),
-            versionSources,
-            github.endpoint,
-            runner.log,
+            runnerPaths = runner.paths(repository.checkout()),
+            versionSources = versionSources,
+            endpoint = github.endpoint,
+            logDestination = runner.log,
         ).run(token = "fake-app-token", appSlug = "fake-app")
         github.pullRequest(MANUAL_MERGE_BRANCH).autoMerge = "squash"
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0", "3.4.0")
-        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
-        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
+        val update =
+            UpdateJob(runnerPaths = runner.paths(repository.checkout()), versionSources = versionSources, logDestination = runner.log)
+        val publish =
+            PublishJob(
+                runnerPaths = runner.paths(repository.checkout()),
+                versionSources = versionSources,
+                endpoint = github.endpoint,
+                logDestination = runner.log,
+            )
 
         // Act
         val updated = update.run()

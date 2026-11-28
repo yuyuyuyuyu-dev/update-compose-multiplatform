@@ -5,6 +5,9 @@ naming:
   InvalidPackageDeclaration:
     rootPackage: dev.yuyuyuyuyu.updatecomposemultiplatform
 complexity:
+  LargeClass:
+    excludes:
+      - "**/src/test/**"
   LongMethod:
     excludes:
       - "**/src/test/**"

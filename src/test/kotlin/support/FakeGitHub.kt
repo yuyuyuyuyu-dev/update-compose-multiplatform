@@ -35,7 +35,7 @@ class FakeGitHub : AutoCloseable {
     val writes: MutableList<String> = Collections.synchronizedList(mutableListOf())
     val pullRequests: MutableList<FakePullRequest> = Collections.synchronizedList(mutableListOf())
 
-    val endpoint = GitHubEndpoint("${server.url}/api", "${server.url}/api/graphql", REPOSITORY)
+    val endpoint = GitHubEndpoint(apiUrl = "${server.url}/api", graphqlUrl = "${server.url}/api/graphql", repository = REPOSITORY)
 
     fun pullRequest(head: String): FakePullRequest = pullRequests.single { it.head == head }
 
