@@ -1,4 +1,4 @@
-package dev.yuyuyuyuyu.updatecomposemultiplatform.support
+package dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support
 
 fun catalog(
     compose: String = "1.10.1",

@@ -1,6 +1,6 @@
-package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
+package dev.yuyuyuyuyu.updatecomposemultiplatform.nonspec
 
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.git
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.git
 import java.io.File
 import java.nio.file.Files
 

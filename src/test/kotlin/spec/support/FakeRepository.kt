@@ -1,4 +1,4 @@
-package dev.yuyuyuyuyu.updatecomposemultiplatform.support
+package dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support
 
 import java.io.File
 import java.nio.file.Files
@@ -12,8 +12,8 @@ class FakeRepository : AutoCloseable {
     private val fixture = root.resolve("fixture")
     private lateinit var initialMain: String
 
-    val origin: File = root.resolve("origin.git")
-    val gradleLog: File = root.resolve("gradlew.log")
+    private val origin: File = root.resolve("origin.git")
+    private val gradleLog: File = root.resolve("gradlew.log")
 
     init {
         git(root, "init", "--quiet", "--bare", "--initial-branch=main", origin.path)
@@ -23,12 +23,11 @@ class FakeRepository : AutoCloseable {
     fun commit(
         files: Map<String, String>,
         projectDirectory: String = ".",
-        gradlew: String = fakeGradlew(gradleLog),
     ) {
         files.forEach { (path, content) -> fixture.resolve(path).apply { parentFile.mkdirs() }.writeText(content) }
         fixture.resolve(projectDirectory).resolve("gradlew").apply {
             parentFile.mkdirs()
-            writeText(gradlew)
+            writeText(fakeGradlew(gradleLog))
             setExecutable(true)
         }
         git(root, "init", "--quiet", "--initial-branch=main", fixture.path)

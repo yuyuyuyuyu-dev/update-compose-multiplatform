@@ -1,4 +1,4 @@
-package dev.yuyuyuyuyu.updatecomposemultiplatform.support
+package dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support
 
 import com.sun.net.httpserver.HttpExchange
 import dev.yuyuyuyuyu.updatecomposemultiplatform.GitHubEndpoint
@@ -32,8 +32,10 @@ class FakeGitHub : AutoCloseable {
     private val pullRequestPath = Regex("/repos/$REPOSITORY/pulls/(\\d+)")
     private val commentPath = Regex("/repos/$REPOSITORY/issues/(\\d+)/comments")
 
-    val writes: MutableList<String> = Collections.synchronizedList(mutableListOf())
-    val pullRequests: MutableList<FakePullRequest> = Collections.synchronizedList(mutableListOf())
+    private val recordedWrites: MutableList<String> = Collections.synchronizedList(mutableListOf())
+    private val pullRequests: MutableList<FakePullRequest> = Collections.synchronizedList(mutableListOf())
+
+    val writes: List<String> get() = recordedWrites.toList()
 
     val endpoint = GitHubEndpoint(apiUrl = "${server.url}/api", graphqlUrl = "${server.url}/api/graphql", repository = REPOSITORY)
 
@@ -49,7 +51,7 @@ class FakeGitHub : AutoCloseable {
         val body = exchange.requestBody.bufferedReader().readText()
         val json = if (body.isBlank()) JsonObject(emptyMap()) else Json.parseToJsonElement(body).jsonObject
         if (method != "GET") {
-            writes += if (path == "/graphql") "$method $path ${mutationName(json)}" else "$method $path"
+            recordedWrites += if (path == "/graphql") "$method $path ${mutationName(json)}" else "$method $path"
         }
         val authorized =
             exchange.requestHeaders

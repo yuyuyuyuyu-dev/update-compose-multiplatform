@@ -1,4 +1,4 @@
-package dev.yuyuyuyuyu.updatecomposemultiplatform.support
+package dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support
 
 data class Outcome(
     val changedFiles: Map<String, Set<String>>,

@@ -1,6 +1,11 @@
 style:
   MaxLineLength:
     active: false
+  ForbiddenImport:
+    active: true
+    includes:
+      - "**/src/test/kotlin/spec/**"
+    forbiddenPatterns: ".*\\.nonspec(\\..*)?"
 naming:
   InvalidPackageDeclaration:
     rootPackage: dev.yuyuyuyuyu.updatecomposemultiplatform

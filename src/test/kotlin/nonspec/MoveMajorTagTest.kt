@@ -1,7 +1,7 @@
-package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
+package dev.yuyuyuyuyu.updatecomposemultiplatform.nonspec
 
 import dev.yuyuyuyuyu.updatecomposemultiplatform.MoveMajorTagJob
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRunner
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.FakeRunner
 import org.junit.jupiter.api.AutoClose
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -18,8 +18,9 @@ class MoveMajorTagTest {
     fun `should move the major tag to a new release of the same major version`() {
         // Arrange
         repository.release("v1.9.2")
-        runner.release("v1.9.2")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("v1.9.2")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()
@@ -42,8 +43,9 @@ class MoveMajorTagTest {
     fun `should ignore prereleases when it looks for a newer release`() {
         // Arrange
         repository.release("v1.9.1")
-        runner.release("v1.9.1")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("v1.9.1")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()
@@ -66,8 +68,9 @@ class MoveMajorTagTest {
     fun `should treat minor version 10 as newer than minor version 9`() {
         // Arrange
         repository.release("v1.10.0")
-        runner.release("v1.10.0")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("v1.10.0")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()
@@ -90,8 +93,9 @@ class MoveMajorTagTest {
     fun `should create the major tag for the first release of a major version`() {
         // Arrange
         repository.release("v2.0.0")
-        runner.release("v2.0.0")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("v2.0.0")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()
@@ -115,8 +119,9 @@ class MoveMajorTagTest {
     fun `should ignore other major versions when it looks for a newer release`() {
         // Arrange
         repository.release("v0.9.1")
-        runner.release("v0.9.1")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("v0.9.1")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()
@@ -140,8 +145,9 @@ class MoveMajorTagTest {
     fun `should fail without moving any tag when the same major version has a newer release`() {
         // Arrange
         repository.release("v1.8.0")
-        runner.release("v1.8.0")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("v1.8.0")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()
@@ -167,8 +173,9 @@ class MoveMajorTagTest {
     fun `should fail without moving any tag when the release tag is a prerelease version`() {
         // Arrange
         repository.release("v1.10.0-rc.1")
-        runner.release("v1.10.0-rc.1")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("v1.10.0-rc.1")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()
@@ -194,8 +201,9 @@ class MoveMajorTagTest {
     fun `should fail without moving any tag when the release tag has no v prefix`() {
         // Arrange
         repository.release("1.9.2")
-        runner.release("1.9.2")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("1.9.2")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()
@@ -221,8 +229,9 @@ class MoveMajorTagTest {
     fun `should fail without moving any tag when the release tag has no patch version`() {
         // Arrange
         repository.release("v1.10")
-        runner.release("v1.10")
-        val moveMajorTag = MoveMajorTagJob(runnerPaths = runner.paths(repository.checkout()))
+        val runnerPaths = runner.paths(repository.checkout())
+        runnerPaths.release("v1.10")
+        val moveMajorTag = MoveMajorTagJob(runnerPaths = runnerPaths)
 
         // Act
         val moved = moveMajorTag.run()

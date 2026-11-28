@@ -1,18 +1,18 @@
-package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
+package dev.yuyuyuyuyu.updatecomposemultiplatform.nonspec
 
 import dev.yuyuyuyuyu.updatecomposemultiplatform.PublishJob
 import dev.yuyuyuyuyu.updatecomposemultiplatform.UpdateJob
 import dev.yuyuyuyuyu.updatecomposemultiplatform.VersionSources
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.CATALOG
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeChangelog
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeGitHub
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeMaven
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRepository
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeRunner
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.MANUAL_MERGE_BRANCH
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.Outcome
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.REPOSITORY
-import dev.yuyuyuyuyu.updatecomposemultiplatform.support.catalog
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.CATALOG
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.FakeChangelog
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.FakeGitHub
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.FakeMaven
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.FakeRepository
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.FakeRunner
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.MANUAL_MERGE_BRANCH
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.Outcome
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.REPOSITORY
+import dev.yuyuyuyuyu.updatecomposemultiplatform.spec.support.catalog
 import org.junit.jupiter.api.AutoClose
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -98,7 +98,7 @@ class PullRequestTest {
             expected =
                 Outcome(
                     changedFiles = mapOf("main" to emptySet(), MANUAL_MERGE_BRANCH to setOf(CATALOG)),
-                    gitHubWrites = listOf("PATCH /repos/$REPOSITORY/pulls/1"),
+                    gitHubWrites = listOf("POST /repos/$REPOSITORY/pulls", "PATCH /repos/$REPOSITORY/pulls/1"),
                 ),
             actual = outcome(),
         )
