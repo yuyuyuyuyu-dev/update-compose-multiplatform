@@ -1,8 +1,8 @@
 package dev.yuyuyuyuyu.updatecomposemultiplatform.tests
 
 import dev.yuyuyuyuyu.updatecomposemultiplatform.PublishJob
-import dev.yuyuyuyuyu.updatecomposemultiplatform.Sources
 import dev.yuyuyuyuyu.updatecomposemultiplatform.UpdateJob
+import dev.yuyuyuyuyu.updatecomposemultiplatform.VersionSources
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.CATALOG
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeChangelog
 import dev.yuyuyuyuyu.updatecomposemultiplatform.support.FakeGitHub
@@ -33,26 +33,26 @@ class HandoverTest {
     @AutoClose
     private val runner = FakeRunner()
 
-    private val sources = Sources(changelog.url, maven.urls)
+    private val versionSources = VersionSources(changelog.url, maven.urls)
 
     @Test
     fun `should publish nothing when the default branch moves while the lock files are updated`() {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
+        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
 
         // Act
         val updated = update.run()
         repository.pushToMain(mapOf("README.md" to "An app\n"))
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
+        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
         val published = publish.run(token = "fake-app-token", appSlug = "fake-app")
 
         // Assert
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertTrue(
-            runner.output.lines().contains(
+            runner.log.lines().contains(
                 "::warning::The default branch moved while the lock files were being updated, " +
                     "so nothing is published. The next run updates it.",
             ),
@@ -68,8 +68,8 @@ class HandoverTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
+        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
 
         // Act
         val updated = update.run()
@@ -80,7 +80,7 @@ class HandoverTest {
         assertTrue(actual = updated.isSuccess, message = updated.exceptionOrNull()?.message)
         assertTrue(actual = published.isSuccess, message = published.exceptionOrNull()?.message)
         assertTrue(
-            runner.output.lines().contains(
+            runner.log.lines().contains(
                 "::warning::The updates changed while the lock files were being updated, " +
                     "so nothing is published. The next run picks them up.",
             ),
@@ -96,8 +96,8 @@ class HandoverTest {
         // Arrange
         repository.commit(mapOf(CATALOG to catalog(ktor = "3.2.0"), "kotlin-js-store/yarn.lock" to "Resolved before\n"))
         maven.publish("io.ktor:ktor-client-core", "3.2.0", "3.3.0")
-        val update = UpdateJob(runner.context(repository.checkout()), sources, runner.output)
-        val publish = PublishJob(runner.context(repository.checkout()), sources, github.endpoint, runner.output)
+        val update = UpdateJob(runner.paths(repository.checkout()), versionSources, runner.log)
+        val publish = PublishJob(runner.paths(repository.checkout()), versionSources, github.endpoint, runner.log)
 
         // Act
         val updated = update.run()

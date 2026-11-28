@@ -3,11 +3,11 @@ package dev.yuyuyuyuyu.updatecomposemultiplatform
 private val releaseVersion = Regex("""v\d+\.\d+\.\d+""")
 
 class MoveMajorTagJob(
-    private val context: RunContext,
+    private val runnerPaths: RunnerPaths,
 ) {
-    private val workspace = Workspace(context.workspace)
+    private val workspace = Workspace(runnerPaths.workspace)
 
-    fun run(): Result<Unit> = runningJob { move(eventField(context.event, "release", "tag_name")) }
+    fun run(): Result<Unit> = runningJob { move(eventField(runnerPaths.event, "release", "tag_name")) }
 
     private fun move(releaseTag: String) {
         check(releaseVersion.matches(releaseTag)) { "$releaseTag is not a version such as v1.2.3, so no major tag is moved." }

@@ -19,7 +19,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.9.2")
         runner.release("v1.9.2")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
@@ -43,7 +43,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.9.1")
         runner.release("v1.9.1")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
@@ -67,7 +67,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.10.0")
         runner.release("v1.10.0")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
@@ -91,7 +91,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v2.0.0")
         runner.release("v2.0.0")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
@@ -116,7 +116,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v0.9.1")
         runner.release("v0.9.1")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
@@ -141,7 +141,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.8.0")
         runner.release("v1.8.0")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
@@ -168,7 +168,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.10.0-rc.1")
         runner.release("v1.10.0-rc.1")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
@@ -195,7 +195,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("1.9.2")
         runner.release("1.9.2")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()
@@ -222,7 +222,7 @@ class MoveMajorTagTest {
         // Arrange
         repository.release("v1.10")
         runner.release("v1.10")
-        val moveMajorTag = MoveMajorTagJob(runner.context(repository.checkout()))
+        val moveMajorTag = MoveMajorTagJob(runner.paths(repository.checkout()))
 
         // Act
         val moved = moveMajorTag.run()

@@ -4,13 +4,13 @@ import java.io.File
 
 const val HANDOVER_FILE = "updates.json"
 
-class RunContext(
+class RunnerPaths(
     val workspace: File,
     val temp: File,
     val event: File,
 )
 
-class Sources(
+class VersionSources(
     val changelogUrl: String,
     val mavenRepositoryUrls: List<String>,
 )

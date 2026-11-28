@@ -6,11 +6,11 @@ import kotlinx.serialization.json.put
 import java.io.File
 
 class UpdateJob(
-    private val context: RunContext,
-    private val sources: Sources,
-    private val output: Appendable,
+    private val runnerPaths: RunnerPaths,
+    private val versionSources: VersionSources,
+    private val logDestination: Appendable,
 ) {
-    private val workspace = Workspace(context.workspace)
+    private val workspace = Workspace(runnerPaths.workspace)
 
     fun run(
         projectDirectoryToUpdate: String? = null,
@@ -19,7 +19,7 @@ class UpdateJob(
     ): Result<Unit> =
         runningJob {
             val settings = Settings(projectDirectoryToUpdate, autoMerge, autoMergeUpdateTypes, workspace)
-            val planner = Planner(settings, sources, workspace, output)
+            val planner = Planner(settings, versionSources, workspace, logDestination)
             val baseCommit = workspace.git("rev-parse", "HEAD")
             val branches = planner.branchUpdates().filter { it.units.isNotEmpty() }
             val handover =
@@ -34,7 +34,7 @@ class UpdateJob(
                         },
                     )
                 }
-            File(context.temp, HANDOVER_FILE).writeText(handover.toString())
+            File(runnerPaths.temp, HANDOVER_FILE).writeText(handover.toString())
         }
 
     private fun updateBranch(

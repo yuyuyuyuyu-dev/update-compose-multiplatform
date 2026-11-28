@@ -7,8 +7,8 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 import kotlin.system.exitProcess
 
-private val sources =
-    Sources(
+private val versionSources =
+    VersionSources(
         changelogUrl = "https://raw.githubusercontent.com/JetBrains/compose-multiplatform/master/CHANGELOG.md",
         mavenRepositoryUrls =
             listOf(
@@ -20,8 +20,8 @@ private val sources =
 
 fun main(arguments: Array<String>) {
     val environment = System.getenv()
-    val context =
-        RunContext(
+    val runnerPaths =
+        RunnerPaths(
             workspace = File(environment.getValue("GITHUB_WORKSPACE")),
             temp = File(environment.getValue("RUNNER_TEMP")),
             event = File(environment.getValue("GITHUB_EVENT_PATH")),
@@ -32,7 +32,7 @@ fun main(arguments: Array<String>) {
     val result =
         when (arguments.single()) {
             "update" -> {
-                UpdateJob(context = context, sources = sources, output = System.out).run(
+                UpdateJob(runnerPaths = runnerPaths, versionSources = versionSources, logDestination = System.out).run(
                     projectDirectoryToUpdate = input("project-directory-to-update"),
                     autoMerge = input("auto-merge"),
                     autoMergeUpdateTypes = input("auto-merge-update-types"),
@@ -46,7 +46,12 @@ fun main(arguments: Array<String>) {
                         graphqlUrl = environment.getValue("GITHUB_GRAPHQL_URL"),
                         repository = environment.getValue("GITHUB_REPOSITORY"),
                     )
-                PublishJob(context = context, sources = sources, endpoint = endpoint, output = System.out).run(
+                PublishJob(
+                    runnerPaths = runnerPaths,
+                    versionSources = versionSources,
+                    endpoint = endpoint,
+                    logDestination = System.out,
+                ).run(
                     token = environment["TOKEN"],
                     appSlug = environment["APP_SLUG"],
                     projectDirectoryToUpdate = input("project-directory-to-update"),
@@ -56,7 +61,7 @@ fun main(arguments: Array<String>) {
             }
 
             "move-major-tag" -> {
-                MoveMajorTagJob(context = context).run()
+                MoveMajorTagJob(runnerPaths = runnerPaths).run()
             }
 
             else -> {

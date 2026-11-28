@@ -37,9 +37,9 @@ class BranchUpdate(
 
 class Planner(
     private val settings: Settings,
-    private val sources: Sources,
+    private val versionSources: VersionSources,
     private val workspace: Workspace,
-    private val output: Appendable,
+    private val logDestination: Appendable,
 ) {
     fun branchUpdates(): List<BranchUpdate> {
         val units = plan()
@@ -60,7 +60,7 @@ class Planner(
 
     private fun plan(): List<UpdateUnit> {
         val catalog = versionCatalog()
-        val changelog = Changelog(fetch(sources.changelogUrl))
+        val changelog = Changelog(fetch(versionSources.changelogUrl))
         val groups = changelog.libraryGroups()
         val composeSlots = catalog.slots.filter { slot -> slot.modules.any { composeKind(it, groups) != null } }
         val composeUnit = composeUnit(composeSlots, changelog, groups)
@@ -108,12 +108,12 @@ class Planner(
     }
 
     private fun otherUnits(slots: List<Slot>): List<UpdateUnit> {
-        val versions = MavenRepositories(sources.mavenRepositoryUrls).versions(slots.flatMap { it.modules }.distinct())
+        val versions = MavenRepositories(versionSources.mavenRepositoryUrls).versions(slots.flatMap { it.modules }.distinct())
         return slots.mapNotNull { slot ->
             val missing = slot.modules.filter { versions.getValue(it).isEmpty() }
             if (missing.isNotEmpty()) {
                 val coordinates = listed(missing.map { it.coordinates })
-                output.appendLine("::warning::${slot.label} is not updated, because no repository has $coordinates.")
+                logDestination.appendLine("::warning::${slot.label} is not updated, because no repository has $coordinates.")
                 null
             } else {
                 val available = slot.modules.map { versions.getValue(it) }.reduce { common, next -> common intersect next }

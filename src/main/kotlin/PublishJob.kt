@@ -7,12 +7,12 @@ import kotlinx.serialization.json.jsonPrimitive
 import java.io.File
 
 class PublishJob(
-    private val context: RunContext,
-    private val sources: Sources,
+    private val runnerPaths: RunnerPaths,
+    private val versionSources: VersionSources,
     private val endpoint: GitHubEndpoint,
-    private val output: Appendable,
+    private val logDestination: Appendable,
 ) {
-    private val workspace = Workspace(context.workspace)
+    private val workspace = Workspace(runnerPaths.workspace)
 
     fun run(
         token: String?,
@@ -29,10 +29,10 @@ class PublishJob(
             val settings = Settings(projectDirectoryToUpdate, autoMerge, autoMergeUpdateTypes, workspace)
             Publication(
                 settings,
-                Planner(settings, sources, workspace, output),
+                Planner(settings, versionSources, workspace, logDestination),
                 GitHub(endpoint, token),
                 appSlug,
-                eventField(context.event, "repository", "default_branch"),
+                eventField(runnerPaths.event, "repository", "default_branch"),
             ).publish()
         }
 
@@ -46,21 +46,21 @@ class PublishJob(
         private val catalogPath = settings.projectPath(CATALOG_PATH)
 
         fun publish() {
-            val handover = Json.parseToJsonElement(File(context.temp, HANDOVER_FILE).readText()).jsonObject
+            val handover = Json.parseToJsonElement(File(runnerPaths.temp, HANDOVER_FILE).readText()).jsonObject
             val baseCommit = workspace.git("rev-parse", "HEAD")
             val branches = planner.branchUpdates()
             val moved = handover.getValue("base").jsonPrimitive.content != baseCommit
             val files = if (moved) null else handedOverFiles(branches, handover)
             when {
                 moved -> {
-                    output.appendLine(
+                    logDestination.appendLine(
                         "::warning::The default branch moved while the lock files were being updated, " +
                             "so nothing is published. The next run updates it.",
                     )
                 }
 
                 files == null -> {
-                    output.appendLine(
+                    logDestination.appendLine(
                         "::warning::The updates changed while the lock files were being updated, " +
                             "so nothing is published. The next run picks them up.",
                     )
@@ -121,7 +121,7 @@ class PublishJob(
                 pullRequest == null -> {
                     val created = github.createPullRequest(update.name, base, title, body)
                     update.autoMerge?.let { github.setAutoMerge(created, it) }
-                    output.appendLine("Opened ${created.url}.")
+                    logDestination.appendLine("Opened ${created.url}.")
                 }
 
                 pullRequest.title != title || pullRequest.body != body -> {
@@ -129,11 +129,11 @@ class PublishJob(
                     if (update.autoMerge == null && pullRequest.autoMerge != null) {
                         github.setAutoMerge(pullRequest, null)
                     }
-                    output.appendLine("Updated ${pullRequest.url}.")
+                    logDestination.appendLine("Updated ${pullRequest.url}.")
                 }
 
                 else -> {
-                    output.appendLine("${pullRequest.url} already has this update.")
+                    logDestination.appendLine("${pullRequest.url} already has this update.")
                 }
             }
         }
@@ -145,7 +145,7 @@ class PublishJob(
             if (pullRequest != null) {
                 github.comment(pullRequest, "Closing because $base needs none of these updates any more.")
                 github.closePullRequest(pullRequest)
-                output.appendLine("Closed ${pullRequest.url}.")
+                logDestination.appendLine("Closed ${pullRequest.url}.")
             }
             if (workspace.git("ls-remote", "--heads", "origin", "refs/heads/$branch").isNotEmpty()) {
                 workspace.git("push", "--quiet", "origin", "--delete", "refs/heads/$branch")
@@ -165,7 +165,7 @@ class PublishJob(
                         workspace.git("rev-parse", "FETCH_HEAD^{tree}") == workspace.git("rev-parse", "HEAD^{tree}")
                     }
             if (holdsTree) {
-                output.appendLine("$branch already holds this update.")
+                logDestination.appendLine("$branch already holds this update.")
             } else {
                 workspace.git("push", "--quiet", "--force", "origin", "HEAD:refs/heads/$branch")
             }
